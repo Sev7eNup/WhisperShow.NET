@@ -1,0 +1,43 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+*.rsuser
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+
+## Build results
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+
+## NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## User-specific files
+*.env
+appsettings.Development.json
+appsettings.Local.json
+
+## Whisper GGML models (large binary files)
+ggml-*.bin
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+## Claude Code
+.claude/
