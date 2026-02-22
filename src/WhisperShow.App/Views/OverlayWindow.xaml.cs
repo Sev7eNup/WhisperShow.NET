@@ -1,9 +1,14 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
+using Microsoft.Extensions.Options;
 using WhisperShow.App.ViewModels;
+using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Hotkey;
 
@@ -13,19 +18,27 @@ public partial class OverlayWindow : Window
 {
     private readonly OverlayViewModel _viewModel;
     private readonly IGlobalHotkeyService _hotkeyService;
+    private readonly WhisperShowOptions _options;
     private Storyboard? _pulseStoryboard;
     private Storyboard? _spinStoryboard;
+    private const int WaveformBarCount = 20;
+    private readonly Rectangle[] _waveformBars = new Rectangle[WaveformBarCount];
 
-    public OverlayWindow(OverlayViewModel viewModel, IGlobalHotkeyService hotkeyService)
+    public OverlayWindow(OverlayViewModel viewModel, IGlobalHotkeyService hotkeyService,
+        IOptions<WhisperShowOptions> options)
     {
         InitializeComponent();
 
         _viewModel = viewModel;
         _hotkeyService = hotkeyService;
+        _options = options.Value;
         DataContext = _viewModel;
 
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-        _hotkeyService.HotkeyPressed += OnHotkeyPressed;
+        _viewModel.WaveformUpdated += (_, _) => Dispatcher.Invoke(UpdateWaveformBars);
+        _hotkeyService.ToggleHotkeyPressed += OnToggleHotkeyPressed;
+        _hotkeyService.PushToTalkHotkeyPressed += OnPushToTalkHotkeyPressed;
+        _hotkeyService.PushToTalkHotkeyReleased += OnPushToTalkHotkeyReleased;
 
         Loaded += OverlayWindow_Loaded;
     }
@@ -38,12 +51,57 @@ public partial class OverlayWindow : Window
         NativeMethods.SetWindowLongW(handle, NativeMethods.GWL_EXSTYLE,
             exStyle | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_TOOLWINDOW);
 
+        // Apply ShowInTaskbar setting
+        ShowInTaskbar = _options.Overlay.ShowInTaskbar;
+
         // Register global hotkey
         _hotkeyService.Register(handle);
 
         // Cache storyboards
         _pulseStoryboard = (Storyboard)FindResource("PulseAnimation");
         _spinStoryboard = (Storyboard)FindResource("SpinAnimation");
+
+        // Create waveform bars
+        CreateWaveformBars();
+
+        // Position: bottom center of primary screen, above taskbar
+        var workArea = SystemParameters.WorkArea;
+        Left = (workArea.Width - ActualWidth) / 2 + workArea.Left;
+        Top = workArea.Bottom - ActualHeight - 60;
+    }
+
+    private void CreateWaveformBars()
+    {
+        var barBrush = new SolidColorBrush(Color.FromArgb(220, 255, 255, 255));
+        barBrush.Freeze();
+        for (int i = 0; i < WaveformBarCount; i++)
+        {
+            var bar = new Rectangle
+            {
+                Width = 2,
+                Height = 2,
+                Fill = barBrush,
+                RadiusX = 1,
+                RadiusY = 1
+            };
+            Canvas.SetLeft(bar, i * 3.5);
+            Canvas.SetTop(bar, 13); // centered vertically in 28px canvas
+            _waveformBars[i] = bar;
+            WaveformCanvas.Children.Add(bar);
+        }
+    }
+
+    private void UpdateWaveformBars()
+    {
+        var levels = _viewModel.GetWaveformLevels();
+        for (int i = 0; i < WaveformBarCount; i++)
+        {
+            // Amplify: typical speech is 0.0-0.3, scale up for visibility
+            float level = Math.Min(levels[i] * 3.5f, 1.0f);
+            double height = Math.Max(2, level * 26);
+            _waveformBars[i].Height = height;
+            Canvas.SetTop(_waveformBars[i], (28 - height) / 2); // center vertically
+        }
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -67,10 +125,32 @@ public partial class OverlayWindow : Window
         ResultPanel.Visibility = Visibility.Collapsed;
         ErrorPanel.Visibility = Visibility.Collapsed;
 
+        // Auto-show/hide for non-always-visible mode
+        if (!_viewModel.IsOverlayAlwaysVisible)
+        {
+            if (state is RecordingState.Recording or RecordingState.Transcribing)
+            {
+                if (!IsVisible)
+                {
+                    Show();
+                    // Re-position in case screen resolution changed
+                    var workArea = SystemParameters.WorkArea;
+                    Left = (workArea.Width - ActualWidth) / 2 + workArea.Left;
+                    Top = workArea.Bottom - ActualHeight - 60;
+                }
+            }
+            else if (state == RecordingState.Idle)
+            {
+                Hide();
+                return; // No need to update panels if hidden
+            }
+        }
+
         switch (state)
         {
             case RecordingState.Idle:
                 IdlePanel.Visibility = Visibility.Visible;
+                _viewModel.ClearWaveform();
                 break;
             case RecordingState.Recording:
                 RecordingPanel.Visibility = Visibility.Visible;
@@ -89,10 +169,14 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void OnHotkeyPressed(object? sender, EventArgs e)
-    {
-        Dispatcher.Invoke(async () => await _viewModel.ToggleRecordingCommand.ExecuteAsync(null));
-    }
+    private void OnToggleHotkeyPressed(object? sender, EventArgs e)
+        => Dispatcher.Invoke(async () => await _viewModel.ToggleRecordingCommand.ExecuteAsync(null));
+
+    private void OnPushToTalkHotkeyPressed(object? sender, EventArgs e)
+        => Dispatcher.Invoke(async () => await _viewModel.HotkeyStartRecordingAsync());
+
+    private void OnPushToTalkHotkeyReleased(object? sender, EventArgs e)
+        => Dispatcher.Invoke(async () => await _viewModel.HotkeyStopRecordingAsync());
 
     // Drag support: track mouse start position, only DragMove if mouse actually moves
     private Point? _dragStart;

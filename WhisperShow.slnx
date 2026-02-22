@@ -4,6 +4,6 @@
     <Project Path="src/WhisperShow.Core/WhisperShow.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/WhisperShow.Core.Tests/WhisperShow.Core.Tests.csproj" />
+    <Project Path="tests/WhisperShow.Tests/WhisperShow.Tests.csproj" />
   </Folder>
 </Solution>

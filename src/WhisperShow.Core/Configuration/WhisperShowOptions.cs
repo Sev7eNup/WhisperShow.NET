@@ -13,6 +13,8 @@ public class WhisperShowOptions
     public HotkeyOptions Hotkey { get; set; } = new();
     public AudioOptions Audio { get; set; } = new();
     public OverlayOptions Overlay { get; set; } = new();
+    public TextCorrectionOptions TextCorrection { get; set; } = new();
+    public AppOptions App { get; set; } = new();
 }
 
 public class OpenAiOptions
@@ -35,8 +37,14 @@ public class LocalWhisperOptions
 
 public class HotkeyOptions
 {
-    public string Modifiers { get; set; } = "Control, Shift";
-    public string Key { get; set; } = "Space";
+    public HotkeyBinding Toggle { get; set; } = new() { Modifiers = "Control, Shift", Key = "Space" };
+    public HotkeyBinding PushToTalk { get; set; } = new() { Modifiers = "Control", Key = "Space" };
+}
+
+public class HotkeyBinding
+{
+    public string Modifiers { get; set; } = "";
+    public string Key { get; set; } = "";
 }
 
 public class AudioOptions
@@ -44,6 +52,8 @@ public class AudioOptions
     public int DeviceIndex { get; set; }
     public int SampleRate { get; set; } = 16000;
     public int MaxRecordingSeconds { get; set; } = 300;
+    public bool CompressBeforeUpload { get; set; } = true;
+    public bool MuteWhileDictating { get; set; } = true;
 }
 
 public class OverlayOptions
@@ -51,4 +61,21 @@ public class OverlayOptions
     public double PositionX { get; set; } = -1;
     public double PositionY { get; set; } = -1;
     public int AutoDismissSeconds { get; set; } = 10;
+    public bool AlwaysVisible { get; set; } = true;
+    public bool ShowInTaskbar { get; set; }
+}
+
+public class TextCorrectionOptions
+{
+    public bool Enabled { get; set; }
+    public string Model { get; set; } = "gpt-4o-mini";
+    public string? SystemPrompt { get; set; }
+    public bool UseCombinedAudioModel { get; set; }
+    public string CombinedAudioModel { get; set; } = "gpt-4o-mini-audio-preview";
+}
+
+public class AppOptions
+{
+    public bool LaunchAtLogin { get; set; }
+    public bool SoundEffects { get; set; } = true;
 }

@@ -3,13 +3,16 @@ using Microsoft.Extensions.Options;
 using OpenAI.Audio;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
+using WhisperShow.Core.Services.Audio;
 
 namespace WhisperShow.Core.Services.Transcription;
 
 public class OpenAiTranscriptionService : ITranscriptionService
 {
     private readonly ILogger<OpenAiTranscriptionService> _logger;
+    private readonly WhisperShowOptions _allOptions;
     private readonly OpenAiOptions _options;
+    private readonly IAudioCompressor _audioCompressor;
     private AudioClient? _audioClient;
 
     public string ProviderName => "OpenAI API";
@@ -17,10 +20,13 @@ public class OpenAiTranscriptionService : ITranscriptionService
 
     public OpenAiTranscriptionService(
         ILogger<OpenAiTranscriptionService> logger,
-        IOptions<WhisperShowOptions> options)
+        IOptions<WhisperShowOptions> options,
+        IAudioCompressor audioCompressor)
     {
         _logger = logger;
+        _allOptions = options.Value;
         _options = options.Value.OpenAI;
+        _audioCompressor = audioCompressor;
     }
 
     public async Task<TranscriptionResult> TranscribeAsync(
@@ -35,7 +41,23 @@ public class OpenAiTranscriptionService : ITranscriptionService
             model: _options.Model,
             apiKey: _options.ApiKey!);
 
-        using var stream = new MemoryStream(audioData);
+        byte[] uploadData;
+        string fileName;
+
+        if (_allOptions.Audio.CompressBeforeUpload)
+        {
+            uploadData = _audioCompressor.CompressToMp3(audioData);
+            fileName = "recording.mp3";
+            _logger.LogInformation("Compressed audio: {OrigSize} -> {CompSize} bytes ({Ratio:P0} reduction)",
+                audioData.Length, uploadData.Length, 1.0 - (double)uploadData.Length / audioData.Length);
+        }
+        else
+        {
+            uploadData = audioData;
+            fileName = "recording.wav";
+        }
+
+        using var stream = new MemoryStream(uploadData);
 
         var transcriptionOptions = new AudioTranscriptionOptions
         {
@@ -44,10 +66,10 @@ public class OpenAiTranscriptionService : ITranscriptionService
         };
 
         _logger.LogInformation("Sending audio to OpenAI ({Size} bytes, model: {Model})",
-            audioData.Length, _options.Model);
+            uploadData.Length, _options.Model);
 
         var result = await _audioClient.TranscribeAudioAsync(
-            stream, "recording.wav", transcriptionOptions, cancellationToken);
+            stream, fileName, transcriptionOptions, cancellationToken);
 
         var transcription = result.Value;
 

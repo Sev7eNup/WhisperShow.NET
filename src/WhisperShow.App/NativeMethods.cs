@@ -87,6 +87,9 @@ internal static partial class NativeMethods
         internal ushort wParamH;
     }
 
+    [LibraryImport("user32.dll")]
+    internal static partial short GetAsyncKeyState(int vKey);
+
     internal const uint INPUT_KEYBOARD = 1;
     internal const uint KEYEVENTF_KEYUP = 0x0002;
     internal const ushort VK_CONTROL = 0x11;

@@ -11,7 +11,7 @@ public class TranscriptionProviderFactory
         _providers = providers;
     }
 
-    public ITranscriptionService GetProvider(TranscriptionProvider provider)
+    public virtual ITranscriptionService GetProvider(TranscriptionProvider provider)
     {
         return provider switch
         {
