@@ -96,6 +96,9 @@ public partial class OverlayWindow : Window
         // Apply initial overlay scale
         ApplyOverlayScale(_options.Overlay.Scale);
 
+        // Force correct visual state (ensures proper sizing after waveform bars are created)
+        UpdateVisualState(_viewModel.State);
+
         // Position: restore saved or default to bottom-center
         RestorePosition();
         _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
