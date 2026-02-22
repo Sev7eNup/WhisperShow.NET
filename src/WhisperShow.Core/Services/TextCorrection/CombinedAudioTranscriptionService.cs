@@ -1,7 +1,9 @@
 #pragma warning disable OPENAI001 // Audio input APIs are experimental
 
+using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenAI;
 using OpenAI.Chat;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Services.Audio;
@@ -27,6 +29,7 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
     private ChatClient? _chatClient;
     private string? _lastApiKey;
     private string? _lastModel;
+    private string? _lastEndpoint;
 
     public bool IsAvailable
     {
@@ -55,14 +58,21 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
     {
         var options = _optionsMonitor.CurrentValue;
 
-        // Recreate client if API key or model changed
-        if (_chatClient is null || _lastApiKey != options.OpenAI.ApiKey || _lastModel != options.TextCorrection.CombinedAudioModel)
+        // Recreate client if API key, model, or endpoint changed
+        if (_chatClient is null || _lastApiKey != options.OpenAI.ApiKey
+            || _lastModel != options.TextCorrection.CombinedAudioModel || _lastEndpoint != options.OpenAI.Endpoint)
         {
+            var clientOptions = new OpenAIClientOptions();
+            if (!string.IsNullOrEmpty(options.OpenAI.Endpoint))
+                clientOptions.Endpoint = new Uri(options.OpenAI.Endpoint);
+
             _chatClient = new ChatClient(
                 model: options.TextCorrection.CombinedAudioModel,
-                apiKey: options.OpenAI.ApiKey!);
+                credential: new ApiKeyCredential(options.OpenAI.ApiKey!),
+                options: clientOptions);
             _lastApiKey = options.OpenAI.ApiKey;
             _lastModel = options.TextCorrection.CombinedAudioModel;
+            _lastEndpoint = options.OpenAI.Endpoint;
         }
 
         // Compress WAV to MP3 to reduce upload size

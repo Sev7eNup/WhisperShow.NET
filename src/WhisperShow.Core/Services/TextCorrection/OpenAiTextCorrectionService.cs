@@ -1,5 +1,7 @@
+using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenAI;
 using OpenAI.Chat;
 using WhisperShow.Core.Configuration;
 
@@ -23,6 +25,7 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
     private ChatClient? _chatClient;
     private string? _lastApiKey;
     private string? _lastModel;
+    private string? _lastEndpoint;
 
     public OpenAiTextCorrectionService(
         ILogger<OpenAiTextCorrectionService> logger,
@@ -40,14 +43,21 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
         {
             var options = _optionsMonitor.CurrentValue;
 
-            // Recreate client if API key or model changed
-            if (_chatClient is null || _lastApiKey != options.OpenAI.ApiKey || _lastModel != options.TextCorrection.Model)
+            // Recreate client if API key, model, or endpoint changed
+            if (_chatClient is null || _lastApiKey != options.OpenAI.ApiKey
+                || _lastModel != options.TextCorrection.Model || _lastEndpoint != options.OpenAI.Endpoint)
             {
+                var clientOptions = new OpenAIClientOptions();
+                if (!string.IsNullOrEmpty(options.OpenAI.Endpoint))
+                    clientOptions.Endpoint = new Uri(options.OpenAI.Endpoint);
+
                 _chatClient = new ChatClient(
                     model: options.TextCorrection.Model,
-                    apiKey: options.OpenAI.ApiKey!);
+                    credential: new ApiKeyCredential(options.OpenAI.ApiKey!),
+                    options: clientOptions);
                 _lastApiKey = options.OpenAI.ApiKey;
                 _lastModel = options.TextCorrection.Model;
+                _lastEndpoint = options.OpenAI.Endpoint;
             }
 
             var systemPrompt = options.TextCorrection.SystemPrompt ?? DefaultSystemPrompt;

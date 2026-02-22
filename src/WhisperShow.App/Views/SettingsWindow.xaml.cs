@@ -208,6 +208,20 @@ public partial class SettingsWindow : Window
             _viewModel.ApplyProvider(provider);
     }
 
+    private void EndpointTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.ApplyEndpoint(tb.Text);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            _viewModel.IsEditingEndpoint = false;
+            e.Handled = true;
+        }
+    }
+
     private void ApiKeyTextBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter && sender is TextBox tb)

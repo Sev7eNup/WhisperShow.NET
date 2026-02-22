@@ -138,6 +138,10 @@ public partial class SettingsViewModel : ObservableObject
     private TranscriptionProvider _provider = TranscriptionProvider.OpenAI;
     [ObservableProperty] private bool _isEditingProvider;
 
+    // --- Transcription: Endpoint ---
+    [ObservableProperty] private string _openAiEndpoint = "";
+    [ObservableProperty] private bool _isEditingEndpoint;
+
     // --- Transcription: API Key ---
     [ObservableProperty] private string _openAiApiKey = "";
     [ObservableProperty] private bool _isEditingApiKey;
@@ -227,6 +231,7 @@ public partial class SettingsViewModel : ObservableObject
 
         // Transcription
         _provider = opts.Provider;
+        _openAiEndpoint = opts.OpenAI.Endpoint ?? "";
         _openAiApiKey = opts.OpenAI.ApiKey ?? "";
         _openAiModelName = opts.OpenAI.Model;
         _localModelName = opts.Local.ModelName;
@@ -540,6 +545,16 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (Enum.TryParse<TranscriptionProvider>(providerName, out var provider))
             ApplyProvider(provider);
+    }
+
+    [RelayCommand]
+    private void StartEditingEndpoint() => IsEditingEndpoint = true;
+
+    public void ApplyEndpoint(string endpoint)
+    {
+        OpenAiEndpoint = endpoint;
+        IsEditingEndpoint = false;
+        ScheduleSave();
     }
 
     [RelayCommand]
@@ -916,6 +931,7 @@ public partial class SettingsViewModel : ObservableObject
         section["Provider"] = Provider.ToString();
         section["OpenAI"]!["ApiKey"] = OpenAiApiKey;
         section["OpenAI"]!["Model"] = _openAiModelName;
+        section["OpenAI"]!["Endpoint"] = string.IsNullOrWhiteSpace(OpenAiEndpoint) ? null : OpenAiEndpoint;
         section["Local"]!["ModelName"] = _localModelName;
         section["Local"]!["GpuAcceleration"] = GpuAcceleration;
         section["Language"] = SelectedLanguageCode;

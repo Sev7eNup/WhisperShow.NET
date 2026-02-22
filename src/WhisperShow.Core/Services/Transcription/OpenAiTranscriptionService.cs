@@ -1,5 +1,7 @@
+using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenAI;
 using OpenAI.Audio;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
@@ -15,6 +17,7 @@ public class OpenAiTranscriptionService : ITranscriptionService
     private AudioClient? _audioClient;
     private string? _lastApiKey;
     private string? _lastModel;
+    private string? _lastEndpoint;
 
     public string ProviderName => "OpenAI API";
     public bool IsAvailable => !string.IsNullOrWhiteSpace(_optionsMonitor.CurrentValue.OpenAI.ApiKey);
@@ -40,12 +43,21 @@ public class OpenAiTranscriptionService : ITranscriptionService
         if (string.IsNullOrWhiteSpace(openAi.ApiKey))
             throw new InvalidOperationException("OpenAI API key is not configured.");
 
-        // Recreate client if API key or model changed
-        if (_audioClient is null || _lastApiKey != openAi.ApiKey || _lastModel != openAi.Model)
+        // Recreate client if API key, model, or endpoint changed
+        if (_audioClient is null || _lastApiKey != openAi.ApiKey
+            || _lastModel != openAi.Model || _lastEndpoint != openAi.Endpoint)
         {
-            _audioClient = new AudioClient(model: openAi.Model, apiKey: openAi.ApiKey!);
+            var clientOptions = new OpenAIClientOptions();
+            if (!string.IsNullOrEmpty(openAi.Endpoint))
+                clientOptions.Endpoint = new Uri(openAi.Endpoint);
+
+            _audioClient = new AudioClient(
+                model: openAi.Model,
+                credential: new ApiKeyCredential(openAi.ApiKey!),
+                options: clientOptions);
             _lastApiKey = openAi.ApiKey;
             _lastModel = openAi.Model;
+            _lastEndpoint = openAi.Endpoint;
         }
 
         byte[] uploadData;

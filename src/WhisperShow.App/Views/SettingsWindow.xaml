@@ -696,6 +696,41 @@
                                         Visibility="{Binding IsEditingApiKey, Converter={StaticResource InverseBoolToVisibility}}"/>
                             </Grid>
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                            <!-- Endpoint -->
+                            <Grid Margin="20,14,20,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Visibility="{Binding IsEditingEndpoint, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <TextBlock Text="API Endpoint" FontSize="13" FontWeight="SemiBold"
+                                               FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock FontSize="12" FontFamily="Segoe UI"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
+                                        <TextBlock.Text>
+                                            <Binding Path="OpenAiEndpoint" FallbackValue="Default (api.openai.com)">
+                                                <Binding.TargetNullValue>Default (api.openai.com)</Binding.TargetNullValue>
+                                            </Binding>
+                                        </TextBlock.Text>
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding OpenAiEndpoint}" Value="">
+                                                        <Setter Property="Text" Value="Default (api.openai.com)"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <TextBox Visibility="{Binding IsEditingEndpoint, Converter={StaticResource BoolToVisibility}}"
+                                         Text="{Binding OpenAiEndpoint}" Style="{StaticResource SettingsTextBoxStyle}"
+                                         KeyDown="EndpointTextBox_KeyDown" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                        Command="{Binding StartEditingEndpointCommand}" VerticalAlignment="Center"
+                                        Visibility="{Binding IsEditingEndpoint, Converter={StaticResource InverseBoolToVisibility}}"/>
+                            </Grid>
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                             <!-- Model -->
                             <Grid Margin="20,14,20,14">
                                 <Grid.ColumnDefinitions>
