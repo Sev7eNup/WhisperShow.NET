@@ -40,6 +40,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IUsageStatsService _statsService;
     private readonly IModelManager _modelManager;
     private readonly ICorrectionModelManager _correctionModelManager;
+    private readonly IModelPreloadService _preloadService;
     private CancellationTokenSource? _saveCts;
 
     // --- Page navigation ---
@@ -195,6 +196,7 @@ public partial class SettingsViewModel : ObservableObject
         IUsageStatsService statsService,
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
+        IModelPreloadService preloadService,
         ILogger<SettingsViewModel> logger)
     {
         _logger = logger;
@@ -204,6 +206,7 @@ public partial class SettingsViewModel : ObservableObject
         _statsService = statsService;
         _modelManager = modelManager;
         _correctionModelManager = correctionModelManager;
+        _preloadService = preloadService;
 
         var opts = options.Value;
 
@@ -549,6 +552,9 @@ public partial class SettingsViewModel : ObservableObject
         IsEditingProvider = false;
         TranscriptionModel = provider == TranscriptionProvider.OpenAI ? _openAiModelName : _localModelName;
         ScheduleSave();
+
+        if (provider == TranscriptionProvider.Local)
+            _preloadService.PreloadTranscriptionModel(_localModelName);
     }
 
     [RelayCommand]
@@ -608,6 +614,9 @@ public partial class SettingsViewModel : ObservableObject
             CorrectionProvider = provider;
             _logger.LogInformation("Text correction provider changed to: {Provider}", provider);
             ScheduleSave();
+
+            if (provider == TextCorrectionProvider.Local)
+                _preloadService.PreloadCorrectionModel(CorrectionLocalModelName);
         }
     }
 
@@ -713,6 +722,8 @@ public partial class SettingsViewModel : ObservableObject
         item.StatusText = "Active";
         CorrectionLocalModelName = item.FileName;
         ScheduleSave();
+
+        _preloadService.PreloadCorrectionModel(item.FileName);
     }
 
     [RelayCommand]
@@ -901,6 +912,8 @@ public partial class SettingsViewModel : ObservableObject
         TranscriptionModel = item.FileName;
         _localModelName = item.FileName;
         ScheduleSave();
+
+        _preloadService.PreloadTranscriptionModel(item.FileName);
     }
 
     [RelayCommand]

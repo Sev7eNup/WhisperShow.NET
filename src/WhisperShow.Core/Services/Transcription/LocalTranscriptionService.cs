@@ -82,6 +82,15 @@ public class LocalTranscriptionService : ITranscriptionService, IDisposable
             EnsureFactoryLoaded(modelPath, localOpts.GpuAcceleration);
     }
 
+    public void Preload(string modelName)
+    {
+        var localOpts = _optionsMonitor.CurrentValue.Local;
+        var dir = localOpts.GetModelDirectory();
+        var path = Path.Combine(dir, modelName);
+        if (File.Exists(path))
+            EnsureFactoryLoaded(path, localOpts.GpuAcceleration);
+    }
+
     private static string? GetModelPath(LocalWhisperOptions localOpts)
     {
         var dir = localOpts.GetModelDirectory();

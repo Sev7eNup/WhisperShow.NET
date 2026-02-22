@@ -16,11 +16,13 @@ namespace WhisperShow.Tests.ViewModels;
 public class SettingsViewModelTests
 {
     private readonly IGlobalHotkeyService _hotkeyService;
+    private readonly IModelPreloadService _preloadService;
     private readonly WhisperShowOptions _options;
 
     public SettingsViewModelTests()
     {
         _hotkeyService = Substitute.For<IGlobalHotkeyService>();
+        _preloadService = Substitute.For<IModelPreloadService>();
         _options = new WhisperShowOptions
         {
             Provider = TranscriptionProvider.OpenAI,
@@ -60,6 +62,7 @@ public class SettingsViewModelTests
             Substitute.For<IUsageStatsService>(),
             Substitute.For<IModelManager>(),
             Substitute.For<ICorrectionModelManager>(),
+            _preloadService,
             NullLogger<SettingsViewModel>.Instance);
     }
 
@@ -685,5 +688,80 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
         vm.VersionText.Should().StartWith("WhisperShow v");
+    }
+
+    // --- Model Preloading ---
+
+    [Fact]
+    public void ApplyProvider_SwitchingToLocal_TriggersPreload()
+    {
+        var vm = CreateViewModel(o => o.Local.ModelName = "ggml-small.bin");
+
+        vm.ApplyProvider(TranscriptionProvider.Local);
+
+        _preloadService.Received(1).PreloadTranscriptionModel("ggml-small.bin");
+    }
+
+    [Fact]
+    public void ApplyProvider_SwitchingToOpenAI_DoesNotTriggerPreload()
+    {
+        var vm = CreateViewModel(o => o.Provider = TranscriptionProvider.Local);
+
+        vm.ApplyProvider(TranscriptionProvider.OpenAI);
+
+        _preloadService.DidNotReceive().PreloadTranscriptionModel(Arg.Any<string?>());
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_SwitchingToLocal_TriggersPreload()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.TextCorrection.Provider = TextCorrectionProvider.Off;
+            o.TextCorrection.LocalModelName = "gemma-2b.gguf";
+        });
+
+        vm.SelectCorrectionProviderCommand.Execute("Local");
+
+        _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_SwitchingToCloud_DoesNotTriggerPreload()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+
+        vm.SelectCorrectionProviderCommand.Execute("Cloud");
+
+        _preloadService.DidNotReceive().PreloadCorrectionModel(Arg.Any<string?>());
+    }
+
+    [Fact]
+    public void ActivateModel_AlwaysTriggersPreload()
+    {
+        var vm = CreateViewModel(o => o.Provider = TranscriptionProvider.OpenAI);
+        var model = new WhisperModel { Name = "Base", FileName = "ggml-base.bin", SizeBytes = 0 };
+        var item = new ModelItemViewModel(model, Whisper.net.Ggml.GgmlType.Base);
+        item.IsDownloaded = true;
+
+        vm.ActivateModelCommand.Execute(item);
+
+        _preloadService.Received(1).PreloadTranscriptionModel("ggml-base.bin");
+    }
+
+    [Fact]
+    public void ActivateCorrectionModel_AlwaysTriggersPreload()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+        var model = new CorrectionModelInfo
+        {
+            Name = "Gemma 2B", FileName = "gemma-2b.gguf", SizeBytes = 0, DownloadUrl = "https://example.com"
+        };
+        var item = new CorrectionModelItemViewModel(model);
+        item.IsDownloaded = true;
+
+        vm.ActivateCorrectionModelCommand.Execute(item);
+
+        _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
     }
 }

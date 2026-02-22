@@ -73,6 +73,7 @@ public class OverlayViewModelTests : IDisposable
             Substitute.For<IUsageStatsService>(),
             Substitute.For<IModelManager>(),
             Substitute.For<ICorrectionModelManager>(),
+            Substitute.For<IModelPreloadService>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<SettingsViewModel>.Instance);
 
         var correctionFactory = new TestCorrectionProviderFactory(_textCorrectionService);

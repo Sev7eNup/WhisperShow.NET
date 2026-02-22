@@ -87,6 +87,7 @@ public partial class App : Application
                 services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
                 services.AddSingleton<IModelManager, ModelManager>();
                 services.AddSingleton<ICorrectionModelManager, CorrectionModelManager>();
+                services.AddSingleton<IModelPreloadService, ModelPreloadService>();
                 services.AddSingleton<IDictionaryService, DictionaryService>();
                 services.AddSingleton<ISnippetService, SnippetService>();
                 services.AddSingleton<IUsageStatsService, UsageStatsService>();
@@ -233,29 +234,13 @@ public partial class App : Application
 
     private void PreloadLocalModels(WhisperShowOptions opts)
     {
-        _ = Task.Run(() =>
-        {
-            try
-            {
-                if (opts.Provider == TranscriptionProvider.Local)
-                {
-                    var local = _host!.Services.GetServices<ITranscriptionService>()
-                        .OfType<LocalTranscriptionService>().FirstOrDefault();
-                    local?.Preload();
-                }
+        var preloadService = _host!.Services.GetRequiredService<IModelPreloadService>();
 
-                if (opts.TextCorrection.Provider == TextCorrectionProvider.Local)
-                {
-                    var local = _host!.Services.GetServices<ITextCorrectionService>()
-                        .OfType<LocalTextCorrectionService>().FirstOrDefault();
-                    local?.Preload();
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Background model preload failed");
-            }
-        });
+        if (opts.Provider == TranscriptionProvider.Local)
+            preloadService.PreloadTranscriptionModel();
+
+        if (opts.TextCorrection.Provider == TextCorrectionProvider.Local)
+            preloadService.PreloadCorrectionModel();
     }
 
     private static Icon CreateTrayIcon()

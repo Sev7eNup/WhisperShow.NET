@@ -111,6 +111,15 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
             EnsureModelLoaded(modelPath, correctionOpts.LocalGpuAcceleration);
     }
 
+    public void Preload(string modelName)
+    {
+        var correctionOpts = _optionsMonitor.CurrentValue.TextCorrection;
+        var dir = correctionOpts.GetLocalModelDirectory();
+        var path = Path.Combine(dir, modelName);
+        if (File.Exists(path))
+            EnsureModelLoaded(path, correctionOpts.LocalGpuAcceleration);
+    }
+
     private static string? GetModelPath(TextCorrectionOptions correctionOpts)
     {
         var dir = correctionOpts.GetLocalModelDirectory();
