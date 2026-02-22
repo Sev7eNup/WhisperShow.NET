@@ -25,11 +25,20 @@ public partial class OverlayWindow : Window
     private readonly IGlobalHotkeyService _hotkeyService;
     private readonly ILogger<OverlayWindow> _logger;
     private readonly WhisperShowOptions _options;
-    private Storyboard? _pulseStoryboard;
-    private Storyboard? _spinStoryboard;
-    private const int WaveformBarCount = 20;
+    private Storyboard? _glowPulseStoryboard;
+    private Storyboard? _typingDotsStoryboard;
+    private const int WaveformBarCount = 16;
+    private const int ViewModelWaveformCount = 20;
     private readonly Rectangle[] _waveformBars = new Rectangle[WaveformBarCount];
     private CancellationTokenSource? _saveCts;
+
+    // Cached brushes for state changes
+    private Brush? _idleGradient;
+    private Brush? _recordingGradient;
+    private Brush? _transcribingGradient;
+    private Brush? _idleTailBrush;
+    private Brush? _recordingTailBrush;
+    private Brush? _transcribingTailBrush;
 
     public OverlayWindow(OverlayViewModel viewModel, SettingsViewModel settingsViewModel,
         IGlobalHotkeyService hotkeyService,
@@ -67,15 +76,52 @@ public partial class OverlayWindow : Window
         _hotkeyService.Register(handle);
 
         // Cache storyboards
-        _pulseStoryboard = (Storyboard)FindResource("PulseAnimation");
-        _spinStoryboard = (Storyboard)FindResource("SpinAnimation");
+        _glowPulseStoryboard = (Storyboard)FindResource("GlowPulseAnimation");
+        _typingDotsStoryboard = (Storyboard)FindResource("TypingDotsAnimation");
+
+        // Cache brushes
+        _idleGradient = (Brush)FindResource("IdleGradient");
+        _recordingGradient = (Brush)FindResource("RecordingGradient");
+        _transcribingGradient = (Brush)FindResource("TranscribingGradient");
+        _idleTailBrush = (Brush)FindResource("IdleTailBrush");
+        _recordingTailBrush = (Brush)FindResource("RecordingTailBrush");
+        _transcribingTailBrush = (Brush)FindResource("TranscribingTailBrush");
 
         // Create waveform bars
         CreateWaveformBars();
 
+        // Setup idle hover effect
+        SetupIdleHoverEffect();
+
         // Position: restore saved or default to bottom-center
         RestorePosition();
         _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
+    }
+
+    private void SetupIdleHoverEffect()
+    {
+        var idleButton = IdlePanel.Children[0] as Button;
+        if (idleButton == null) return;
+
+        idleButton.MouseEnter += (_, _) =>
+        {
+            var scaleUp = new DoubleAnimation(1.05, TimeSpan.FromMilliseconds(150))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
+            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
+        };
+
+        idleButton.MouseLeave += (_, _) =>
+        {
+            var scaleDown = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(150))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
+            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
+        };
     }
 
     private void CreateWaveformBars()
@@ -86,14 +132,14 @@ public partial class OverlayWindow : Window
         {
             var bar = new Rectangle
             {
-                Width = 2,
+                Width = 3,
                 Height = 2,
                 Fill = barBrush,
-                RadiusX = 1,
-                RadiusY = 1
+                RadiusX = 1.5,
+                RadiusY = 1.5
             };
-            Canvas.SetLeft(bar, i * 3.5);
-            Canvas.SetTop(bar, 13); // centered vertically in 28px canvas
+            Canvas.SetLeft(bar, i * 4.5);
+            Canvas.SetTop(bar, 14); // centered vertically in 30px canvas
             _waveformBars[i] = bar;
             WaveformCanvas.Children.Add(bar);
         }
@@ -104,11 +150,18 @@ public partial class OverlayWindow : Window
         var levels = _viewModel.GetWaveformLevels();
         for (int i = 0; i < WaveformBarCount; i++)
         {
+            // Map 20 ViewModel levels to 16 bars via linear interpolation
+            double srcIndex = i * (ViewModelWaveformCount - 1.0) / (WaveformBarCount - 1.0);
+            int lo = (int)srcIndex;
+            int hi = Math.Min(lo + 1, ViewModelWaveformCount - 1);
+            double frac = srcIndex - lo;
+            float interpolated = (float)(levels[lo] * (1 - frac) + levels[hi] * frac);
+
             // Amplify: typical speech is 0.0-0.3, scale up for visibility
-            float level = Math.Min(levels[i] * 3.5f, 1.0f);
-            double height = Math.Max(2, level * 26);
+            float level = Math.Min(interpolated * 3.5f, 1.0f);
+            double height = Math.Max(2, level * 28);
             _waveformBars[i].Height = height;
-            Canvas.SetTop(_waveformBars[i], (28 - height) / 2); // center vertically
+            Canvas.SetTop(_waveformBars[i], (30 - height) / 2); // center vertically
         }
     }
 
@@ -131,8 +184,9 @@ public partial class OverlayWindow : Window
             _hotkeyService.UnregisterEscapeHotkey();
 
         // Stop all animations
-        _pulseStoryboard?.Stop(this);
-        _spinStoryboard?.Stop(this);
+        _glowPulseStoryboard?.Stop(this);
+        _typingDotsStoryboard?.Stop(this);
+        GlowBorder.Opacity = 0;
 
         // Hide all panels
         IdlePanel.Visibility = Visibility.Collapsed;
@@ -160,6 +214,9 @@ public partial class OverlayWindow : Window
             }
         }
 
+        // Update bubble colors for current state
+        UpdateBubbleColors(state);
+
         switch (state)
         {
             case RecordingState.Idle:
@@ -168,19 +225,85 @@ public partial class OverlayWindow : Window
                 break;
             case RecordingState.Recording:
                 RecordingPanel.Visibility = Visibility.Visible;
-                _pulseStoryboard?.Begin(this, true);
+                _glowPulseStoryboard?.Begin(this, true);
+                AnimateStateTransition();
                 break;
             case RecordingState.Transcribing:
                 TranscribingPanel.Visibility = Visibility.Visible;
-                _spinStoryboard?.Begin(this, true);
+                _typingDotsStoryboard?.Begin(this, true);
+                AnimateStateTransition();
                 break;
             case RecordingState.Result:
                 ResultPanel.Visibility = Visibility.Visible;
+                AnimateResultAppear();
                 break;
             case RecordingState.Error:
                 ErrorPanel.Visibility = Visibility.Visible;
+                AnimateErrorShake();
                 break;
         }
+    }
+
+    private void UpdateBubbleColors(RecordingState state)
+    {
+        switch (state)
+        {
+            case RecordingState.Recording:
+                BubbleBody.Background = _recordingGradient;
+                BubbleTail.Fill = _recordingTailBrush;
+                break;
+            case RecordingState.Transcribing:
+                BubbleBody.Background = _transcribingGradient;
+                BubbleTail.Fill = _transcribingTailBrush;
+                break;
+            default: // Idle, Result, Error
+                BubbleBody.Background = _idleGradient;
+                BubbleTail.Fill = _idleTailBrush;
+                break;
+        }
+    }
+
+    private void AnimateStateTransition()
+    {
+        var duration = TimeSpan.FromMilliseconds(250);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var scaleX = new DoubleAnimation(0.85, 1.0, duration) { EasingFunction = ease };
+        var scaleY = new DoubleAnimation(0.85, 1.0, duration) { EasingFunction = ease };
+
+        BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleX);
+        BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleY);
+    }
+
+    private void AnimateResultAppear()
+    {
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        // Fade in
+        ResultPanel.Opacity = 0;
+        var fadeIn = new DoubleAnimation(0, 1, duration) { EasingFunction = ease };
+        ResultPanel.BeginAnimation(OpacityProperty, fadeIn);
+
+        // Slide up
+        var slideUp = new DoubleAnimation(4, 0, duration) { EasingFunction = ease };
+        ResultTranslate.BeginAnimation(TranslateTransform.YProperty, slideUp);
+    }
+
+    private void AnimateErrorShake()
+    {
+        var shake = new DoubleAnimationUsingKeyFrames
+        {
+            Duration = TimeSpan.FromMilliseconds(400)
+        };
+        shake.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromPercent(0)));
+        shake.KeyFrames.Add(new LinearDoubleKeyFrame(-4, KeyTime.FromPercent(0.15)));
+        shake.KeyFrames.Add(new LinearDoubleKeyFrame(4, KeyTime.FromPercent(0.35)));
+        shake.KeyFrames.Add(new LinearDoubleKeyFrame(-3, KeyTime.FromPercent(0.55)));
+        shake.KeyFrames.Add(new LinearDoubleKeyFrame(3, KeyTime.FromPercent(0.75)));
+        shake.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromPercent(1.0)));
+
+        ErrorTranslate.BeginAnimation(TranslateTransform.XProperty, shake);
     }
 
     private void OnToggleHotkeyPressed(object? sender, EventArgs e)
@@ -251,12 +374,12 @@ public partial class OverlayWindow : Window
     // Drag support: track mouse start position, only DragMove if mouse actually moves
     private Point? _dragStart;
 
-    private void MainBorder_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void RootGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _dragStart = e.GetPosition(this);
     }
 
-    private void MainBorder_PreviewMouseMove(object sender, MouseEventArgs e)
+    private void RootGrid_PreviewMouseMove(object sender, MouseEventArgs e)
     {
         if (_dragStart is null || e.LeftButton != MouseButtonState.Pressed) return;
 
@@ -275,7 +398,7 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void MainBorder_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void RootGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         _dragStart = null;
     }

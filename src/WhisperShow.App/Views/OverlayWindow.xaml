@@ -9,85 +9,167 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
-        MinHeight="44"
+        MinHeight="51"
         MinWidth="44"
         WindowStartupLocation="Manual">
 
     <Window.Resources>
-        <!-- Colors -->
-        <SolidColorBrush x:Key="IdleBrush" Color="#FF2D2D2D"/>
-        <SolidColorBrush x:Key="RecordingBrush" Color="#FFE53935"/>
-        <SolidColorBrush x:Key="TranscribingBrush" Color="#FF1E88E5"/>
-        <SolidColorBrush x:Key="ResultBrush" Color="#FF2D2D2D"/>
-        <SolidColorBrush x:Key="ErrorBrush" Color="#FFE53935"/>
+        <!-- Gradient Brushes -->
+        <LinearGradientBrush x:Key="IdleGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF3A3A3A" Offset="0"/>
+            <GradientStop Color="#FF2D2D2D" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="RecordingGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FFEF5350" Offset="0"/>
+            <GradientStop Color="#FFD32F2F" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="TranscribingGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF42A5F5" Offset="0"/>
+            <GradientStop Color="#FF1565C0" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Tail colors (match bottom gradient stop) -->
+        <SolidColorBrush x:Key="IdleTailBrush" Color="#FF2D2D2D"/>
+        <SolidColorBrush x:Key="RecordingTailBrush" Color="#FFD32F2F"/>
+        <SolidColorBrush x:Key="TranscribingTailBrush" Color="#FF1565C0"/>
+
+        <!-- Text colors -->
         <SolidColorBrush x:Key="TextBrush" Color="#FFFFFFFF"/>
         <SolidColorBrush x:Key="SubtleBrush" Color="#AAFFFFFF"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#FFE53935"/>
 
-        <!-- Pulse animation for recording -->
-        <Storyboard x:Key="PulseAnimation" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetName="PulseRing"
+        <!-- Breathing glow for recording -->
+        <Storyboard x:Key="GlowPulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="GlowBorder"
                              Storyboard.TargetProperty="Opacity"
-                             From="0.6" To="0.0" Duration="0:0:1"/>
-            <DoubleAnimation Storyboard.TargetName="PulseRing"
-                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                             From="1.0" To="1.5" Duration="0:0:1"/>
-            <DoubleAnimation Storyboard.TargetName="PulseRing"
-                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                             From="1.0" To="1.5" Duration="0:0:1"/>
+                             From="0" To="0.4" Duration="0:0:0.8">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
         </Storyboard>
 
-        <!-- Spinner rotation for transcribing -->
-        <Storyboard x:Key="SpinAnimation" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetName="Spinner"
-                             Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                             From="0" To="360" Duration="0:0:1"/>
+        <!-- Typing dots for transcribing -->
+        <Storyboard x:Key="TypingDotsAnimation" RepeatBehavior="Forever">
+            <!-- Dot 1 -->
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Dot1Transform"
+                                           Storyboard.TargetProperty="Y"
+                                           BeginTime="0:0:0">
+                <SplineDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="-6">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.0,0.0" ControlPoint2="0.58,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value="0">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.42,0.0" ControlPoint2="1.0,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.9" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <!-- Dot 2 -->
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Dot2Transform"
+                                           Storyboard.TargetProperty="Y"
+                                           BeginTime="0:0:0.15">
+                <SplineDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="-6">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.0,0.0" ControlPoint2="0.58,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value="0">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.42,0.0" ControlPoint2="1.0,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.9" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <!-- Dot 3 -->
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Dot3Transform"
+                                           Storyboard.TargetProperty="Y"
+                                           BeginTime="0:0:0.3">
+                <SplineDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="-6">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.0,0.0" ControlPoint2="0.58,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value="0">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.42,0.0" ControlPoint2="1.0,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.9" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
         </Storyboard>
     </Window.Resources>
 
-    <Border CornerRadius="20" Padding="0" x:Name="MainBorder"
-            PreviewMouseLeftButtonDown="MainBorder_PreviewMouseLeftButtonDown"
-            PreviewMouseMove="MainBorder_PreviewMouseMove"
-            PreviewMouseLeftButtonUp="MainBorder_PreviewMouseLeftButtonUp">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="7" ShadowDepth="1" Opacity="0.3"/>
-        </Border.Effect>
+    <!-- Root grid for drag support -->
+    <Grid x:Name="RootGrid"
+          PreviewMouseLeftButtonDown="RootGrid_PreviewMouseLeftButtonDown"
+          PreviewMouseMove="RootGrid_PreviewMouseMove"
+          PreviewMouseLeftButtonUp="RootGrid_PreviewMouseLeftButtonUp">
 
+        <!-- Glow border behind bubble (for recording breathing effect) -->
+        <Border x:Name="GlowBorder" Opacity="0" CornerRadius="14"
+                Margin="-4,-4,-4,-2" IsHitTestVisible="False">
+            <Border.Background>
+                <SolidColorBrush Color="#FFEF5350"/>
+            </Border.Background>
+            <Border.Effect>
+                <BlurEffect Radius="15"/>
+            </Border.Effect>
+        </Border>
+
+        <!-- Speech bubble: body + tail -->
         <Grid>
-            <!-- Idle State -->
-            <Grid x:Name="IdlePanel" Visibility="Visible">
-                <Button Click="RecordButton_Click" Cursor="Hand"
-                        Width="40" Height="40" BorderThickness="0">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{StaticResource IdleBrush}" CornerRadius="20"
-                                    Width="40" Height="40">
-                                <Path Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
-                                      Fill="{StaticResource TextBrush}" Stretch="Uniform"
-                                      Width="15" Height="15"
-                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-            </Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-            <!-- Recording State -->
-            <Grid x:Name="RecordingPanel" Visibility="Collapsed">
-                <Border Background="{StaticResource RecordingBrush}" CornerRadius="20"
-                        Padding="3,0,0,0" Height="40">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Pulse ring + Stop button -->
-                        <Grid Width="34" Height="34">
-                            <Ellipse x:Name="PulseRing" Width="34" Height="34"
-                                     Stroke="{StaticResource TextBrush}" StrokeThickness="2"
-                                     Fill="Transparent" Opacity="0"
-                                     RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
+            <!-- Bubble body -->
+            <Border x:Name="BubbleBody" Grid.Row="0" CornerRadius="12"
+                    Background="{StaticResource IdleGradient}"
+                    RenderTransformOrigin="0.5,0.5">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.3" Direction="270"/>
+                </Border.Effect>
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="BubbleScale" ScaleX="1" ScaleY="1"/>
+                </Border.RenderTransform>
+
+                <Grid>
+                    <!-- Idle State -->
+                    <Grid x:Name="IdlePanel" Visibility="Visible">
+                        <Button Click="RecordButton_Click" Cursor="Hand"
+                                Width="44" Height="44" BorderThickness="0"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Button.RenderTransform>
+                                <ScaleTransform x:Name="IdleButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Button.RenderTransform>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" Width="44" Height="44">
+                                        <Path Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
+                                              Fill="{StaticResource TextBrush}" Stretch="Uniform"
+                                              Width="16" Height="16"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <!-- Recording State -->
+                    <Grid x:Name="RecordingPanel" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                    Margin="3,0,0,0" Height="44">
+                            <!-- Stop button -->
                             <Button Click="RecordButton_Click" Cursor="Hand"
-                                    Width="34" Height="34" BorderThickness="0">
+                                    Width="34" Height="34" BorderThickness="0"
+                                    VerticalAlignment="Center">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border Background="Transparent" Width="34" Height="34">
@@ -98,103 +180,124 @@
                                     </ControlTemplate>
                                 </Button.Template>
                             </Button>
-                        </Grid>
-                        <!-- Waveform visualization -->
-                        <Canvas x:Name="WaveformCanvas" Width="70" Height="28"
-                                Margin="2,0,6,0" VerticalAlignment="Center"/>
-                        <!-- Recording timer -->
-                        <TextBlock Text="{Binding RecordingTimerText}"
-                                   Foreground="{StaticResource TextBrush}" FontSize="11"
-                                   FontFamily="Segoe UI" VerticalAlignment="Center"
-                                   Margin="2,0,8,0" Opacity="0.8"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <!-- Transcribing State -->
-            <Grid x:Name="TranscribingPanel" Visibility="Collapsed">
-                <Border Background="{StaticResource TranscribingBrush}" CornerRadius="20"
-                        Width="40" Height="40">
-                    <!-- Spinner -->
-                    <Path x:Name="Spinner"
-                          Data="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"
-                          Fill="{StaticResource TextBrush}" Stretch="Uniform"
-                          Width="15" Height="15"
-                          RenderTransformOrigin="0.5,0.5"
-                          HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Path.RenderTransform>
-                            <RotateTransform Angle="0"/>
-                        </Path.RenderTransform>
-                    </Path>
-                </Border>
-            </Grid>
-
-            <!-- Result State -->
-            <Grid x:Name="ResultPanel" Visibility="Collapsed">
-                <Border Background="{StaticResource ResultBrush}" CornerRadius="20"
-                        Padding="10,6" MinWidth="150" MaxWidth="500">
-                    <StackPanel>
-                        <TextBlock Text="{Binding TranscribedText}" TextWrapping="Wrap"
-                                   Foreground="{StaticResource TextBrush}" FontSize="11"
-                                   MaxHeight="300" Margin="0,0,0,6"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Insert" Margin="0,0,4,0"
-                                    Click="InsertButton_Click" Style="{x:Null}"
-                                    Background="#FF4CAF50" Foreground="White"
-                                    Padding="8,3" Cursor="Hand"
-                                    BorderThickness="0" FontSize="11">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}"
-                                                CornerRadius="10" Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter HorizontalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                            <Button Content="X" Click="DismissButton_Click" Style="{x:Null}"
-                                    Background="Transparent" Foreground="{StaticResource SubtleBrush}"
-                                    Padding="4,3" Cursor="Hand"
-                                    BorderThickness="0" FontWeight="Bold" FontSize="11">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}"
-                                                CornerRadius="10" Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter HorizontalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
+                            <!-- Waveform visualization -->
+                            <Canvas x:Name="WaveformCanvas" Width="72" Height="30"
+                                    Margin="2,0,6,0" VerticalAlignment="Center"/>
+                            <!-- Recording timer -->
+                            <TextBlock Text="{Binding RecordingTimerText}"
+                                       Foreground="{StaticResource TextBrush}" FontSize="11"
+                                       FontFamily="Segoe UI" VerticalAlignment="Center"
+                                       Margin="2,0,8,0" Opacity="0.8"/>
                         </StackPanel>
-                    </StackPanel>
-                </Border>
-            </Grid>
+                    </Grid>
 
-            <!-- Error State -->
-            <Grid x:Name="ErrorPanel" Visibility="Collapsed">
-                <Border Background="{StaticResource IdleBrush}" CornerRadius="20"
-                        Padding="10,6" MinWidth="120" MaxWidth="300"
-                        BorderBrush="{StaticResource ErrorBrush}" BorderThickness="2">
-                    <StackPanel>
-                        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap"
-                                   Foreground="{StaticResource ErrorBrush}" FontSize="10"
-                                   MaxHeight="120" Margin="0,0,0,4"/>
-                        <Button Content="OK" Click="DismissButton_Click" Style="{x:Null}"
-                                Background="#FF555555" Foreground="White"
-                                Padding="8,3" Cursor="Hand" HorizontalAlignment="Right"
-                                BorderThickness="0" FontSize="11">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Background="{TemplateBinding Background}"
-                                            CornerRadius="10" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center"/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </StackPanel>
-                </Border>
-            </Grid>
+                    <!-- Transcribing State -->
+                    <Grid x:Name="TranscribingPanel" Visibility="Collapsed"
+                          Width="56" Height="44">
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
+                                     Margin="0,0,5,0" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <TranslateTransform x:Name="Dot1Transform"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
+                                     Margin="0,0,5,0" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <TranslateTransform x:Name="Dot2Transform"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
+                                     RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <TranslateTransform x:Name="Dot3Transform"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Result State -->
+                    <Grid x:Name="ResultPanel" Visibility="Collapsed"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="ResultTranslate"/>
+                        </Grid.RenderTransform>
+                        <StackPanel Margin="10,6" MinWidth="150" MaxWidth="500">
+                            <TextBlock Text="{Binding TranscribedText}" TextWrapping="Wrap"
+                                       Foreground="{StaticResource TextBrush}" FontSize="11"
+                                       MaxHeight="300" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Insert" Margin="0,0,4,0"
+                                        Click="InsertButton_Click" Style="{x:Null}"
+                                        Background="#FF4CAF50" Foreground="White"
+                                        Padding="8,3" Cursor="Hand"
+                                        BorderThickness="0" FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <Button Content="X" Click="DismissButton_Click" Style="{x:Null}"
+                                        Background="Transparent" Foreground="{StaticResource SubtleBrush}"
+                                        Padding="4,3" Cursor="Hand"
+                                        BorderThickness="0" FontWeight="Bold" FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Error State -->
+                    <Grid x:Name="ErrorPanel" Visibility="Collapsed"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="ErrorTranslate"/>
+                        </Grid.RenderTransform>
+                        <Border Padding="10,6" MinWidth="120" MaxWidth="300"
+                                BorderBrush="{StaticResource ErrorBrush}" BorderThickness="2"
+                                CornerRadius="12">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap"
+                                           Foreground="{StaticResource ErrorBrush}" FontSize="10"
+                                           MaxHeight="120" Margin="0,0,0,4"/>
+                                <Button Content="OK" Click="DismissButton_Click" Style="{x:Null}"
+                                        Background="#FF555555" Foreground="White"
+                                        Padding="8,3" Cursor="Hand" HorizontalAlignment="Right"
+                                        BorderThickness="0" FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Bubble tail (triangle) -->
+            <Path x:Name="BubbleTail" Grid.Row="1"
+                  Data="M0,0 L6,7 L12,0 Z"
+                  Fill="{StaticResource IdleTailBrush}"
+                  HorizontalAlignment="Center"
+                  Margin="0,-1,0,0"
+                  IsHitTestVisible="False"/>
         </Grid>
-    </Border>
+    </Grid>
 </Window>
