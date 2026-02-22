@@ -99,6 +99,11 @@ public partial class OverlayWindow : Window
         // Force correct visual state (ensures proper sizing after waveform bars are created)
         UpdateVisualState(_viewModel.State);
 
+        // Force SizeToContent recalculation — WPF caches the initial window size
+        // and won't re-measure after panel visibility changes without this reset
+        SizeToContent = SizeToContent.Manual;
+        SizeToContent = SizeToContent.WidthAndHeight;
+
         // Position: restore saved or default to bottom-center
         RestorePosition();
         _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
