@@ -1203,7 +1203,8 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <!-- ===== Combined Audio Model section ===== -->
+                <!-- ===== Combined Audio Model section (only for Cloud provider) ===== -->
+                <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=OpenAI}">
                 <TextBlock Text="Combined Audio Model" Style="{StaticResource GroupHeaderStyle}" Margin="0,20,0,8"/>
                 <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
                     <StackPanel>
@@ -1249,6 +1250,7 @@
                         </Grid>
                     </StackPanel>
                 </Border>
+                </StackPanel>
 
                 <!-- Cloud usage hint -->
                 <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,10,0,0"
