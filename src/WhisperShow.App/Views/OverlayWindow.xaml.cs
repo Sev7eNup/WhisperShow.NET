@@ -93,6 +93,9 @@ public partial class OverlayWindow : Window
         // Setup idle hover effect
         SetupIdleHoverEffect();
 
+        // Apply initial overlay scale
+        ApplyOverlayScale(_options.Overlay.Scale);
+
         // Position: restore saved or default to bottom-center
         RestorePosition();
         _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
@@ -306,6 +309,13 @@ public partial class OverlayWindow : Window
         ErrorTranslate.BeginAnimation(TranslateTransform.XProperty, shake);
     }
 
+    private void ApplyOverlayScale(double scale)
+    {
+        scale = Math.Clamp(scale, 0.75, 2.0);
+        OverlayScaleTransform.ScaleX = scale;
+        OverlayScaleTransform.ScaleY = scale;
+    }
+
     private void OnToggleHotkeyPressed(object? sender, EventArgs e)
     {
         _logger.LogDebug("Toggle hotkey event received in OverlayWindow");
@@ -332,7 +342,11 @@ public partial class OverlayWindow : Window
 
     private void OnSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SettingsViewModel.ShowInTaskbar))
+        if (e.PropertyName == nameof(SettingsViewModel.OverlayScale))
+        {
+            Dispatcher.Invoke(() => ApplyOverlayScale(_settingsViewModel.OverlayScale));
+        }
+        else if (e.PropertyName == nameof(SettingsViewModel.ShowInTaskbar))
         {
             Dispatcher.Invoke(() =>
             {

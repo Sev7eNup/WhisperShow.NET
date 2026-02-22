@@ -552,6 +552,26 @@
                                     Command="{Binding StartEditingMaxRecordingCommand}" VerticalAlignment="Center"
                                     Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource InverseBoolToVisibility}}"/>
                         </Grid>
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                        <!-- Overlay size -->
+                        <Grid Margin="20,14,20,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Overlay size" FontSize="13" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <Slider Value="{Binding OverlayScale}" Minimum="0.75" Maximum="2.0"
+                                        SmallChange="0.25" LargeChange="0.25"
+                                        IsSnapToTickEnabled="True" TickFrequency="0.25"
+                                        Margin="0,6,0,0" Width="200" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center">
+                                <Run Text="{Binding OverlayScale, StringFormat={}{0:0.00}x, Mode=OneWay}"/>
+                            </TextBlock>
+                        </Grid>
                     </StackPanel>
                 </Border>
 

@@ -110,6 +110,9 @@
           PreviewMouseLeftButtonDown="RootGrid_PreviewMouseLeftButtonDown"
           PreviewMouseMove="RootGrid_PreviewMouseMove"
           PreviewMouseLeftButtonUp="RootGrid_PreviewMouseLeftButtonUp">
+        <Grid.LayoutTransform>
+            <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1"/>
+        </Grid.LayoutTransform>
 
         <!-- Glow border behind bubble (for recording breathing effect) -->
         <Border x:Name="GlowBorder" Opacity="0" CornerRadius="14"

@@ -133,6 +133,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _combinedAudioModel = "gpt-4o-mini-audio-preview";
     [ObservableProperty] private bool _isEditingCombinedAudioModel;
 
+    // --- System: Overlay scale ---
+    [ObservableProperty] private double _overlayScale = 1.0;
+
     // --- System: Auto-dismiss ---
     [ObservableProperty] private int _autoDismissSeconds = 10;
     [ObservableProperty] private bool _isEditingAutoDismiss;
@@ -244,6 +247,7 @@ public partial class SettingsViewModel : ObservableObject
         _correctionLocalModelName = opts.TextCorrection.LocalModelName;
         _useCombinedAudioModel = opts.TextCorrection.UseCombinedAudioModel;
         _combinedAudioModel = opts.TextCorrection.CombinedAudioModel;
+        _overlayScale = opts.Overlay.Scale;
         _autoDismissSeconds = opts.Overlay.AutoDismissSeconds;
         _maxRecordingSeconds = opts.Audio.MaxRecordingSeconds;
 
@@ -542,6 +546,8 @@ public partial class SettingsViewModel : ObservableObject
         SetAutoStart(LaunchAtLogin);
         ScheduleSave();
     }
+
+    partial void OnOverlayScaleChanged(double value) => ScheduleSave();
 
     [RelayCommand]
     private void ToggleOverlayAlwaysVisible() => ScheduleSave();
@@ -1081,6 +1087,7 @@ public partial class SettingsViewModel : ObservableObject
         section["Overlay"]!["AutoDismissSeconds"] = AutoDismissSeconds;
         section["Overlay"]!["AlwaysVisible"] = OverlayAlwaysVisible;
         section["Overlay"]!["ShowInTaskbar"] = ShowInTaskbar;
+        section["Overlay"]!["Scale"] = OverlayScale;
         section["TextCorrection"]!["Provider"] = CorrectionProvider.ToString();
         section["TextCorrection"]!["Model"] = CorrectionCloudModel;
         section["TextCorrection"]!["LocalModelName"] = CorrectionLocalModelName;
