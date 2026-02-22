@@ -11,6 +11,7 @@ public class LocalTranscriptionService : ITranscriptionService, IDisposable
 {
     private readonly ILogger<LocalTranscriptionService> _logger;
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
+    private readonly Lock _loadLock = new();
     private WhisperFactory? _factory;
     private string? _loadedModelPath;
     private bool _disposed;
@@ -90,21 +91,24 @@ public class LocalTranscriptionService : ITranscriptionService, IDisposable
 
     private void EnsureFactoryLoaded(string modelPath, bool gpuAcceleration)
     {
-        if (_factory is not null && _loadedModelPath == modelPath)
-            return;
+        lock (_loadLock)
+        {
+            if (_factory is not null && _loadedModelPath == modelPath)
+                return;
 
-        _factory?.Dispose();
+            _factory?.Dispose();
 
-        // Configure runtime order based on GPU setting
-        if (gpuAcceleration)
-            RuntimeOptions.RuntimeLibraryOrder = [RuntimeLibrary.Cuda, RuntimeLibrary.Cpu];
-        else
-            RuntimeOptions.RuntimeLibraryOrder = [RuntimeLibrary.Cpu];
+            // Configure runtime order based on GPU setting
+            if (gpuAcceleration)
+                RuntimeOptions.RuntimeLibraryOrder = [RuntimeLibrary.Cuda, RuntimeLibrary.Cpu];
+            else
+                RuntimeOptions.RuntimeLibraryOrder = [RuntimeLibrary.Cpu];
 
-        _logger.LogInformation("Loading Whisper model from {Path} (GPU: {Gpu})",
-            modelPath, gpuAcceleration);
-        _factory = WhisperFactory.FromPath(modelPath);
-        _loadedModelPath = modelPath;
+            _logger.LogInformation("Loading Whisper model from {Path} (GPU: {Gpu})",
+                modelPath, gpuAcceleration);
+            _factory = WhisperFactory.FromPath(modelPath);
+            _loadedModelPath = modelPath;
+        }
     }
 
     public void Dispose()

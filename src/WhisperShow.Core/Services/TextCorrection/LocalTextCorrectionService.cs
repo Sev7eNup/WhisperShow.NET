@@ -23,6 +23,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private readonly ILogger<LocalTextCorrectionService> _logger;
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private readonly IDictionaryService _dictionaryService;
+    private readonly Lock _loadLock = new();
     private LLamaWeights? _model;
     private string? _loadedModelPath;
     private bool _disposed;
@@ -121,22 +122,25 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
 
     private void EnsureModelLoaded(string modelPath, bool gpuAcceleration)
     {
-        if (_model is not null && _loadedModelPath == modelPath)
-            return;
-
-        _model?.Dispose();
-
-        _logger.LogInformation("Loading correction model from {Path} (GPU: {Gpu})",
-            modelPath, gpuAcceleration);
-
-        var loadParams = new ModelParams(modelPath)
+        lock (_loadLock)
         {
-            GpuLayerCount = gpuAcceleration ? -1 : 0,
-            Threads = Math.Max(1, Environment.ProcessorCount / 2),
-        };
+            if (_model is not null && _loadedModelPath == modelPath)
+                return;
 
-        _model = LLamaWeights.LoadFromFile(loadParams);
-        _loadedModelPath = modelPath;
+            _model?.Dispose();
+
+            _logger.LogInformation("Loading correction model from {Path} (GPU: {Gpu})",
+                modelPath, gpuAcceleration);
+
+            var loadParams = new ModelParams(modelPath)
+            {
+                GpuLayerCount = gpuAcceleration ? -1 : 0,
+                Threads = Math.Max(1, Environment.ProcessorCount / 2),
+            };
+
+            _model = LLamaWeights.LoadFromFile(loadParams);
+            _loadedModelPath = modelPath;
+        }
     }
 
     public void Dispose()
