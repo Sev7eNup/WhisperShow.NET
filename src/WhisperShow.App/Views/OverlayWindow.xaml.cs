@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhisperShow.App.ViewModels;
 using WhisperShow.Core.Configuration;
@@ -20,7 +21,9 @@ namespace WhisperShow.App.Views;
 public partial class OverlayWindow : Window
 {
     private readonly OverlayViewModel _viewModel;
+    private readonly SettingsViewModel _settingsViewModel;
     private readonly IGlobalHotkeyService _hotkeyService;
+    private readonly ILogger<OverlayWindow> _logger;
     private readonly WhisperShowOptions _options;
     private Storyboard? _pulseStoryboard;
     private Storyboard? _spinStoryboard;
@@ -28,13 +31,16 @@ public partial class OverlayWindow : Window
     private readonly Rectangle[] _waveformBars = new Rectangle[WaveformBarCount];
     private CancellationTokenSource? _saveCts;
 
-    public OverlayWindow(OverlayViewModel viewModel, IGlobalHotkeyService hotkeyService,
-        IOptions<WhisperShowOptions> options)
+    public OverlayWindow(OverlayViewModel viewModel, SettingsViewModel settingsViewModel,
+        IGlobalHotkeyService hotkeyService,
+        IOptions<WhisperShowOptions> options, ILogger<OverlayWindow> logger)
     {
         InitializeComponent();
 
         _viewModel = viewModel;
+        _settingsViewModel = settingsViewModel;
         _hotkeyService = hotkeyService;
+        _logger = logger;
         _options = options.Value;
         DataContext = _viewModel;
 
@@ -43,20 +49,18 @@ public partial class OverlayWindow : Window
         _hotkeyService.ToggleHotkeyPressed += OnToggleHotkeyPressed;
         _hotkeyService.PushToTalkHotkeyPressed += OnPushToTalkHotkeyPressed;
         _hotkeyService.PushToTalkHotkeyReleased += OnPushToTalkHotkeyReleased;
+        _settingsViewModel.PropertyChanged += OnSettingsChanged;
 
         Loaded += OverlayWindow_Loaded;
     }
 
     private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        // Set WS_EX_NOACTIVATE and WS_EX_TOOLWINDOW so the overlay doesn't steal focus
-        var handle = new WindowInteropHelper(this).Handle;
-        int exStyle = NativeMethods.GetWindowLongW(handle, NativeMethods.GWL_EXSTYLE);
-        NativeMethods.SetWindowLongW(handle, NativeMethods.GWL_EXSTYLE,
-            exStyle | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_TOOLWINDOW);
+        _logger.LogInformation("OverlayWindow loaded, configuring WS_EX_NOACTIVATE");
 
-        // Apply ShowInTaskbar setting
-        ShowInTaskbar = _options.Overlay.ShowInTaskbar;
+        // Configure extended window styles via Win32 (not WPF's ShowInTaskbar, which recreates the HWND).
+        var handle = new WindowInteropHelper(this).Handle;
+        ApplyTaskbarVisibility(handle, _options.Overlay.ShowInTaskbar);
 
         // Register global hotkey
         _hotkeyService.Register(handle);
@@ -70,6 +74,7 @@ public partial class OverlayWindow : Window
 
         // Position: restore saved or default to bottom-center
         RestorePosition();
+        _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
     }
 
     private void CreateWaveformBars()
@@ -116,6 +121,8 @@ public partial class OverlayWindow : Window
 
     private void UpdateVisualState(RecordingState state)
     {
+        _logger.LogDebug("Visual state update: {State}", state);
+
         // Stop all animations
         _pulseStoryboard?.Stop(this);
         _spinStoryboard?.Stop(this);
@@ -130,7 +137,8 @@ public partial class OverlayWindow : Window
         // Auto-show/hide for non-always-visible mode
         if (!_viewModel.IsOverlayAlwaysVisible)
         {
-            if (state is RecordingState.Recording or RecordingState.Transcribing)
+            if (state is RecordingState.Recording or RecordingState.Transcribing
+                or RecordingState.Result or RecordingState.Error)
             {
                 if (!IsVisible)
                 {
@@ -169,13 +177,63 @@ public partial class OverlayWindow : Window
     }
 
     private void OnToggleHotkeyPressed(object? sender, EventArgs e)
-        => Dispatcher.Invoke(async () => await _viewModel.ToggleRecordingCommand.ExecuteAsync(null));
+    {
+        _logger.LogDebug("Toggle hotkey event received in OverlayWindow");
+        Dispatcher.Invoke(async () => await _viewModel.ToggleRecordingCommand.ExecuteAsync(null));
+    }
 
     private void OnPushToTalkHotkeyPressed(object? sender, EventArgs e)
-        => Dispatcher.Invoke(async () => await _viewModel.HotkeyStartRecordingAsync());
+    {
+        _logger.LogDebug("Push-to-Talk pressed event received in OverlayWindow");
+        Dispatcher.Invoke(async () => await _viewModel.HotkeyStartRecordingAsync());
+    }
 
     private void OnPushToTalkHotkeyReleased(object? sender, EventArgs e)
-        => Dispatcher.Invoke(async () => await _viewModel.HotkeyStopRecordingAsync());
+    {
+        _logger.LogDebug("Push-to-Talk released event received in OverlayWindow");
+        Dispatcher.Invoke(async () => await _viewModel.HotkeyStopRecordingAsync());
+    }
+
+    private void OnSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsViewModel.ShowInTaskbar))
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var handle = new WindowInteropHelper(this).Handle;
+                if (handle != IntPtr.Zero)
+                    ApplyTaskbarVisibility(handle, _settingsViewModel.ShowInTaskbar);
+            });
+        }
+    }
+
+    private void ApplyTaskbarVisibility(IntPtr handle, bool showInTaskbar)
+    {
+        int exStyle = NativeMethods.GetWindowLongW(handle, NativeMethods.GWL_EXSTYLE);
+
+        // Always set WS_EX_NOACTIVATE so the overlay doesn't steal focus
+        exStyle |= NativeMethods.WS_EX_NOACTIVATE;
+
+        if (showInTaskbar)
+        {
+            exStyle &= ~NativeMethods.WS_EX_TOOLWINDOW;
+            exStyle |= NativeMethods.WS_EX_APPWINDOW;
+        }
+        else
+        {
+            exStyle |= NativeMethods.WS_EX_TOOLWINDOW;
+            exStyle &= ~NativeMethods.WS_EX_APPWINDOW;
+        }
+
+        NativeMethods.SetWindowLongW(handle, NativeMethods.GWL_EXSTYLE, exStyle);
+
+        // Notify the shell to refresh the taskbar entry
+        NativeMethods.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE
+            | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_FRAMECHANGED);
+
+        _logger.LogDebug("Taskbar visibility set to {Value} (Win32 styles updated)", showInTaskbar);
+    }
 
     // Drag support: track mouse start position, only DragMove if mouse actually moves
     private Point? _dragStart;
@@ -240,7 +298,7 @@ public partial class OverlayWindow : Window
         {
             var workArea = SystemParameters.WorkArea;
             Left = (workArea.Width - ActualWidth) / 2 + workArea.Left;
-            Top = workArea.Bottom - ActualHeight - 60;
+            Top = workArea.Bottom - ActualHeight - 10;
         }
     }
 
@@ -271,7 +329,10 @@ public partial class OverlayWindow : Window
                 await File.WriteAllTextAsync(path, doc.ToJsonString(options), token);
             }
             catch (TaskCanceledException) { }
-            catch { /* position save is best-effort */ }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save overlay position");
+            }
         }, token);
     }
 

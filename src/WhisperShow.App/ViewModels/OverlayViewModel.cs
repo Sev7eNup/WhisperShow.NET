@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -58,7 +59,8 @@ public partial class OverlayViewModel : ObservableObject
         ICombinedTranscriptionCorrectionService combinedService,
         SoundEffectService soundEffects,
         ILogger<OverlayViewModel> logger,
-        IOptions<WhisperShowOptions> options)
+        IOptions<WhisperShowOptions> options,
+        SettingsViewModel settingsViewModel)
     {
         _audioService = audioService;
         _mutingService = mutingService;
@@ -76,7 +78,31 @@ public partial class OverlayViewModel : ObservableObject
         _audioService.AudioLevelChanged += (_, level) =>
             Application.Current.Dispatcher.Invoke(() => AudioLevel = level);
 
+        // Subscribe to live settings changes from SettingsViewModel
+        settingsViewModel.PropertyChanged += OnSettingsChanged;
+
         UpdateProviderName();
+    }
+
+    private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not SettingsViewModel settings) return;
+
+        switch (e.PropertyName)
+        {
+            case nameof(SettingsViewModel.MuteWhileDictating):
+                MuteWhileDictating = settings.MuteWhileDictating;
+                _logger.LogDebug("MuteWhileDictating updated to {Value}", MuteWhileDictating);
+                break;
+            case nameof(SettingsViewModel.OverlayAlwaysVisible):
+                IsOverlayAlwaysVisible = settings.OverlayAlwaysVisible;
+                _logger.LogDebug("IsOverlayAlwaysVisible updated to {Value}", IsOverlayAlwaysVisible);
+                break;
+            case nameof(SettingsViewModel.SoundEffectsEnabled):
+                _soundEffects.Enabled = settings.SoundEffectsEnabled;
+                _logger.LogDebug("SoundEffects.Enabled updated to {Value}", _soundEffects.Enabled);
+                break;
+        }
     }
 
     [RelayCommand]
@@ -102,6 +128,7 @@ public partial class OverlayViewModel : ObservableObject
     /// </summary>
     public async Task HotkeyStartRecordingAsync()
     {
+        _logger.LogDebug("HotkeyStartRecordingAsync called (current state: {State})", State);
         if (State == RecordingState.Idle)
             await StartRecordingAsync();
     }
@@ -111,6 +138,7 @@ public partial class OverlayViewModel : ObservableObject
     /// </summary>
     public async Task HotkeyStopRecordingAsync()
     {
+        _logger.LogDebug("HotkeyStopRecordingAsync called (current state: {State})", State);
         if (State == RecordingState.Recording)
             await StopAndTranscribeAsync();
     }
@@ -121,10 +149,13 @@ public partial class OverlayViewModel : ObservableObject
         try
         {
             _previousForegroundWindow = NativeMethods.GetForegroundWindow();
+            _logger.LogInformation("Starting recording (ForegroundWindow: 0x{Handle:X})",
+                _previousForegroundWindow.ToInt64());
             if (MuteWhileDictating)
                 _mutingService.MuteOtherApplications();
             _soundEffects.PlayStartRecording();
             State = RecordingState.Recording;
+            _logger.LogInformation("State: Idle -> Recording");
             await _audioService.StartRecordingAsync();
         }
         catch (Exception ex)
@@ -139,6 +170,7 @@ public partial class OverlayViewModel : ObservableObject
 
     private async Task StopAndTranscribeAsync()
     {
+        _logger.LogInformation("State: Recording -> Transcribing");
         if (MuteWhileDictating)
             _mutingService.UnmuteAll();
         _soundEffects.PlayStopRecording();
@@ -149,6 +181,7 @@ public partial class OverlayViewModel : ObservableObject
 
             if (audioData.Length < 1000)
             {
+                _logger.LogWarning("Recording too short ({Size} bytes), discarding", audioData.Length);
                 ErrorMessage = "Recording too short. Please try again.";
                 State = RecordingState.Error;
                 StartAutoDismissTimer();
@@ -160,6 +193,7 @@ public partial class OverlayViewModel : ObservableObject
             // Fast path: combined audio model (transcription + correction in one API call)
             if (_options.TextCorrection.Enabled && _combinedService.IsAvailable)
             {
+                _logger.LogInformation("Using combined transcription+correction pipeline");
                 try
                 {
                     text = await _combinedService.TranscribeAndCorrectAsync(audioData, _options.Language);
@@ -172,20 +206,27 @@ public partial class OverlayViewModel : ObservableObject
             }
             else
             {
+                _logger.LogInformation("Using standard transcription pipeline (Provider: {Provider})", _options.Provider);
                 text = await StandardTranscribeAsync(audioData);
             }
 
             if (string.IsNullOrWhiteSpace(text))
             {
+                _logger.LogWarning("Transcription returned empty text");
                 ErrorMessage = "No speech detected. Please try again.";
                 State = RecordingState.Error;
                 StartAutoDismissTimer();
                 return;
             }
 
+            _logger.LogInformation("Transcription result: {Length} chars", text.Length);
             TranscribedText = text;
             // Auto-insert into the previously focused window
             await InsertTextAsync();
+            // Show result panel with transcribed text, auto-dismiss after configured timeout
+            State = RecordingState.Result;
+            _logger.LogInformation("State: Transcribing -> Result");
+            StartAutoDismissTimer();
         }
         catch (Exception ex)
         {
@@ -217,9 +258,12 @@ public partial class OverlayViewModel : ObservableObject
     {
         if (string.IsNullOrEmpty(TranscribedText)) return;
 
+        _logger.LogInformation("Inserting transcribed text ({Length} chars)", TranscribedText.Length);
+
         // Restore focus to previously active window
         if (_previousForegroundWindow != IntPtr.Zero)
         {
+            _logger.LogDebug("Restoring focus to window 0x{Handle:X}", _previousForegroundWindow.ToInt64());
             var foregroundThread = NativeMethods.GetWindowThreadProcessId(
                 NativeMethods.GetForegroundWindow(), out _);
             var currentThread = NativeMethods.GetCurrentThreadId();
@@ -236,8 +280,6 @@ public partial class OverlayViewModel : ObservableObject
         }
 
         await _textInsertionService.InsertTextAsync(TranscribedText);
-
-        DismissResult();
     }
 
     [RelayCommand]
@@ -245,16 +287,17 @@ public partial class OverlayViewModel : ObservableObject
     {
         if (string.IsNullOrEmpty(TranscribedText)) return;
         Application.Current.Dispatcher.Invoke(() => Clipboard.SetText(TranscribedText));
-        DismissResult();
     }
 
     [RelayCommand]
     private void DismissResult()
     {
         CancelAutoDismissTimer();
+        var previousState = State;
         TranscribedText = null;
         ErrorMessage = null;
         State = RecordingState.Idle;
+        _logger.LogDebug("Result dismissed (was {PreviousState})", previousState);
     }
 
     private async void StartAutoDismissTimer()

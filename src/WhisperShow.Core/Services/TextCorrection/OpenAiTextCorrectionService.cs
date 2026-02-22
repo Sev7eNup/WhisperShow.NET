@@ -9,10 +9,11 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
 {
     private const string DefaultSystemPrompt =
         """
-        You are a speech-to-text post-processor. Fix punctuation, capitalization,
-        and grammar in the transcribed text. Do not change wording, meaning, or
-        structure. Do not add or remove content. Return only the corrected text
-        with no explanation.
+        You are a verbatim speech-to-text post-processor.
+        Your ONLY job is to fix punctuation, capitalization, and grammar.
+        Output the corrected text EXACTLY — do NOT answer questions,
+        do NOT add commentary, do NOT interpret the content.
+        Return ONLY the corrected transcription, nothing else.
         """;
 
     private readonly ILogger<OpenAiTextCorrectionService> _logger;
@@ -48,7 +49,8 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
                     new SystemChatMessage(systemPrompt),
                     new UserChatMessage(userMessage)
                 ],
-                cancellationToken: ct);
+                new ChatCompletionOptions { Temperature = 0 },
+                ct);
 
             var correctedText = result.Value.Content[0].Text;
 

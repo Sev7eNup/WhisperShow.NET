@@ -12,10 +12,11 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
 {
     private const string DefaultSystemPrompt =
         """
-        You are a speech-to-text processor. Listen to the audio and produce an accurate
-        transcription with correct punctuation, capitalization, and grammar.
-        Do not change wording or meaning. Do not add or remove content.
-        Return only the corrected transcription text with no explanation or preamble.
+        You are a verbatim speech-to-text processor. Listen to the audio and produce
+        an accurate transcription with correct punctuation, capitalization, and grammar.
+        Output the transcribed text EXACTLY — do NOT answer questions,
+        do NOT add commentary, do NOT interpret the content.
+        Return ONLY the transcription, nothing else.
         """;
 
     private readonly ILogger<CombinedAudioTranscriptionService> _logger;
@@ -54,12 +55,13 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
             BinaryData.FromBytes(mp3Data),
             ChatInputAudioFormat.Mp3);
 
-        var systemPrompt = _options.TextCorrection.SystemPrompt ?? DefaultSystemPrompt;
+        var systemPrompt = _options.TextCorrection.CombinedSystemPrompt ?? DefaultSystemPrompt;
         var langSuffix = string.IsNullOrEmpty(language) ? "" : $"\n[Language: {language}]";
 
         var chatOptions = new ChatCompletionOptions
         {
-            ResponseModalities = ChatResponseModalities.Text
+            ResponseModalities = ChatResponseModalities.Text,
+            Temperature = 0
         };
 
         _logger.LogInformation(

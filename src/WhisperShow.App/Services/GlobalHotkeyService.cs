@@ -83,11 +83,13 @@ public class GlobalHotkeyService : IGlobalHotkeyService
             var id = wParam.ToInt32();
             if (id == HotkeyIdToggle)
             {
+                _logger.LogInformation("Toggle hotkey pressed");
                 ToggleHotkeyPressed?.Invoke(this, EventArgs.Empty);
                 handled = true;
             }
             else if (id == HotkeyIdPushToTalk)
             {
+                _logger.LogInformation("Push-to-Talk hotkey pressed");
                 PushToTalkHotkeyPressed?.Invoke(this, EventArgs.Empty);
                 StartPollingForRelease();
                 handled = true;
@@ -125,6 +127,7 @@ public class GlobalHotkeyService : IGlobalHotkeyService
         var keyState = NativeMethods.GetAsyncKeyState(_trackedVirtualKey);
         if ((keyState & 0x8000) == 0)
         {
+            _logger.LogInformation("Push-to-Talk hotkey released");
             StopPolling();
             PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty);
         }
@@ -148,6 +151,7 @@ public class GlobalHotkeyService : IGlobalHotkeyService
 
     public void UpdateToggleHotkey(string modifiers, string key)
     {
+        _logger.LogInformation("Updating Toggle hotkey to {Modifiers}+{Key}", modifiers, key);
         if (_windowHandle != IntPtr.Zero)
             NativeMethods.UnregisterHotKey(_windowHandle, HotkeyIdToggle);
 
@@ -159,6 +163,7 @@ public class GlobalHotkeyService : IGlobalHotkeyService
 
     public void UpdatePushToTalkHotkey(string modifiers, string key)
     {
+        _logger.LogInformation("Updating Push-to-Talk hotkey to {Modifiers}+{Key}", modifiers, key);
         if (_windowHandle != IntPtr.Zero)
             NativeMethods.UnregisterHotKey(_windowHandle, HotkeyIdPushToTalk);
 

@@ -8,8 +8,8 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        SizeToContent="Width"
-        Height="44"
+        SizeToContent="WidthAndHeight"
+        MinHeight="44"
         MinWidth="44"
         WindowStartupLocation="Manual">
 
@@ -127,11 +127,11 @@
             <!-- Result State -->
             <Grid x:Name="ResultPanel" Visibility="Collapsed">
                 <Border Background="{StaticResource ResultBrush}" CornerRadius="20"
-                        Padding="10,6" MinWidth="150" MaxWidth="400">
+                        Padding="10,6" MinWidth="150" MaxWidth="500">
                     <StackPanel>
                         <TextBlock Text="{Binding TranscribedText}" TextWrapping="Wrap"
                                    Foreground="{StaticResource TextBrush}" FontSize="11"
-                                   MaxHeight="90" Margin="0,0,0,6"/>
+                                   MaxHeight="300" Margin="0,0,0,6"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Insert" Margin="0,0,4,0"
                                     Click="InsertButton_Click" Style="{x:Null}"
@@ -187,7 +187,7 @@
                     <StackPanel>
                         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap"
                                    Foreground="{StaticResource ErrorBrush}" FontSize="10"
-                                   MaxHeight="45" Margin="0,0,0,4"/>
+                                   MaxHeight="120" Margin="0,0,0,4"/>
                         <Button Content="OK" Click="DismissButton_Click" Style="{x:Null}"
                                 Background="#FF555555" Foreground="White"
                                 Padding="8,3" Cursor="Hand" HorizontalAlignment="Right"

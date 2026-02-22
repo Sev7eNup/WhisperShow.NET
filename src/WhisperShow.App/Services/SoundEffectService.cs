@@ -1,28 +1,38 @@
 using System.Media;
+using Microsoft.Extensions.Logging;
 
 namespace WhisperShow.App.Services;
 
 public class SoundEffectService
 {
+    private readonly ILogger<SoundEffectService> _logger;
+
     public bool Enabled { get; set; }
 
-    public SoundEffectService(bool enabled)
+    public SoundEffectService(ILogger<SoundEffectService> logger, bool enabled)
     {
+        _logger = logger;
         Enabled = enabled;
     }
 
     public void PlayStartRecording()
     {
-        if (Enabled) SystemSounds.Exclamation.Play();
+        if (!Enabled) return;
+        _logger.LogDebug("Playing start recording sound");
+        SystemSounds.Exclamation.Play();
     }
 
     public void PlayStopRecording()
     {
-        if (Enabled) SystemSounds.Asterisk.Play();
+        if (!Enabled) return;
+        _logger.LogDebug("Playing stop recording sound");
+        SystemSounds.Asterisk.Play();
     }
 
     public void PlayError()
     {
-        if (Enabled) SystemSounds.Hand.Play();
+        if (!Enabled) return;
+        _logger.LogDebug("Playing error sound");
+        SystemSounds.Hand.Play();
     }
 }

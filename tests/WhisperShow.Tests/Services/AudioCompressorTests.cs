@@ -27,7 +27,7 @@ public class AudioCompressorTests
     [Fact]
     public void CompressToMp3_WithValidWav_ProducesSmallerOutput()
     {
-        var compressor = new AudioCompressor();
+        var compressor = new AudioCompressor(Microsoft.Extensions.Logging.Abstractions.NullLogger<AudioCompressor>.Instance);
         var wavData = CreateTestWavData(2.0);
 
         var mp3Data = compressor.CompressToMp3(wavData);
@@ -39,7 +39,7 @@ public class AudioCompressorTests
     [Fact]
     public void CompressToMp3_WithValidWav_ReturnsNonEmptyData()
     {
-        var compressor = new AudioCompressor();
+        var compressor = new AudioCompressor(Microsoft.Extensions.Logging.Abstractions.NullLogger<AudioCompressor>.Instance);
         var wavData = CreateTestWavData();
 
         var mp3Data = compressor.CompressToMp3(wavData);
@@ -50,7 +50,7 @@ public class AudioCompressorTests
     [Fact]
     public void CompressToMp3_WithInvalidData_ThrowsException()
     {
-        var compressor = new AudioCompressor();
+        var compressor = new AudioCompressor(Microsoft.Extensions.Logging.Abstractions.NullLogger<AudioCompressor>.Instance);
         var invalidData = new byte[] { 0, 1, 2, 3, 4 };
 
         var act = () => compressor.CompressToMp3(invalidData);
@@ -61,7 +61,7 @@ public class AudioCompressorTests
     [Fact]
     public void CompressToMp3_WithCustomBitrate_ProducesOutput()
     {
-        var compressor = new AudioCompressor();
+        var compressor = new AudioCompressor(Microsoft.Extensions.Logging.Abstractions.NullLogger<AudioCompressor>.Instance);
         var wavData = CreateTestWavData(1.0);
 
         var mp3Data32 = compressor.CompressToMp3(wavData, bitrate: 32);

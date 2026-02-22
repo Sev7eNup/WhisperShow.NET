@@ -450,100 +450,6 @@
                         </Grid>
                     </StackPanel>
                 </Border>
-
-                <!-- ===== Transcription group ===== -->
-                <TextBlock Text="Transcription" Style="{StaticResource GroupHeaderStyle}"/>
-                <Border Background="{StaticResource CardBgBrush}" CornerRadius="12">
-                    <StackPanel>
-                        <!-- Text correction -->
-                        <Grid Margin="20,14,20,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Text correction" FontSize="13" FontFamily="Segoe UI"
-                                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                            <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
-                                          IsChecked="{Binding TextCorrectionEnabled}"
-                                          Command="{Binding ToggleTextCorrectionCommand}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="20,0"/>
-                        <!-- Audio compression -->
-                        <Grid Margin="20,14,20,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Audio compression" FontSize="13" FontFamily="Segoe UI"
-                                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                            <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
-                                          IsChecked="{Binding AudioCompressionEnabled}"
-                                          Command="{Binding ToggleAudioCompressionCommand}" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="20,0"/>
-                        <!-- Auto-dismiss -->
-                        <Grid Margin="20,14,20,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource InverseBoolToVisibility}}">
-                                <TextBlock Text="Auto-dismiss overlay" FontSize="13"
-                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBlock FontSize="12" FontFamily="Segoe UI"
-                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0">
-                                    <Run Text="{Binding AutoDismissSeconds, Mode=OneWay}"/><Run Text=" seconds"/>
-                                </TextBlock>
-                            </StackPanel>
-                            <StackPanel Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource BoolToVisibility}}">
-                                <TextBlock Text="Auto-dismiss overlay" FontSize="13"
-                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBox Style="{StaticResource SettingsTextBoxStyle}"
-                                             Text="{Binding AutoDismissSeconds}" MinWidth="60" MaxWidth="80"
-                                             KeyDown="AutoDismissTextBox_KeyDown"/>
-                                    <TextBlock Text="seconds" FontSize="12" FontFamily="Segoe UI"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
-                                               VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
-                                    Command="{Binding StartEditingAutoDismissCommand}" VerticalAlignment="Center"
-                                    Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource InverseBoolToVisibility}}"/>
-                        </Grid>
-                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="20,0"/>
-                        <!-- Max recording -->
-                        <Grid Margin="20,14,20,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource InverseBoolToVisibility}}">
-                                <TextBlock Text="Max recording duration" FontSize="13"
-                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBlock FontSize="12" FontFamily="Segoe UI"
-                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0">
-                                    <Run Text="{Binding MaxRecordingSeconds, Mode=OneWay, Converter={StaticResource SecondsToMinutes}}"/><Run Text=" minutes"/>
-                                </TextBlock>
-                            </StackPanel>
-                            <StackPanel Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource BoolToVisibility}}">
-                                <TextBlock Text="Max recording duration" FontSize="13"
-                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBox Style="{StaticResource SettingsTextBoxStyle}"
-                                             Text="{Binding MaxRecordingSeconds}" MinWidth="60" MaxWidth="80"
-                                             KeyDown="MaxRecordingTextBox_KeyDown"/>
-                                    <TextBlock Text="seconds" FontSize="12" FontFamily="Segoe UI"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
-                                               VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
-                                    Command="{Binding StartEditingMaxRecordingCommand}" VerticalAlignment="Center"
-                                    Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource InverseBoolToVisibility}}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
             </StackPanel>
         </DataTemplate>
 
@@ -688,6 +594,100 @@
                             <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
                                     Command="{Binding StartEditingCombinedAudioModelCommand}" VerticalAlignment="Center"
                                     Visibility="{Binding IsEditingCombinedAudioModel, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===== Settings group ===== -->
+                <TextBlock Text="Settings" Style="{StaticResource GroupHeaderStyle}"/>
+                <Border Background="{StaticResource CardBgBrush}" CornerRadius="12">
+                    <StackPanel>
+                        <!-- Text correction -->
+                        <Grid Margin="20,14,20,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Text correction" FontSize="13" FontFamily="Segoe UI"
+                                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding TextCorrectionEnabled}"
+                                          Command="{Binding ToggleTextCorrectionCommand}" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="20,0"/>
+                        <!-- Audio compression -->
+                        <Grid Margin="20,14,20,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Audio compression" FontSize="13" FontFamily="Segoe UI"
+                                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding AudioCompressionEnabled}"
+                                          Command="{Binding ToggleAudioCompressionCommand}" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="20,0"/>
+                        <!-- Auto-dismiss -->
+                        <Grid Margin="20,14,20,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="Auto-dismiss overlay" FontSize="13"
+                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock FontSize="12" FontFamily="Segoe UI"
+                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0">
+                                    <Run Text="{Binding AutoDismissSeconds, Mode=OneWay}"/><Run Text=" seconds"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Auto-dismiss overlay" FontSize="13"
+                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBox Style="{StaticResource SettingsTextBoxStyle}"
+                                             Text="{Binding AutoDismissSeconds}" MinWidth="60" MaxWidth="80"
+                                             KeyDown="AutoDismissTextBox_KeyDown"/>
+                                    <TextBlock Text="seconds" FontSize="12" FontFamily="Segoe UI"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Command="{Binding StartEditingAutoDismissCommand}" VerticalAlignment="Center"
+                                    Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="20,0"/>
+                        <!-- Max recording -->
+                        <Grid Margin="20,14,20,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="Max recording duration" FontSize="13"
+                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock FontSize="12" FontFamily="Segoe UI"
+                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0">
+                                    <Run Text="{Binding MaxRecordingSeconds, Mode=OneWay, Converter={StaticResource SecondsToMinutes}}"/><Run Text=" minutes"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Max recording duration" FontSize="13"
+                                           FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBox Style="{StaticResource SettingsTextBoxStyle}"
+                                             Text="{Binding MaxRecordingSeconds}" MinWidth="60" MaxWidth="80"
+                                             KeyDown="MaxRecordingTextBox_KeyDown"/>
+                                    <TextBlock Text="seconds" FontSize="12" FontFamily="Segoe UI"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Command="{Binding StartEditingMaxRecordingCommand}" VerticalAlignment="Center"
+                                    Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource InverseBoolToVisibility}}"/>
                         </Grid>
                     </StackPanel>
                 </Border>

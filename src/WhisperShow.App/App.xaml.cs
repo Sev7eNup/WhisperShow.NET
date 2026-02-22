@@ -5,6 +5,7 @@ using H.NotifyIcon;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 using WhisperShow.App.Services;
@@ -82,7 +83,8 @@ public partial class App : Application
                 services.AddSingleton(sp =>
                 {
                     var opts = sp.GetRequiredService<IOptions<WhisperShowOptions>>();
-                    return new SoundEffectService(opts.Value.App.SoundEffects);
+                    var logger = sp.GetRequiredService<ILogger<SoundEffectService>>();
+                    return new SoundEffectService(logger, opts.Value.App.SoundEffects);
                 });
 
                 // ViewModels

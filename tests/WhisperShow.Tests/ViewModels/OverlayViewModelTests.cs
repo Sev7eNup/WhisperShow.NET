@@ -7,6 +7,7 @@ using WhisperShow.App.ViewModels;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Audio;
+using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Core.Services.TextInsertion;
 using WhisperShow.Core.Services.Transcription;
@@ -49,6 +50,22 @@ public class OverlayViewModelTests : IDisposable
         // Since we can't use OfType<> matching with mocks, we wrap it.
         var providerFactory = new TestProviderFactory(_transcriptionProvider);
 
+        var opts = OptionsHelper.Create(o =>
+        {
+            o.Provider = _optionsValue.Provider;
+            o.Language = _optionsValue.Language;
+            o.TextCorrection = _optionsValue.TextCorrection;
+            o.OpenAI = _optionsValue.OpenAI;
+            o.Hotkey = _optionsValue.Hotkey;
+            o.Audio = _optionsValue.Audio;
+            o.Overlay = _optionsValue.Overlay;
+        });
+
+        var settingsVm = new SettingsViewModel(
+            opts,
+            Substitute.For<IGlobalHotkeyService>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<SettingsViewModel>.Instance);
+
         return new OverlayViewModel(
             _audioService,
             _mutingService,
@@ -56,18 +73,10 @@ public class OverlayViewModelTests : IDisposable
             _textInsertionService,
             _textCorrectionService,
             _combinedService,
-            new SoundEffectService(false),
+            new SoundEffectService(Microsoft.Extensions.Logging.Abstractions.NullLogger<SoundEffectService>.Instance, false),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<OverlayViewModel>.Instance,
-            OptionsHelper.Create(o =>
-            {
-                o.Provider = _optionsValue.Provider;
-                o.Language = _optionsValue.Language;
-                o.TextCorrection = _optionsValue.TextCorrection;
-                o.OpenAI = _optionsValue.OpenAI;
-                o.Hotkey = _optionsValue.Hotkey;
-                o.Audio = _optionsValue.Audio;
-                o.Overlay = _optionsValue.Overlay;
-            }));
+            opts,
+            settingsVm);
     }
 
     // --- State Machine Tests ---

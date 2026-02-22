@@ -7,7 +7,13 @@ internal static partial class NativeMethods
     internal const int GWL_EXSTYLE = -20;
     internal const int WS_EX_NOACTIVATE = 0x08000000;
     internal const int WS_EX_TOOLWINDOW = 0x00000080;
+    internal const int WS_EX_APPWINDOW = 0x00040000;
     internal const int WM_HOTKEY = 0x0312;
+
+    internal const uint SWP_NOMOVE = 0x0002;
+    internal const uint SWP_NOSIZE = 0x0001;
+    internal const uint SWP_NOZORDER = 0x0004;
+    internal const uint SWP_FRAMECHANGED = 0x0020;
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -89,6 +95,11 @@ internal static partial class NativeMethods
 
     [LibraryImport("user32.dll")]
     internal static partial short GetAsyncKeyState(int vKey);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
+        int X, int Y, int cx, int cy, uint uFlags);
 
     internal const uint INPUT_KEYBOARD = 1;
     internal const uint KEYEVENTF_KEYUP = 0x0002;

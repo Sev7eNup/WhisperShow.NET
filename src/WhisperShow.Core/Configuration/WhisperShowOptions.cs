@@ -70,6 +70,7 @@ public class TextCorrectionOptions
     public bool Enabled { get; set; }
     public string Model { get; set; } = "gpt-4o-mini";
     public string? SystemPrompt { get; set; }
+    public string? CombinedSystemPrompt { get; set; }
     public bool UseCombinedAudioModel { get; set; }
     public string CombinedAudioModel { get; set; } = "gpt-4o-mini-audio-preview";
 }
