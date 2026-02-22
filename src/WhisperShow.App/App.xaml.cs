@@ -19,6 +19,7 @@ using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
 using WhisperShow.Core.Services.History;
 using WhisperShow.Core.Services.Statistics;
+using WhisperShow.Core.Services.Snippets;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Core.Services.TextInsertion;
 using WhisperShow.Core.Services.Transcription;
@@ -87,6 +88,7 @@ public partial class App : Application
                 services.AddSingleton<IModelManager, ModelManager>();
                 services.AddSingleton<ICorrectionModelManager, CorrectionModelManager>();
                 services.AddSingleton<IDictionaryService, DictionaryService>();
+                services.AddSingleton<ISnippetService, SnippetService>();
                 services.AddSingleton<IUsageStatsService, UsageStatsService>();
                 services.AddSingleton<ITranscriptionHistoryService, TranscriptionHistoryService>();
 

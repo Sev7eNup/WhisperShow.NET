@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using WhisperShow.App.Services;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Audio;
+using WhisperShow.Core.Services.Snippets;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Core.Services.TextInsertion;
 using WhisperShow.Core.Services.History;
@@ -24,6 +25,7 @@ public partial class OverlayViewModel : ObservableObject
     private readonly TextCorrectionProviderFactory _correctionFactory;
     private readonly ICombinedTranscriptionCorrectionService _combinedService;
     private readonly SoundEffectService _soundEffects;
+    private readonly ISnippetService _snippetService;
     private readonly IUsageStatsService _statsService;
     private readonly ITranscriptionHistoryService _historyService;
     private readonly ILogger<OverlayViewModel> _logger;
@@ -64,6 +66,7 @@ public partial class OverlayViewModel : ObservableObject
         ITextInsertionService textInsertionService,
         TextCorrectionProviderFactory correctionFactory,
         ICombinedTranscriptionCorrectionService combinedService,
+        ISnippetService snippetService,
         SoundEffectService soundEffects,
         IUsageStatsService statsService,
         ITranscriptionHistoryService historyService,
@@ -76,6 +79,7 @@ public partial class OverlayViewModel : ObservableObject
         _textInsertionService = textInsertionService;
         _correctionFactory = correctionFactory;
         _combinedService = combinedService;
+        _snippetService = snippetService;
         _soundEffects = soundEffects;
         _statsService = statsService;
         _historyService = historyService;
@@ -226,6 +230,9 @@ public partial class OverlayViewModel : ObservableObject
                 _logger.LogInformation("Using standard transcription pipeline (Provider: {Provider})", _settings.Provider);
                 text = await StandardTranscribeAsync(audioData);
             }
+
+            // Apply snippet expansions after transcription + correction
+            text = _snippetService.ApplySnippets(text);
 
             if (string.IsNullOrWhiteSpace(text))
             {

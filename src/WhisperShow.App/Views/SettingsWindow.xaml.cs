@@ -314,6 +314,31 @@ public partial class SettingsWindow : Window
             e.Handled = true;
         }
     }
+
+    private void SnippetTriggerTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Tab && sender is TextBox)
+        {
+            // Move focus to replacement textbox (next focusable element)
+            var request = new TraversalRequest(FocusNavigationDirection.Next);
+            (sender as UIElement)?.MoveFocus(request);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            _viewModel.AddSnippetCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void SnippetReplacementTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            _viewModel.AddSnippetCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
 }
 
 // --- Value Converters ---

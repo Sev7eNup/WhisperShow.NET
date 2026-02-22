@@ -12,6 +12,7 @@ using WhisperShow.Core.Models;
 using Whisper.net.Ggml;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
+using WhisperShow.Core.Services.Snippets;
 using WhisperShow.Core.Services.Statistics;
 using WhisperShow.Core.Services.TextCorrection;
 
@@ -23,6 +24,7 @@ public enum SettingsPage
     System,
     Models,
     Dictionary,
+    Snippets,
     Statistics
 }
 
@@ -34,6 +36,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly IGlobalHotkeyService _hotkeyService;
     private readonly IDictionaryService _dictionaryService;
+    private readonly ISnippetService _snippetService;
     private readonly IUsageStatsService _statsService;
     private readonly IModelManager _modelManager;
     private readonly ICorrectionModelManager _correctionModelManager;
@@ -160,6 +163,11 @@ public partial class SettingsViewModel : ObservableObject
     public ObservableCollection<string> DictionaryEntries { get; } = [];
     [ObservableProperty] private string _newDictionaryWord = "";
 
+    // --- Snippets ---
+    public ObservableCollection<SnippetEntry> SnippetItems { get; } = [];
+    [ObservableProperty] private string _newSnippetTrigger = "";
+    [ObservableProperty] private string _newSnippetReplacement = "";
+
     // --- Models ---
     public ObservableCollection<ModelItemViewModel> ModelItems { get; } = [];
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];
@@ -183,6 +191,7 @@ public partial class SettingsViewModel : ObservableObject
         IOptions<WhisperShowOptions> options,
         IGlobalHotkeyService hotkeyService,
         IDictionaryService dictionaryService,
+        ISnippetService snippetService,
         IUsageStatsService statsService,
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
@@ -191,6 +200,7 @@ public partial class SettingsViewModel : ObservableObject
         _logger = logger;
         _hotkeyService = hotkeyService;
         _dictionaryService = dictionaryService;
+        _snippetService = snippetService;
         _statsService = statsService;
         _modelManager = modelManager;
         _correctionModelManager = correctionModelManager;
@@ -242,6 +252,7 @@ public partial class SettingsViewModel : ObservableObject
 
         LoadMicrophones();
         LoadDictionaryEntries();
+        LoadSnippets();
         UpdateDisplayTexts();
         UpdateToggleBadges();
         UpdatePttBadges();
@@ -751,6 +762,35 @@ public partial class SettingsViewModel : ObservableObject
     {
         _dictionaryService.RemoveEntry(word);
         DictionaryEntries.Remove(word);
+    }
+
+    // --- Snippets ---
+
+    private void LoadSnippets()
+    {
+        SnippetItems.Clear();
+        foreach (var entry in _snippetService.GetSnippets())
+            SnippetItems.Add(entry);
+    }
+
+    [RelayCommand]
+    private void AddSnippet()
+    {
+        if (string.IsNullOrWhiteSpace(NewSnippetTrigger) || string.IsNullOrWhiteSpace(NewSnippetReplacement)) return;
+        var trigger = NewSnippetTrigger.Trim();
+        var replacement = NewSnippetReplacement.Trim();
+        _snippetService.AddSnippet(trigger, replacement);
+        if (!SnippetItems.Any(s => s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase)))
+            SnippetItems.Add(new SnippetEntry(trigger, replacement));
+        NewSnippetTrigger = "";
+        NewSnippetReplacement = "";
+    }
+
+    [RelayCommand]
+    private void RemoveSnippet(SnippetEntry snippet)
+    {
+        _snippetService.RemoveSnippet(snippet.Trigger);
+        SnippetItems.Remove(snippet);
     }
 
     // --- Statistics ---

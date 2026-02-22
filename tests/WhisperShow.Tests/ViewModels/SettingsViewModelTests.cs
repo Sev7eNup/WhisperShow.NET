@@ -6,6 +6,7 @@ using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
+using WhisperShow.Core.Services.Snippets;
 using WhisperShow.Core.Services.Statistics;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Tests.TestHelpers;
@@ -55,6 +56,7 @@ public class SettingsViewModelTests
             }),
             _hotkeyService,
             Substitute.For<IDictionaryService>(),
+            Substitute.For<ISnippetService>(),
             Substitute.For<IUsageStatsService>(),
             Substitute.For<IModelManager>(),
             Substitute.For<ICorrectionModelManager>(),

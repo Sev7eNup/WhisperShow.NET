@@ -10,6 +10,7 @@ using WhisperShow.Core.Services.Audio;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.History;
 using WhisperShow.Core.Services.ModelManagement;
+using WhisperShow.Core.Services.Snippets;
 using WhisperShow.Core.Services.Statistics;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Core.Services.TextInsertion;
@@ -68,6 +69,7 @@ public class OverlayViewModelTests : IDisposable
             opts,
             Substitute.For<IGlobalHotkeyService>(),
             Substitute.For<IDictionaryService>(),
+            Substitute.For<ISnippetService>(),
             Substitute.For<IUsageStatsService>(),
             Substitute.For<IModelManager>(),
             Substitute.For<ICorrectionModelManager>(),
@@ -82,6 +84,7 @@ public class OverlayViewModelTests : IDisposable
             _textInsertionService,
             correctionFactory,
             _combinedService,
+            Substitute.For<ISnippetService>(),
             new SoundEffectService(Microsoft.Extensions.Logging.Abstractions.NullLogger<SoundEffectService>.Instance, false),
             Substitute.For<IUsageStatsService>(),
             Substitute.For<ITranscriptionHistoryService>(),
