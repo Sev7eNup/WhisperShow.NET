@@ -21,6 +21,7 @@ public class OpenAiOptions
 {
     public string? ApiKey { get; set; }
     public string Model { get; set; } = "whisper-1";
+    public string? Endpoint { get; set; }
 }
 
 public class LocalWhisperOptions
