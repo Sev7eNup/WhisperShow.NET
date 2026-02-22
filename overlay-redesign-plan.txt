@@ -1,0 +1,133 @@
+# Overlay Redesign: Sprechblasen-Design mit Animationen
+
+## Context
+
+Das aktuelle Overlay ist ein simpler dunkler Kreis (40x40px) mit Mikrofon-Icon. Beim Recording wird es zu einer roten Pill-Form mit Waveform-Bars und Pulse-Ring. Das Ganze soll zu einer modernen Sprechblase (Speech Bubble) mit kleinem Dreieck-Tail umgebaut werden, mit polierteren Animationen.
+
+ViewModel bleibt komplett unverändert - alle Änderungen sind rein visuell (XAML + Code-Behind).
+
+---
+
+## Designkonzept
+
+### Sprechblasen-Form
+- Grid mit 2 Rows: Border (Bubble-Body, CornerRadius=12) + Path (kleines Dreieck-Tail, 12px breit, 7px hoch, zentriert unten)
+- Margin="0,-1,0,0" auf dem Tail verhindert Anti-Aliasing-Lücke
+- Skaliert automatisch mit dem Content (SizeToContent bleibt)
+
+### Farbschema-Upgrade: Flache Farben → Subtile Gradienten
+- Idle: #3A3A3A → #2D2D2D (vertikaler Gradient)
+- Recording: #EF5350 → #D32F2F (warmer Rot-Gradient)
+- Transcribing: #42A5F5 → #1565C0 (kühler Blau-Gradient)
+- Tail-Farbe matched jeweils die untere Gradient-Farbe
+
+---
+
+## Zustandsdesign
+
+### 1. Idle (Sprechblase + Mic)
+- 44x44px Body + 7px Tail
+- Mic-Icon (gleiche SVG-Path wie bisher, 16x16px)
+- Neu: Hover-Effekt — leichtes Scale-Up (1.05x) über 150ms mit CubicEase
+
+### 2. Recording (Haupteffekt)
+- Variable Breite, 44px Höhe + Tail
+- Roter Gradient-Hintergrund
+- Stop-Button (gerundetes Quadrat) + Waveform + Timer (Layout wie bisher)
+- Statt Pulse-Ring: Breathing Glow — ein unscharfer roter Border hinter der Bubble pulsiert (Opacity 0→0.4→0, 800ms, SineEase, Forever)
+- Waveform: 16 Bars (statt 20), 3px breit, 1.5px Radius, 4.5px Spacing — organischerer Look
+- State-Transition: Scale-In Animation (0.85→1.0, 250ms, CubicEase)
+
+### 3. Transcribing (Typing Dots — Chat-Metapher)
+- 56x44px Body + Tail
+- Blauer Gradient
+- Statt Spinner: 3 weiße Dots (7px Durchmesser), die nacheinander hochbouncen
+  - Jeder Dot: TranslateY 0→-6→0 über 300ms (QuadraticEase)
+  - 150ms Versatz zwischen Dots
+  - Gesamtzyklus: ~900ms, RepeatBehavior=Forever
+
+### 4. Result (Text in Sprechblase)
+- Gleicher Content wie bisher (Text + Insert/Copy/X Buttons)
+- Dunkler Gradient-Hintergrund
+- Neu: Fade-In + leichtes Slide-Up beim Erscheinen (Opacity 0→1, TranslateY 4→0, 200ms)
+
+### 5. Error
+- Gleicher Content wie bisher (Error-Text + OK Button)
+- Dunkler Hintergrund mit rotem Border
+- Neu: Shake-Animation (TranslateX oszilliert: 0, -4, 4, -3, 3, 0 über 400ms)
+
+---
+
+## Implementierungsschritte
+
+### Step 1: XAML-Struktur umbauen
+Datei: src/WhisperShow.App/Views/OverlayWindow.xaml
+
+- Top-Level Border (MainBorder) → Grid (RootGrid) ersetzen
+  - Drag-Handler (PreviewMouse*) gehen auf das RootGrid
+- Darunter: Inner Grid mit 2 Rows (Body + Tail)
+  - Row 0: Border x:Name="BubbleBody" CornerRadius="12" mit DropShadowEffect
+  - Row 1: Path x:Name="BubbleTail" Data="M0,0 L6,7 L12,0 Z" HorizontalAlignment=Center
+- GlowBorder (für Recording-Glow) hinter dem Bubble-Grid, initial Opacity=0
+- MinHeight von 44 auf 51 erhöhen (44 Body + 7 Tail)
+
+### Step 2: Farb-Ressourcen aktualisieren
+Datei: src/WhisperShow.App/Views/OverlayWindow.xaml
+
+- IdleBrush → IdleGradient (LinearGradientBrush)
+- RecordingBrush → RecordingGradient
+- TranscribingBrush → TranscribingGradient
+- Neue IdleTailBrush, RecordingTailBrush, TranscribingTailBrush
+- TextBrush, SubtleBrush, ErrorBrush bleiben
+
+### Step 3: State-Panels anpassen
+Datei: src/WhisperShow.App/Views/OverlayWindow.xaml
+
+- Panels bekommen Background="Transparent" (Hintergrund kommt vom BubbleBody)
+- Idle: Button 44x44, Mic-Icon 16x16, mit ScaleTransform für Hover
+- Recording: PulseRing-Ellipse entfernen, Waveform-Canvas auf 72x30px anpassen
+- Transcribing: Spinner-Path → 3 Ellipsen (Dot1, Dot2, Dot3) mit je einer TranslateTransform
+- Result/Error: Background-Attribute entfernen (kommt von BubbleBody)
+
+### Step 4: Animationen ersetzen
+Datei: src/WhisperShow.App/Views/OverlayWindow.xaml
+
+- PulseAnimation Storyboard → GlowPulseAnimation (Opacity auf GlowBorder, 0→0.4, AutoReverse, 800ms)
+- SpinAnimation Storyboard → TypingDotsAnimation (3 staggered DoubleAnimationUsingKeyFrames auf Dot1/2/3 TranslateY)
+
+### Step 5: Code-Behind aktualisieren
+Datei: src/WhisperShow.App/Views/OverlayWindow.xaml.cs
+
+- Storyboard-Felder: _pulseStoryboard/_spinStoryboard → _glowPulseStoryboard/_typingDotsStoryboard
+- CreateWaveformBars(): 16 Bars, 3px breit, 1.5px Radius, 4.5px Spacing
+- UpdateWaveformBars(): 20 Waveform-Levels auf 16 Bars mappen
+- Neue Methode UpdateBubbleColors(RecordingState): BubbleBody.Background + BubbleTail.Fill pro State setzen
+- Neue Methode AnimateStateTransition(): Scale 0.85→1.0 + Opacity 0→1 (250ms)
+- Neue Methode AnimateErrorShake(): TranslateX-Oscillation (400ms)
+- UpdateVisualState() anpassen: neue Storyboards, Farb-Update, Transition-Animation aufrufen
+- Drag-Handler-Referenzen: MainBorder → RootGrid
+
+---
+
+## Dateien
+
+| Datei                                              | Änderung                                                                              |
+|----------------------------------------------------|---------------------------------------------------------------------------------------|
+| src/WhisperShow.App/Views/OverlayWindow.xaml       | Kompletter XAML-Umbau: Sprechblasen-Struktur, Gradienten, neue Panels, neue Storyboards |
+| src/WhisperShow.App/Views/OverlayWindow.xaml.cs    | Neue Animationsmethoden, Waveform-Bars redesign, Farbwechsel-Logik                    |
+| src/WhisperShow.App/ViewModels/OverlayViewModel.cs | Keine Änderungen                                                                      |
+
+---
+
+## Verifikation
+
+1. dotnet build WhisperShow.slnx — Build muss erfolgreich sein
+2. dotnet test — Bestehende OverlayViewModel-Tests müssen weiterhin passen (da kein ViewModel-Change)
+3. App starten und manuell testen:
+   - Idle: Sprechblase mit Tail sichtbar, Mic-Icon, Hover-Effekt
+   - Recording: Roter Gradient, Glow-Puls, 16 Waveform-Bars animieren mit Sprache, Timer läuft
+   - Transcribing: Blaue Bubble, 3 bouncende Dots
+   - Result: Text erscheint mit Fade-In, Buttons funktionieren (Insert, Copy, Dismiss)
+   - Error: Shake-Animation, roter Border
+   - Drag funktioniert weiterhin in allen States
+   - Overlay stiehlt keinen Fokus (WS_EX_NOACTIVATE)
