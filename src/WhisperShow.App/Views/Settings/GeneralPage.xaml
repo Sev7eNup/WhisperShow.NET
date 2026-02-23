@@ -1,0 +1,105 @@
+<UserControl x:Class="WhisperShow.App.Views.Settings.GeneralPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="General" Style="{StaticResource PageTitleStyle}"/>
+
+        <!-- Single container with divider lines -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="0">
+
+            <StackPanel>
+                <!-- Keybind shortcuts row -->
+                <Grid Margin="20,16,20,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Keybind shortcuts" FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{Binding HotkeyDisplayText}" FontSize="12"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                            Command="{Binding OpenHotkeyDialogCommand}" VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Divider -->
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+
+                <!-- Microphone row -->
+                <Grid Margin="20,16,20,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Microphone" FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{Binding SelectedMicrophoneDisplay}" FontSize="12"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Style="{StaticResource PillButtonStyle}"
+                            Command="{Binding ToggleMicTestCommand}" VerticalAlignment="Center"
+                            Margin="0,0,6,0">
+                        <Button.Content>
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Test"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMicTesting}" Value="True">
+                                                <Setter Property="Text" Value="Stop"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button.Content>
+                    </Button>
+                    <Button Grid.Column="2" Content="Change" Style="{StaticResource PillButtonStyle}"
+                            Command="{Binding OpenMicrophoneDialogCommand}" VerticalAlignment="Center"/>
+                </Grid>
+                <!-- Mic test level bar -->
+                <ProgressBar Height="6" Margin="20,0,20,12"
+                             Minimum="0" Maximum="1" Value="{Binding MicTestLevel, Mode=OneWay}"
+                             Foreground="#4CAF50" Background="{DynamicResource CardBgBrush}"
+                             BorderThickness="0"
+                             Visibility="{Binding IsMicTesting, Converter={StaticResource BoolToVisibility}}">
+                    <ProgressBar.Resources>
+                        <Style TargetType="ProgressBar">
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="3"/>
+                                </Style>
+                            </Style.Resources>
+                        </Style>
+                    </ProgressBar.Resources>
+                </ProgressBar>
+
+                <!-- Divider -->
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+
+                <!-- Language row -->
+                <Grid Margin="20,16,20,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Language" FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{Binding SelectedLanguageDisplay}" FontSize="12"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                            Command="{Binding OpenLanguageDialogCommand}" VerticalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
