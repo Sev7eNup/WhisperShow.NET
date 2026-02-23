@@ -119,6 +119,7 @@
                     <!-- Idle State -->
                     <Grid x:Name="IdlePanel" Visibility="Visible">
                         <Button Click="RecordButton_Click" Cursor="Hand"
+                                ToolTip="{Binding PushToTalkHotkeyText}"
                                 Width="44" Height="44" BorderThickness="0"
                                 RenderTransformOrigin="0.5,0.5">
                             <Button.RenderTransform>

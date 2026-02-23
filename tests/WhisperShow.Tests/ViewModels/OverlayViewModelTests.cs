@@ -522,6 +522,26 @@ public class OverlayViewModelTests : IDisposable
         vm.IsOverlayAlwaysVisible.Should().BeTrue();
     }
 
+    // --- Hotkey Display ---
+
+    [Fact]
+    public void PushToTalkHotkeyText_FormatsCorrectly()
+    {
+        var vm = CreateViewModel();
+        vm.PushToTalkHotkeyText.Should().Be("Ctrl + Space");
+    }
+
+    [Fact]
+    public void PushToTalkHotkeyText_CustomHotkey_FormatsCorrectly()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Hotkey.PushToTalk.Modifiers = "Control, Alt";
+            o.Hotkey.PushToTalk.Key = "F1";
+        });
+        vm.PushToTalkHotkeyText.Should().Be("Ctrl + Alt + F1");
+    }
+
     // --- Provider Name ---
 
     [Fact]
