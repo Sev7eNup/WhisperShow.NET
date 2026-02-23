@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using WhisperShow.App.ViewModels;
 
 namespace WhisperShow.App.Views;
@@ -16,6 +17,14 @@ public partial class HistoryWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = _viewModel;
+
+        ClipBorder.SizeChanged += OnClipBorderSizeChanged;
+    }
+
+    private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ClipBorder.Clip = new RectangleGeometry(
+            new Rect(0, 0, e.NewSize.Width, e.NewSize.Height), 12, 12);
     }
 
     public void ShowAndRefresh()
