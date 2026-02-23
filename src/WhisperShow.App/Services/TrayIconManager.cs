@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -17,7 +16,8 @@ public class TrayIconManager : IDisposable
         _trayIcon = new TaskbarIcon
         {
             ToolTipText = "WhisperShow - Speech to Text",
-            Icon = CreateIcon()
+            Icon = new System.Drawing.Icon(
+                Application.GetResourceStream(new Uri("/Resources/Icons/app.ico", UriKind.Relative))!.Stream)
         };
 
         var contextMenu = BuildContextMenu(overlayWindow, settingsFactory, historyFactory, shutdown);
@@ -52,7 +52,7 @@ public class TrayIconManager : IDisposable
             FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
             FontSize = 11,
             FontWeight = FontWeights.SemiBold,
-            Foreground = (System.Windows.Media.Brush)styles["TrayMenuTextSecondary"],
+            Foreground = (System.Windows.Media.Brush)styles["TrayMenuAccent"],
             Margin = new Thickness(12, 4, 12, 4),
             IsHitTestVisible = false
         };
@@ -147,42 +147,6 @@ public class TrayIconManager : IDisposable
                 overlayWindow.Activate();
             }
         };
-    }
-
-    private static Icon CreateIcon()
-    {
-        var bitmap = new Bitmap(64, 64);
-        using var g = Graphics.FromImage(bitmap);
-        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        g.Clear(Color.Transparent);
-
-        // Speech bubble body (rounded rectangle)
-        using var bubbleBrush = new SolidBrush(Color.FromArgb(45, 45, 45)); // #2D2D2D
-        using var bubblePath = new System.Drawing.Drawing2D.GraphicsPath();
-        var rect = new Rectangle(4, 2, 56, 42);
-        int r = 12;
-        bubblePath.AddArc(rect.X, rect.Y, r, r, 180, 90);
-        bubblePath.AddArc(rect.Right - r, rect.Y, r, r, 270, 90);
-        bubblePath.AddArc(rect.Right - r, rect.Bottom - r, r, r, 0, 90);
-        bubblePath.AddArc(rect.X, rect.Bottom - r, r, r, 90, 90);
-        bubblePath.CloseFigure();
-        g.FillPath(bubbleBrush, bubblePath);
-
-        // Tail triangle (bottom-left)
-        g.FillPolygon(bubbleBrush, [new System.Drawing.Point(12, 43), new System.Drawing.Point(24, 43), new System.Drawing.Point(8, 58)]);
-
-        // Waveform bars (5 white bars, centered in bubble)
-        using var barBrush = new SolidBrush(Color.White);
-        int[] barHeights = [10, 22, 30, 18, 12];
-        int barWidth = 6, gap = 3, startX = 13, centerY = 23;
-        for (int i = 0; i < barHeights.Length; i++)
-        {
-            int x = startX + i * (barWidth + gap);
-            int h = barHeights[i];
-            g.FillRectangle(barBrush, x, centerY - h / 2, barWidth, h);
-        }
-
-        return Icon.FromHandle(bitmap.GetHicon());
     }
 
     public void Dispose()
