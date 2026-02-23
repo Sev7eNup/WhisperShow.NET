@@ -26,7 +26,7 @@ public class OverlayWindowTests
         var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
 
         heights.Should().HaveCount(16);
-        // 1.0 * 3.5 = 3.5 → clamped to 1.0 → 1.0 * 28 = 28
+        // sqrt(1.0 * 5) = sqrt(5) ≈ 2.24 → clamped to 1.0 → 1.0 * 28 = 28
         heights.Should().AllSatisfy(h => h.Should().Be(28.0));
     }
 
@@ -64,24 +64,24 @@ public class OverlayWindowTests
     [Fact]
     public void InterpolateWaveformLevels_AmplificationClamps()
     {
-        // 0.3 * 3.5 = 1.05 → should clamp to 1.0
+        // sqrt(0.3 * 5) = sqrt(1.5) ≈ 1.22 → clamped to 1.0
         var levels = Enumerable.Repeat(0.3f, 20).ToArray();
 
         var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
 
-        // level = min(0.3 * 3.5, 1.0) = 1.0 → height = max(2, 1.0 * 28) = 28
+        // level = min(sqrt(1.5), 1.0) = 1.0 → height = max(2, 1.0 * 28) = 28
         heights.Should().AllSatisfy(h => h.Should().Be(28.0));
     }
 
     [Fact]
     public void InterpolateWaveformLevels_LowLevel_AmplifiedButNotClamped()
     {
-        // 0.1 * 3.5 = 0.35 → not clamped → height = 0.35 * 28 = 9.8
+        // sqrt(0.1 * 5) = sqrt(0.5) ≈ 0.707 → height = 0.707 * 28 ≈ 19.8
         var levels = Enumerable.Repeat(0.1f, 20).ToArray();
 
         var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
 
-        heights.Should().AllSatisfy(h => h.Should().BeApproximately(9.8, 0.01));
+        heights.Should().AllSatisfy(h => h.Should().BeApproximately(19.8, 0.1));
     }
 
     [Fact]
@@ -105,8 +105,8 @@ public class OverlayWindowTests
 
         var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
 
-        // First bar uses levels[0]: 0.05 * 3.5 = 0.175 → height = 0.175 * 28 = 4.9
-        // Last bar uses levels[19]: 0.2 * 3.5 = 0.7 → height = 0.7 * 28 = 19.6
+        // First bar uses levels[0]: sqrt(0.05 * 5) = sqrt(0.25) = 0.5 → height = 14
+        // Last bar uses levels[19]: sqrt(0.2 * 5) = sqrt(1.0) = 1.0 → height = 28
         heights[0].Should().BeGreaterThan(2.0);
         heights[15].Should().BeGreaterThan(heights[0]);
     }

@@ -204,8 +204,8 @@ public partial class OverlayWindow : Window
             double frac = srcIndex - lo;
             float interpolated = (float)(levels[lo] * (1 - frac) + levels[hi] * frac);
 
-            // Amplify: typical speech is 0.0-0.3, scale up for visibility
-            float level = Math.Min(interpolated * 3.5f, 1.0f);
+            // Square-root scaling: compresses dynamic range so quiet speech is visible
+            float level = MathF.Min(MathF.Sqrt(interpolated * 5.0f), 1.0f);
             heights[i] = Math.Max(2, level * 28);
         }
         return heights;
