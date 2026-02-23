@@ -109,7 +109,8 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
     private void EnsureLoaded()
     {
         if (_entries is not null) return;
-        LoadAsync().GetAwaiter().GetResult();
+        throw new InvalidOperationException(
+            $"{nameof(TranscriptionHistoryService)} not initialized. Call LoadAsync() at startup.");
     }
 
     private void ScheduleSave()

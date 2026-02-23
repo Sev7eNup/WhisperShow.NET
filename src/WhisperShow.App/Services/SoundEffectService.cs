@@ -1,9 +1,10 @@
 using System.Media;
 using Microsoft.Extensions.Logging;
+using WhisperShow.Core.Services.Audio;
 
 namespace WhisperShow.App.Services;
 
-public class SoundEffectService
+public class SoundEffectService : ISoundEffectService
 {
     private readonly ILogger<SoundEffectService> _logger;
 

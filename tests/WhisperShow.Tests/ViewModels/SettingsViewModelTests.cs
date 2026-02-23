@@ -4,6 +4,7 @@ using NSubstitute;
 using WhisperShow.App.ViewModels;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
+using WhisperShow.Core.Services.Configuration;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
 using WhisperShow.Core.Services.Snippets;
@@ -63,6 +64,7 @@ public class SettingsViewModelTests
             Substitute.For<IModelManager>(),
             Substitute.For<ICorrectionModelManager>(),
             _preloadService,
+            Substitute.For<IAutoStartService>(),
             NullLogger<SettingsViewModel>.Instance);
     }
 
@@ -744,7 +746,7 @@ public class SettingsViewModelTests
         var item = new ModelItemViewModel(model, Whisper.net.Ggml.GgmlType.Base);
         item.IsDownloaded = true;
 
-        vm.ActivateModelCommand.Execute(item);
+        vm.Models.ActivateModelCommand.Execute(item);
 
         _preloadService.Received(1).PreloadTranscriptionModel("ggml-base.bin");
     }
@@ -760,7 +762,7 @@ public class SettingsViewModelTests
         var item = new CorrectionModelItemViewModel(model);
         item.IsDownloaded = true;
 
-        vm.ActivateCorrectionModelCommand.Execute(item);
+        vm.Models.ActivateCorrectionModelCommand.Execute(item);
 
         _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
     }

@@ -14,6 +14,7 @@ using WhisperShow.App.ViewModels;
 using WhisperShow.App.Views;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
+using WhisperShow.Core.Services.Configuration;
 using WhisperShow.Core.Services.Audio;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
@@ -94,12 +95,14 @@ public partial class App : Application
                 services.AddSingleton<ITranscriptionHistoryService, TranscriptionHistoryService>();
 
                 // App services
-                services.AddSingleton(sp =>
+                services.AddSingleton<ISoundEffectService>(sp =>
                 {
                     var opts = sp.GetRequiredService<IOptions<WhisperShowOptions>>();
                     var logger = sp.GetRequiredService<ILogger<SoundEffectService>>();
                     return new SoundEffectService(logger, opts.Value.App.SoundEffects);
                 });
+                services.AddSingleton<IWindowFocusService, WindowFocusService>();
+                services.AddSingleton<IAutoStartService, AutoStartService>();
 
                 // ViewModels
                 services.AddSingleton<OverlayViewModel>();
@@ -115,11 +118,18 @@ public partial class App : Application
 
         await _host.StartAsync();
 
+        // Preload all services that persist data to disk
+        await Task.WhenAll(
+            _host.Services.GetRequiredService<ITranscriptionHistoryService>().LoadAsync(),
+            _host.Services.GetRequiredService<IUsageStatsService>().LoadAsync(),
+            _host.Services.GetRequiredService<IDictionaryService>().LoadAsync(),
+            _host.Services.GetRequiredService<ISnippetService>().LoadAsync());
+
         try
         {
             // Sync autostart registry with config
             var opts = _host.Services.GetRequiredService<IOptions<WhisperShowOptions>>().Value;
-            SyncAutoStartRegistry(opts);
+            _host.Services.GetRequiredService<IAutoStartService>().SetAutoStart(opts.App.LaunchAtLogin);
 
             // Show overlay window
             var overlayWindow = _host.Services.GetRequiredService<OverlayWindow>();
@@ -277,46 +287,6 @@ public partial class App : Application
         }
 
         return Icon.FromHandle(bitmap.GetHicon());
-    }
-
-    private static void SyncAutoStartRegistry(WhisperShowOptions options)
-    {
-        try
-        {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
-            if (key is null) return;
-
-            var currentValue = key.GetValue("WhisperShow") as string;
-            var exePath = Environment.ProcessPath;
-
-            if (options.App.LaunchAtLogin)
-            {
-                // Ensure registry entry exists and points to the correct path
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    var expected = $"\"{exePath}\"";
-                    if (!string.Equals(currentValue, expected, StringComparison.OrdinalIgnoreCase))
-                    {
-                        key.SetValue("WhisperShow", expected);
-                        Log.Information("Updated autostart registry path to {Path}", expected);
-                    }
-                }
-            }
-            else
-            {
-                // Config says off — remove stale registry entry if present
-                if (currentValue is not null)
-                {
-                    key.DeleteValue("WhisperShow", throwOnMissingValue: false);
-                    Log.Information("Removed stale autostart registry entry");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Failed to sync autostart registry");
-        }
     }
 
     private static void AddCudaLibraryPaths()

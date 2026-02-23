@@ -1,9 +1,9 @@
-using System.ComponentModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
-using WhisperShow.App.Services;
+using Microsoft.Extensions.Options;
+using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Audio;
 using WhisperShow.Core.Services.Snippets;
@@ -24,19 +24,22 @@ public partial class OverlayViewModel : ObservableObject
     private readonly ITextInsertionService _textInsertionService;
     private readonly TextCorrectionProviderFactory _correctionFactory;
     private readonly ICombinedTranscriptionCorrectionService _combinedService;
-    private readonly SoundEffectService _soundEffects;
+    private readonly ISoundEffectService _soundEffects;
     private readonly ISnippetService _snippetService;
     private readonly IUsageStatsService _statsService;
     private readonly ITranscriptionHistoryService _historyService;
+    private readonly IWindowFocusService _windowFocusService;
     private readonly ILogger<OverlayViewModel> _logger;
-    private readonly SettingsViewModel _settings;
+    private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private IntPtr _previousForegroundWindow;
     private CancellationTokenSource? _autoDismissCts;
     private DateTime _recordingStartTime;
     private System.Timers.Timer? _recordingTimer;
 
-    public bool MuteWhileDictating { get; set; }
-    public bool IsOverlayAlwaysVisible { get; set; }
+    private WhisperShowOptions Options => _optionsMonitor.CurrentValue;
+
+    public bool MuteWhileDictating => Options.Audio.MuteWhileDictating;
+    public bool IsOverlayAlwaysVisible => Options.Overlay.AlwaysVisible;
 
     [ObservableProperty]
     private RecordingState _state = RecordingState.Idle;
@@ -67,11 +70,12 @@ public partial class OverlayViewModel : ObservableObject
         TextCorrectionProviderFactory correctionFactory,
         ICombinedTranscriptionCorrectionService combinedService,
         ISnippetService snippetService,
-        SoundEffectService soundEffects,
+        ISoundEffectService soundEffects,
         IUsageStatsService statsService,
         ITranscriptionHistoryService historyService,
+        IWindowFocusService windowFocusService,
         ILogger<OverlayViewModel> logger,
-        SettingsViewModel settingsViewModel)
+        IOptionsMonitor<WhisperShowOptions> optionsMonitor)
     {
         _audioService = audioService;
         _mutingService = mutingService;
@@ -83,44 +87,26 @@ public partial class OverlayViewModel : ObservableObject
         _soundEffects = soundEffects;
         _statsService = statsService;
         _historyService = historyService;
+        _windowFocusService = windowFocusService;
         _logger = logger;
-        _settings = settingsViewModel;
+        _optionsMonitor = optionsMonitor;
 
-        MuteWhileDictating = _settings.MuteWhileDictating;
-        IsOverlayAlwaysVisible = _settings.OverlayAlwaysVisible;
+        _soundEffects.Enabled = Options.App.SoundEffects;
 
         _audioService.AudioLevelChanged += (_, level) =>
             Application.Current.Dispatcher.Invoke(() => AudioLevel = level);
 
-        // Subscribe to live settings changes from SettingsViewModel
-        settingsViewModel.PropertyChanged += OnSettingsChanged;
+        _optionsMonitor.OnChange(OnOptionsChanged);
 
         UpdateProviderName();
     }
 
-    private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnOptionsChanged(WhisperShowOptions options, string? name)
     {
-        if (sender is not SettingsViewModel settings) return;
-
-        switch (e.PropertyName)
-        {
-            case nameof(SettingsViewModel.MuteWhileDictating):
-                MuteWhileDictating = settings.MuteWhileDictating;
-                _logger.LogDebug("MuteWhileDictating updated to {Value}", MuteWhileDictating);
-                break;
-            case nameof(SettingsViewModel.OverlayAlwaysVisible):
-                IsOverlayAlwaysVisible = settings.OverlayAlwaysVisible;
-                _logger.LogDebug("IsOverlayAlwaysVisible updated to {Value}", IsOverlayAlwaysVisible);
-                break;
-            case nameof(SettingsViewModel.SoundEffectsEnabled):
-                _soundEffects.Enabled = settings.SoundEffectsEnabled;
-                _logger.LogDebug("SoundEffects.Enabled updated to {Value}", _soundEffects.Enabled);
-                break;
-            case nameof(SettingsViewModel.Provider):
-                UpdateProviderName();
-                _logger.LogInformation("Transcription provider changed to {Provider}", settings.Provider);
-                break;
-        }
+        _soundEffects.Enabled = options.App.SoundEffects;
+        UpdateProviderName();
+        OnPropertyChanged(nameof(MuteWhileDictating));
+        OnPropertyChanged(nameof(IsOverlayAlwaysVisible));
     }
 
     [RelayCommand]
@@ -166,7 +152,7 @@ public partial class OverlayViewModel : ObservableObject
         CancelAutoDismissTimer();
         try
         {
-            _previousForegroundWindow = NativeMethods.GetForegroundWindow();
+            _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
             _logger.LogInformation("Starting recording (ForegroundWindow: 0x{Handle:X})",
                 _previousForegroundWindow.ToInt64());
             if (MuteWhileDictating)
@@ -212,12 +198,12 @@ public partial class OverlayViewModel : ObservableObject
             string text;
 
             // Fast path: combined audio model (transcription + correction in one API call)
-            if (_settings.UseCombinedAudioModel && _combinedService.IsAvailable)
+            if (Options.TextCorrection.UseCombinedAudioModel && _combinedService.IsAvailable)
             {
                 _logger.LogInformation("Using combined transcription+correction pipeline");
                 try
                 {
-                    text = await _combinedService.TranscribeAndCorrectAsync(audioData, _settings.SelectedLanguageCode);
+                    text = await _combinedService.TranscribeAndCorrectAsync(audioData, Options.Language);
                 }
                 catch (Exception ex)
                 {
@@ -227,7 +213,7 @@ public partial class OverlayViewModel : ObservableObject
             }
             else
             {
-                _logger.LogInformation("Using standard transcription pipeline (Provider: {Provider})", _settings.Provider);
+                _logger.LogInformation("Using standard transcription pipeline (Provider: {Provider})", Options.Provider);
                 text = await StandardTranscribeAsync(audioData);
             }
 
@@ -248,8 +234,8 @@ public partial class OverlayViewModel : ObservableObject
 
             // Record stats and history
             var duration = (DateTime.UtcNow - _recordingStartTime).TotalSeconds;
-            _statsService.RecordTranscription(duration, audioData.Length, _settings.Provider.ToString());
-            _historyService.AddEntry(text, _settings.Provider.ToString(), duration);
+            _statsService.RecordTranscription(duration, audioData.Length, Options.Provider.ToString());
+            _historyService.AddEntry(text, Options.Provider.ToString(), duration);
 
             // Auto-insert into the previously focused window
             await InsertTextAsync();
@@ -271,16 +257,16 @@ public partial class OverlayViewModel : ObservableObject
 
     private async Task<string> StandardTranscribeAsync(byte[] audioData)
     {
-        var provider = _providerFactory.GetProvider(_settings.Provider);
-        var result = await provider.TranscribeAsync(audioData, _settings.SelectedLanguageCode);
+        var provider = _providerFactory.GetProvider(Options.Provider);
+        var result = await provider.TranscribeAsync(audioData, Options.Language);
 
         var text = result.Text;
 
-        var corrector = _correctionFactory.GetProvider(_settings.CorrectionProvider);
-        _logger.LogInformation("Text correction: {Provider}", _settings.CorrectionProvider);
+        var corrector = _correctionFactory.GetProvider(Options.TextCorrection.Provider);
+        _logger.LogInformation("Text correction: {Provider}", Options.TextCorrection.Provider);
         if (corrector is not null && !string.IsNullOrWhiteSpace(text))
         {
-            text = await corrector.CorrectAsync(text, _settings.SelectedLanguageCode);
+            text = await corrector.CorrectAsync(text, Options.Language);
         }
 
         return text;
@@ -294,23 +280,7 @@ public partial class OverlayViewModel : ObservableObject
         _logger.LogInformation("Inserting transcribed text ({Length} chars)", TranscribedText.Length);
 
         // Restore focus to previously active window
-        if (_previousForegroundWindow != IntPtr.Zero)
-        {
-            _logger.LogDebug("Restoring focus to window 0x{Handle:X}", _previousForegroundWindow.ToInt64());
-            var foregroundThread = NativeMethods.GetWindowThreadProcessId(
-                NativeMethods.GetForegroundWindow(), out _);
-            var currentThread = NativeMethods.GetCurrentThreadId();
-
-            if (foregroundThread != currentThread)
-                NativeMethods.AttachThreadInput(currentThread, foregroundThread, true);
-
-            NativeMethods.SetForegroundWindow(_previousForegroundWindow);
-
-            if (foregroundThread != currentThread)
-                NativeMethods.AttachThreadInput(currentThread, foregroundThread, false);
-
-            await Task.Delay(150);
-        }
+        await _windowFocusService.RestoreFocusAsync(_previousForegroundWindow);
 
         await _textInsertionService.InsertTextAsync(TranscribedText);
     }
@@ -362,7 +332,7 @@ public partial class OverlayViewModel : ObservableObject
 
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(_settings.AutoDismissSeconds), token);
+            await Task.Delay(TimeSpan.FromSeconds(Options.Overlay.AutoDismissSeconds), token);
             if (State is RecordingState.Error or RecordingState.Result)
                 DismissResult();
         }
@@ -391,7 +361,7 @@ public partial class OverlayViewModel : ObservableObject
 
     public void UpdateProviderName()
     {
-        var provider = _providerFactory.GetProvider(_settings.Provider);
+        var provider = _providerFactory.GetProvider(Options.Provider);
         CurrentProviderName = provider.ProviderName;
     }
 }

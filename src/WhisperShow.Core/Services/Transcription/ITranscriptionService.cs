@@ -9,6 +9,7 @@ public interface ITranscriptionService
         string? language = null,
         CancellationToken cancellationToken = default);
 
+    TranscriptionProvider ProviderType { get; }
     string ProviderName { get; }
     bool IsAvailable { get; }
 }

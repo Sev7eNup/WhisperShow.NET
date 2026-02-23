@@ -4,20 +4,17 @@ namespace WhisperShow.Core.Services.TextCorrection;
 
 public class TextCorrectionProviderFactory
 {
-    private readonly IEnumerable<ITextCorrectionService> _providers;
+    private readonly Dictionary<TextCorrectionProvider, ITextCorrectionService> _providerMap;
 
     public TextCorrectionProviderFactory(IEnumerable<ITextCorrectionService> providers)
     {
-        _providers = providers;
+        _providerMap = providers.ToDictionary(p => p.ProviderType);
     }
 
     public virtual ITextCorrectionService? GetProvider(TextCorrectionProvider provider)
     {
-        return provider switch
-        {
-            TextCorrectionProvider.Cloud => _providers.OfType<OpenAiTextCorrectionService>().FirstOrDefault(),
-            TextCorrectionProvider.Local => _providers.OfType<LocalTextCorrectionService>().FirstOrDefault(),
-            _ => null
-        };
+        return _providerMap.TryGetValue(provider, out var service)
+            ? service
+            : null;
     }
 }

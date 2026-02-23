@@ -5,6 +5,7 @@ using LLama.Sampling;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhisperShow.Core.Configuration;
+using WhisperShow.Core.Models;
 
 namespace WhisperShow.Core.Services.TextCorrection;
 
@@ -27,6 +28,8 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private LLamaWeights? _model;
     private string? _loadedModelPath;
     private bool _disposed;
+
+    public TextCorrectionProvider ProviderType => TextCorrectionProvider.Local;
 
     public LocalTextCorrectionService(
         ILogger<LocalTextCorrectionService> logger,

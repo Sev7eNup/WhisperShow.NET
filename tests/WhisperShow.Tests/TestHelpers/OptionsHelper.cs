@@ -21,13 +21,28 @@ public static class OptionsHelper
 }
 
 /// <summary>
-/// Simple IOptionsMonitor implementation for tests that returns a fixed value.
+/// Simple IOptionsMonitor implementation for tests that returns a fixed value
+/// and supports Update() to simulate live option changes.
 /// </summary>
 internal class TestOptionsMonitor<T> : IOptionsMonitor<T>
 {
-    public TestOptionsMonitor(T currentValue) => CurrentValue = currentValue;
+    private T _value;
+    private Action<T, string?>? _listener;
 
-    public T CurrentValue { get; }
-    public T Get(string? name) => CurrentValue;
-    public IDisposable? OnChange(Action<T, string?> listener) => null;
+    public TestOptionsMonitor(T value) => _value = value;
+
+    public T CurrentValue => _value;
+    public T Get(string? name) => _value;
+
+    public IDisposable? OnChange(Action<T, string?> listener)
+    {
+        _listener = listener;
+        return null;
+    }
+
+    public void Update(T newValue)
+    {
+        _value = newValue;
+        _listener?.Invoke(newValue, null);
+    }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
 using WhisperShow.Core.Configuration;
+using WhisperShow.Core.Models;
 
 namespace WhisperShow.Core.Services.TextCorrection;
 
@@ -26,6 +27,8 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
     private string? _lastApiKey;
     private string? _lastModel;
     private string? _lastEndpoint;
+
+    public TextCorrectionProvider ProviderType => TextCorrectionProvider.Cloud;
 
     public OpenAiTextCorrectionService(
         ILogger<OpenAiTextCorrectionService> logger,

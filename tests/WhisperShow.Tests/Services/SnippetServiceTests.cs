@@ -17,9 +17,15 @@ public class SnippetServiceTests : IDisposable
 
         // Use a custom file path via reflection to avoid polluting real AppData
         _service = new SnippetService(NullLogger<SnippetService>.Instance);
+        SetFilePath(_service, Path.Combine(_tempDir, "snippets.json"));
+        _service.LoadAsync().GetAwaiter().GetResult();
+    }
+
+    private static void SetFilePath(SnippetService service, string path)
+    {
         var field = typeof(SnippetService).GetField("_filePath",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        field.SetValue(_service, Path.Combine(_tempDir, "snippets.json"));
+        field.SetValue(service, path);
     }
 
     public void Dispose()
@@ -114,9 +120,7 @@ public class SnippetServiceTests : IDisposable
 
         // Create new service instance pointing to same file
         var service2 = new SnippetService(NullLogger<SnippetService>.Instance);
-        var field = typeof(SnippetService).GetField("_filePath",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        field.SetValue(service2, Path.Combine(_tempDir, "snippets.json"));
+        SetFilePath(service2, Path.Combine(_tempDir, "snippets.json"));
 
         await service2.LoadAsync();
 
