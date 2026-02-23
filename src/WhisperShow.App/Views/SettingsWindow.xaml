@@ -331,7 +331,8 @@
                                                     Background="{DynamicResource CardBgBrush}"
                                                     BorderThickness="2" BorderBrush="Transparent">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Flag}" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <Image Source="{Binding Flag}" Width="24" Height="16" Margin="0,0,6,0"
+                                                           VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
                                                     <TextBlock Text="{Binding DisplayName}" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
                                                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                                 </StackPanel>
