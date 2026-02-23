@@ -9,6 +9,7 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
+        Icon="/Resources/Icons/app.ico"
         Width="700" Height="500"
         Title="WhisperShow Settings"
         PreviewKeyDown="Window_PreviewKeyDown">

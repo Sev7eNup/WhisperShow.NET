@@ -51,8 +51,10 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
             var systemPrompt = correctionOpts.SystemPrompt ?? TextCorrectionDefaults.CorrectionSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
 
-            var languageHint = string.IsNullOrEmpty(language) ? "auto-detected" : language;
-            var userMessage = $"[Language: {languageHint}]\n{rawText}";
+            var languageHint = string.IsNullOrEmpty(language)
+                ? "Keep the SAME language as the input — do NOT translate"
+                : $"Output language MUST be: {language}";
+            var userMessage = $"[{languageHint}]\n{rawText}";
 
             _logger.LogInformation("Running local text correction ({Length} chars, model: {Model})",
                 rawText.Length, correctionOpts.LocalModelName);
@@ -92,7 +94,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Local text correction failed, returning raw text");
+            _logger.LogError(ex, "Local text correction failed, returning raw text");
             return rawText;
         }
     }

@@ -23,6 +23,7 @@ public partial class OverlayWindow : Window
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private readonly ILogger<OverlayWindow> _logger;
     private readonly WhisperShowOptions _options;
+    private readonly IDisposable? _optionsChangeRegistration;
     private Storyboard? _typingDotsStoryboard;
     private const int WaveformBarCount = 16;
     private const int ViewModelWaveformCount = 20;
@@ -55,7 +56,7 @@ public partial class OverlayWindow : Window
         _hotkeyService.PushToTalkHotkeyReleased += OnPushToTalkHotkeyReleased;
         _hotkeyService.EscapePressed += OnEscapePressed;
 
-        _optionsMonitor.OnChange(OnOptionsChanged);
+        _optionsChangeRegistration = _optionsMonitor.OnChange(OnOptionsChanged);
 
         Loaded += OverlayWindow_Loaded;
     }
@@ -64,6 +65,7 @@ public partial class OverlayWindow : Window
 
     public void Cleanup()
     {
+        _optionsChangeRegistration?.Dispose();
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         _viewModel.WaveformUpdated -= OnWaveformUpdated;
         _hotkeyService.ToggleHotkeyPressed -= OnToggleHotkeyPressed;

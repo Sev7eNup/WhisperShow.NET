@@ -110,7 +110,9 @@ public class LocalTranscriptionService : ITranscriptionService, IDisposable
 
             _factory?.Dispose();
 
-            // Configure runtime order based on GPU setting
+            // RuntimeOptions.RuntimeLibraryOrder is a static Whisper.net config.
+            // Safe here: singleton service behind lock, set immediately before FromPath().
+            // LocalTextCorrectionService uses LLamaSharp with its own ModelParams.GpuLayerCount.
             if (gpuAcceleration)
                 RuntimeOptions.RuntimeLibraryOrder = [RuntimeLibrary.Cuda, RuntimeLibrary.Cpu];
             else

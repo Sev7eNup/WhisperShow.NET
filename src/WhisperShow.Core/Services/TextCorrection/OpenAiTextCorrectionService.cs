@@ -39,8 +39,10 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
             var systemPrompt = options.TextCorrection.SystemPrompt ?? TextCorrectionDefaults.CorrectionSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
 
-            var languageHint = string.IsNullOrEmpty(language) ? "auto-detected" : language;
-            var userMessage = $"[Language: {languageHint}]\n{rawText}";
+            var languageHint = string.IsNullOrEmpty(language)
+                ? "Keep the SAME language as the input — do NOT translate"
+                : $"Output language MUST be: {language}";
+            var userMessage = $"[{languageHint}]\n{rawText}";
 
             _logger.LogInformation("Sending text correction request ({Length} chars, model: {Model})",
                 rawText.Length, options.TextCorrection.Model);
@@ -62,8 +64,13 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Text correction failed, returning raw text");
+            _logger.LogError(ex, "Text correction failed, returning raw text");
             return rawText;
         }
+    }
+
+    public void Dispose()
+    {
+        // No unmanaged resources — cloud client lifecycle is managed by OpenAiClientFactory
     }
 }

@@ -218,8 +218,10 @@ public partial class App : Application
 
         if (_host is not null)
         {
+            // Unsubscribe event handlers before host disposal to ensure clean shutdown
             _host.Services.GetService<OverlayWindow>()?.Cleanup();
             _host.Services.GetService<SettingsWindow>()?.Cleanup();
+            _host.Services.GetService<HistoryWindow>()?.Cleanup();
 
             var hotkeyService = _host.Services.GetService<IGlobalHotkeyService>();
             hotkeyService?.Dispose();

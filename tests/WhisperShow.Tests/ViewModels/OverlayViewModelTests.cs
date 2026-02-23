@@ -703,6 +703,17 @@ public class OverlayViewModelTests : IDisposable
         act.Should().NotThrow();
     }
 
+    [Fact]
+    public void Dispose_UnsubscribesAudioLevelChanged()
+    {
+        var vm = CreateViewModel();
+        vm.Dispose();
+
+        // Fire the event after disposal — AudioLevel should NOT update
+        _audioService.AudioLevelChanged += Raise.Event<EventHandler<float>>(_audioService, 0.5f);
+        vm.AudioLevel.Should().Be(0f);
+    }
+
     public void Dispose()
     {
         // Cleanup if needed

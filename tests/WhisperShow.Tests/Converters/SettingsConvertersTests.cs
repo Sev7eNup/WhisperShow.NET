@@ -176,6 +176,58 @@ public class SettingsConvertersTests
         result.Should().Be(Visibility.Collapsed);
     }
 
+    // --- EmptyStringToVisibilityConverter ---
+
+    [Fact]
+    public void EmptyString_Null_ReturnsVisible()
+    {
+        var converter = new EmptyStringToVisibilityConverter();
+        var result = converter.Convert(null!, typeof(Visibility), null!, Culture);
+        result.Should().Be(Visibility.Visible);
+    }
+
+    [Fact]
+    public void EmptyString_Empty_ReturnsVisible()
+    {
+        var converter = new EmptyStringToVisibilityConverter();
+        var result = converter.Convert("", typeof(Visibility), null!, Culture);
+        result.Should().Be(Visibility.Visible);
+    }
+
+    [Fact]
+    public void EmptyString_NonEmpty_ReturnsCollapsed()
+    {
+        var converter = new EmptyStringToVisibilityConverter();
+        var result = converter.Convert("hello", typeof(Visibility), null!, Culture);
+        result.Should().Be(Visibility.Collapsed);
+    }
+
+    // --- NonEmptyStringToVisibilityConverter ---
+
+    [Fact]
+    public void NonEmptyString_Null_ReturnsCollapsed()
+    {
+        var converter = new NonEmptyStringToVisibilityConverter();
+        var result = converter.Convert(null!, typeof(Visibility), null!, Culture);
+        result.Should().Be(Visibility.Collapsed);
+    }
+
+    [Fact]
+    public void NonEmptyString_Empty_ReturnsCollapsed()
+    {
+        var converter = new NonEmptyStringToVisibilityConverter();
+        var result = converter.Convert("", typeof(Visibility), null!, Culture);
+        result.Should().Be(Visibility.Collapsed);
+    }
+
+    [Fact]
+    public void NonEmptyString_NonEmpty_ReturnsVisible()
+    {
+        var converter = new NonEmptyStringToVisibilityConverter();
+        var result = converter.Convert("hello", typeof(Visibility), null!, Culture);
+        result.Should().Be(Visibility.Visible);
+    }
+
     // --- ModelUseVisibilityConverter ---
 
     [Fact]

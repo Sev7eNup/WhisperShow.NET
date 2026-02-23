@@ -42,7 +42,7 @@ public class ModelPreloadService : IModelPreloadService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Background transcription model preload failed");
+                _logger.LogError(ex, "Background transcription model preload failed");
             }
         });
     }
@@ -69,7 +69,7 @@ public class ModelPreloadService : IModelPreloadService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Background correction model preload failed");
+                _logger.LogError(ex, "Background correction model preload failed");
             }
         });
     }

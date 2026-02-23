@@ -111,13 +111,15 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         PositionX = optionsMonitor.CurrentValue.Overlay.PositionX;
         PositionY = optionsMonitor.CurrentValue.Overlay.PositionY;
 
-        _audioService.AudioLevelChanged += (_, level) =>
-            _dispatcher.Invoke(() => AudioLevel = level);
+        _audioService.AudioLevelChanged += OnAudioLevelChanged;
 
         _optionsChangeRegistration = _optionsMonitor.OnChange(OnOptionsChanged);
 
         UpdateProviderName();
     }
+
+    private void OnAudioLevelChanged(object? sender, float level)
+        => _dispatcher.Invoke(() => AudioLevel = level);
 
     private void OnOptionsChanged(WhisperShowOptions options, string? name)
     {
@@ -415,6 +417,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        _audioService.AudioLevelChanged -= OnAudioLevelChanged;
         _autoDismissCts?.Cancel();
         _autoDismissCts?.Dispose();
         _autoDismissCts = null;

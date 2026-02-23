@@ -36,6 +36,23 @@ public class OpenAiTextCorrectionServiceTests
         result.Should().Be(rawText);
     }
 
+    [Fact]
+    public void Dispose_DoesNotThrow()
+    {
+        var service = CreateService(apiKey: "sk-test");
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var service = CreateService(apiKey: "sk-test");
+        service.Dispose();
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
+
     private static OpenAiTextCorrectionService CreateService(string? apiKey)
     {
         var options = OptionsHelper.CreateMonitor(o =>

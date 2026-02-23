@@ -19,10 +19,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>Resources\Icons\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Resource Include="Resources\Flags\*.png" />
+    <Resource Include="Resources\Icons\app.ico" />
   </ItemGroup>
 
   <ItemGroup>

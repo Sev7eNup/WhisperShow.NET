@@ -76,6 +76,24 @@ public class CapturingHotkeyTextConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+public class EmptyStringToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.IsNullOrEmpty(value as string) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public class NonEmptyStringToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.IsNullOrEmpty(value as string) ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>Show Download button when !IsDownloaded and !IsDownloading.</summary>
 public class ModelActionVisibilityConverter : IMultiValueConverter
 {

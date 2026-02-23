@@ -61,7 +61,9 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
 
         var systemPrompt = options.TextCorrection.CombinedSystemPrompt ?? TextCorrectionDefaults.CombinedAudioSystemPrompt;
         systemPrompt += _dictionaryService.BuildPromptFragment();
-        var langSuffix = string.IsNullOrEmpty(language) ? "" : $"\n[Language: {language}]";
+        var langSuffix = string.IsNullOrEmpty(language)
+            ? ""
+            : $"\n[Output language MUST be: {language}]";
 
         var chatOptions = new ChatCompletionOptions
         {
