@@ -24,8 +24,8 @@ src/
   WhisperShow.Core/          # Platform-independent core logic (net10.0)
     Configuration/            # WhisperShowOptions (strongly-typed config, IOptionsMonitor)
     Models/                   # RecordingState, TranscriptionResult, TranscriptionProvider,
-                              # WhisperModel, TextCorrectionProvider, CorrectionModelInfo,
-                              # TranscriptionHistoryEntry, UsageStats
+                              # ModelInfoBase (abstract base), WhisperModel, CorrectionModelInfo,
+                              # TextCorrectionProvider, TranscriptionHistoryEntry, UsageStats
     Services/
       Audio/                  # IAudioRecordingService, AudioRecordingService (NAudio WaveInEvent)
                               # IAudioMutingService, AudioMutingService (NAudio CoreAudioApi)
@@ -37,35 +37,54 @@ src/
                               # ICombinedTranscriptionCorrectionService, CombinedAudioTranscriptionService
                               # TextCorrectionProviderFactory (Off/Cloud/Local)
                               # IDictionaryService, DictionaryService (custom word dictionary)
+      Snippets/               # ISnippetService, SnippetService (trigger→replacement with cached regex)
       ModelManagement/        # IModelManager, ModelManager (Whisper GGML model download)
                               # ICorrectionModelManager, CorrectionModelManager (GGUF model download)
+                              # IModelPreloadService, ModelPreloadService, ModelDownloadHelper
       History/                # ITranscriptionHistoryService, TranscriptionHistoryService
       Statistics/             # IUsageStatsService, UsageStatsService
-      TextInsertion/          # ITextInsertionService (interface only)
+      TextInsertion/          # ITextInsertionService, IWindowFocusService (interfaces only)
       Hotkey/                 # IGlobalHotkeyService (interface only)
+      Configuration/          # IAutoStartService (interface only)
+      OpenAiClientFactory.cs  # Centralized OpenAI client caching (ApiKey+Endpoint keyed)
+      DebouncedSaveHelper.cs  # Reusable debounced async save utility (used by 6 services)
 
   WhisperShow.App/            # WPF application (net10.0-windows)
     App.xaml.cs               # Host builder, DI, Serilog, system tray, CUDA path discovery, model preloading
     NativeMethods.cs          # Win32 P/Invoke (SendInput, RegisterHotKey, etc.)
-    Themes/                   # SettingsDarkTheme.xaml, SettingsLightTheme.xaml
+    Themes/                   # SettingsStyles.xaml (shared), SettingsDarkTheme.xaml, SettingsLightTheme.xaml
+    Converters/               # SettingsConverters.cs (Visibility, Boolean, etc.)
     ViewModels/
       OverlayViewModel.cs     # Main state machine: Idle -> Recording -> Transcribing -> auto-insert
       SettingsViewModel.cs    # Settings UI state, inline editing, auto-save to appsettings.json
       HistoryViewModel.cs     # Transcription history list
+      ModelItemViewModelBase.cs # Abstract base for model download items
       ModelItemViewModel.cs   # Whisper model download item
       CorrectionModelItemViewModel.cs # Correction model download item
+      Settings/               # Sub-ViewModels for settings pages
+        ModelManagementViewModel.cs   # Model download management
+        StatisticsViewModel.cs        # Statistics display
+        DictionarySnippetsViewModel.cs # Dictionary and snippets management
     Views/
       OverlayWindow.xaml      # Transparent topmost overlay (WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW)
       OverlayWindow.xaml.cs   # Waveform bars, drag support, visual state management
-      SettingsWindow.xaml      # Settings window (5 pages: General, System, Models, Dictionary, Statistics)
+      SettingsWindow.xaml      # Settings window container (6 pages)
       SettingsWindow.xaml.cs   # Code-behind: hotkey capture, inline editing, theme switching
       HistoryWindow.xaml       # Transcription history window
       HistoryWindow.xaml.cs
-      SettingsPageTemplateSelector.cs # DataTemplate selector for settings pages
+      Settings/               # Per-page UserControls
+        GeneralPage.xaml       # General settings (language, mic, hotkey)
+        SystemPage.xaml        # System settings (launch at login, theme, sound)
+        ModelsPage.xaml        # Model download management
+        DictionaryPage.xaml    # Custom dictionary management
+        SnippetsPage.xaml      # Snippet trigger→replacement management
+        StatisticsPage.xaml    # Usage statistics
     Services/
       TextInsertionService.cs # Clipboard + SendInput (Ctrl+V simulation)
       GlobalHotkeyService.cs  # Win32 RegisterHotKey, WndProc hook for WM_HOTKEY
       SoundEffectService.cs   # Start/stop recording sound effects
+      AutoStartService.cs     # Windows auto-start registry management
+      WindowFocusService.cs   # SetForegroundWindow + AttachThreadInput
 
 tests/
   WhisperShow.Tests/          # xUnit + NSubstitute + FluentAssertions tests
@@ -90,6 +109,18 @@ All core services use `IOptionsMonitor<WhisperShowOptions>` (not `IOptions<T>`!)
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
 - **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/WhisperShow/custom-dictionary.json`)
 - Switched via `TextCorrectionProviderFactory` (Off/Cloud/Local)
+
+### OpenAI Client Caching (OpenAiClientFactory)
+Centralized factory that caches `OpenAIClient` instances by ApiKey+Endpoint. Used by `OpenAiTranscriptionService`, `OpenAiTextCorrectionService`, and `CombinedAudioTranscriptionService`. Provides typed accessors `GetAudioClient(model)` and `GetChatClient(model)`.
+
+### Debounced Save (DebouncedSaveHelper)
+Reusable utility for debounced async persistence. Used by 6 services: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `SettingsViewModel`, `OverlayWindow` (position saving). Manages `CancellationTokenSource` lifecycle internally, implements `IDisposable`.
+
+### Model Info Hierarchy (ModelInfoBase)
+Abstract base class shared by `WhisperModel` and `CorrectionModelInfo`. Provides `Name`, `FileName`, `SizeBytes`, `FilePath`, `IsDownloaded`, `SizeDisplay`. `CorrectionModelInfo` extends with `DownloadUrl`.
+
+### Snippet Service (SnippetService)
+Trigger→replacement text substitution applied after transcription. Uses compiled `Regex` with word boundary matching (`\b`), cached and invalidated on add/remove. Persisted to `%APPDATA%/WhisperShow/snippets.json`.
 
 ### Recording Flow (OverlayViewModel)
 1. **Idle** -> User clicks mic button or presses hotkey (Ctrl+Shift+Space)
@@ -190,6 +221,8 @@ Environment variables prefixed with `WHISPERSHOW_` also bind to config.
 - **CUDA_PATH may point to old version**: `AddCudaLibraryPaths()` works around this by scanning versioned env vars and filesystem for v13.x.
 - **WS_EX_NOACTIVATE blocks tray menu**: Temporarily remove the flag in `TrayRightMouseDown`, call `SetForegroundWindow`, restore when menu closes.
 - **IOptionsMonitor, not IOptions**: All core services must use `IOptionsMonitor<WhisperShowOptions>` for live settings.
+- **Factory methods are `virtual`**: `TranscriptionProviderFactory.GetProvider` and `TextCorrectionProviderFactory.GetProvider` must stay `virtual` — tests override them for isolation (`OverlayViewModelTests`).
+- **appsettings.json contains API key locally**: Only `appsettings.Development.json` and `appsettings.Local.json` are gitignored — the main `appsettings.json` is tracked. Always check `git diff` before staging to avoid committing secrets.
 
 ## Git Repository
 
