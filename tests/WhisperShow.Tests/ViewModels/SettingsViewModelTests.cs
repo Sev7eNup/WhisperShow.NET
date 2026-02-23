@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using WhisperShow.App.ViewModels;
+using WhisperShow.App.ViewModels.Settings;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Configuration;
@@ -75,18 +76,18 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
 
-        vm.ToggleModifiers.Should().Be("Control, Shift");
-        vm.ToggleKey.Should().Be("Space");
-        vm.PttModifiers.Should().Be("Control");
-        vm.PttKey.Should().Be("Space");
-        vm.SelectedLanguageCode.Should().Be("de");
-        vm.Provider.Should().Be(TranscriptionProvider.OpenAI);
-        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Cloud);
-        vm.AudioCompressionEnabled.Should().BeTrue();
-        vm.UseCombinedAudioModel.Should().BeFalse();
-        vm.AutoDismissSeconds.Should().Be(10);
-        vm.MaxRecordingSeconds.Should().Be(300);
-        vm.GpuAcceleration.Should().BeTrue();
+        vm.General.ToggleModifiers.Should().Be("Control, Shift");
+        vm.General.ToggleKey.Should().Be("Space");
+        vm.General.PttModifiers.Should().Be("Control");
+        vm.General.PttKey.Should().Be("Space");
+        vm.General.SelectedLanguageCode.Should().Be("de");
+        vm.Transcription.Provider.Should().Be(TranscriptionProvider.OpenAI);
+        vm.Transcription.CorrectionProvider.Should().Be(TextCorrectionProvider.Cloud);
+        vm.System.AudioCompressionEnabled.Should().BeTrue();
+        vm.Transcription.UseCombinedAudioModel.Should().BeFalse();
+        vm.System.AutoDismissSeconds.Should().Be(10);
+        vm.System.MaxRecordingSeconds.Should().Be(300);
+        vm.Transcription.GpuAcceleration.Should().BeTrue();
     }
 
     [Fact]
@@ -100,70 +101,70 @@ public class SettingsViewModelTests
     public void Constructor_SetsHotkeyDisplayText()
     {
         var vm = CreateViewModel();
-        vm.HotkeyDisplayText.Should().Contain("Toggle");
-        vm.HotkeyDisplayText.Should().Contain("PTT");
-        vm.HotkeyDisplayText.Should().Contain("Ctrl");
-        vm.HotkeyDisplayText.Should().Contain("Space");
+        vm.General.HotkeyDisplayText.Should().Contain("Toggle");
+        vm.General.HotkeyDisplayText.Should().Contain("PTT");
+        vm.General.HotkeyDisplayText.Should().Contain("Ctrl");
+        vm.General.HotkeyDisplayText.Should().Contain("Space");
     }
 
     [Fact]
     public void Constructor_SetsToggleDisplayText()
     {
         var vm = CreateViewModel();
-        vm.ToggleDisplayText.Should().Contain("start and stop");
-        vm.ToggleDisplayText.Should().Contain("Ctrl");
+        vm.General.ToggleDisplayText.Should().Contain("start and stop");
+        vm.General.ToggleDisplayText.Should().Contain("Ctrl");
     }
 
     [Fact]
     public void Constructor_SetsPttDisplayText()
     {
         var vm = CreateViewModel();
-        vm.PttDisplayText.Should().Contain("Hold");
-        vm.PttDisplayText.Should().Contain("Ctrl");
+        vm.General.PttDisplayText.Should().Contain("Hold");
+        vm.General.PttDisplayText.Should().Contain("Ctrl");
     }
 
     [Fact]
     public void Constructor_SetsLanguageDisplay()
     {
         var vm = CreateViewModel();
-        vm.SelectedLanguageDisplay.Should().Be("German");
+        vm.General.SelectedLanguageDisplay.Should().Be("German");
     }
 
     [Fact]
     public void Constructor_NullLanguage_DisplaysAutoDetect()
     {
         var vm = CreateViewModel(o => o.Language = null);
-        vm.SelectedLanguageDisplay.Should().Be("Auto-detect");
-        vm.IsAutoDetectLanguage.Should().BeTrue();
+        vm.General.SelectedLanguageDisplay.Should().Be("Auto-detect");
+        vm.General.IsAutoDetectLanguage.Should().BeTrue();
     }
 
     [Fact]
     public void Constructor_MasksApiKey()
     {
         var vm = CreateViewModel();
-        vm.OpenAiApiKeyDisplay.Should().StartWith("sk-...");
-        vm.OpenAiApiKeyDisplay.Should().EndWith("1234");
+        vm.Transcription.OpenAiApiKeyDisplay.Should().StartWith("sk-...");
+        vm.Transcription.OpenAiApiKeyDisplay.Should().EndWith("1234");
     }
 
     [Fact]
     public void Constructor_EmptyApiKey_DisplaysNotConfigured()
     {
         var vm = CreateViewModel(o => o.OpenAI.ApiKey = "");
-        vm.OpenAiApiKeyDisplay.Should().Be("Not configured");
+        vm.Transcription.OpenAiApiKeyDisplay.Should().Be("Not configured");
     }
 
     [Fact]
     public void Constructor_PopulatesToggleBadges()
     {
         var vm = CreateViewModel();
-        vm.ToggleBadges.Should().Equal("Ctrl", "Shift", "Space");
+        vm.General.ToggleBadges.Should().Equal("Ctrl", "Shift", "Space");
     }
 
     [Fact]
     public void Constructor_PopulatesPttBadges()
     {
         var vm = CreateViewModel();
-        vm.PttBadges.Should().Equal("Ctrl", "Space");
+        vm.General.PttBadges.Should().Equal("Ctrl", "Space");
     }
 
     // --- Navigation ---
@@ -190,11 +191,11 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
 
-        vm.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
 
-        vm.IsDialogOpen.Should().BeTrue();
-        vm.ActiveDialog.Should().Be("Hotkey");
-        vm.CapturingHotkey.Should().BeEmpty();
+        vm.General.IsDialogOpen.Should().BeTrue();
+        vm.General.ActiveDialog.Should().Be("Hotkey");
+        vm.General.CapturingHotkey.Should().BeEmpty();
     }
 
     [Fact]
@@ -202,10 +203,10 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
 
-        vm.OpenMicrophoneDialogCommand.Execute(null);
+        vm.General.OpenMicrophoneDialogCommand.Execute(null);
 
-        vm.IsDialogOpen.Should().BeTrue();
-        vm.ActiveDialog.Should().Be("Microphone");
+        vm.General.IsDialogOpen.Should().BeTrue();
+        vm.General.ActiveDialog.Should().Be("Microphone");
     }
 
     [Fact]
@@ -213,10 +214,10 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
 
-        vm.OpenLanguageDialogCommand.Execute(null);
+        vm.General.OpenLanguageDialogCommand.Execute(null);
 
-        vm.IsDialogOpen.Should().BeTrue();
-        vm.ActiveDialog.Should().Be("Language");
+        vm.General.IsDialogOpen.Should().BeTrue();
+        vm.General.ActiveDialog.Should().Be("Language");
     }
 
     [Fact]
@@ -224,23 +225,23 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(); // language = "de"
 
-        vm.OpenLanguageDialogCommand.Execute(null);
+        vm.General.OpenLanguageDialogCommand.Execute(null);
 
-        vm.PendingLanguageCode.Should().Be("de");
+        vm.General.PendingLanguageCode.Should().Be("de");
     }
 
     [Fact]
     public void CloseDialog_ResetsDialogState()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
-        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.StartCapturingToggleHotkeyCommand.Execute(null);
 
-        vm.CloseDialogCommand.Execute(null);
+        vm.General.CloseDialogCommand.Execute(null);
 
-        vm.IsDialogOpen.Should().BeFalse();
-        vm.ActiveDialog.Should().BeEmpty();
-        vm.CapturingHotkey.Should().BeEmpty();
+        vm.General.IsDialogOpen.Should().BeFalse();
+        vm.General.ActiveDialog.Should().BeEmpty();
+        vm.General.CapturingHotkey.Should().BeEmpty();
     }
 
     // --- Toggle Hotkey ---
@@ -249,39 +250,39 @@ public class SettingsViewModelTests
     public void StartCapturingToggleHotkey_SetsCapturingState()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
 
-        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+        vm.General.StartCapturingToggleHotkeyCommand.Execute(null);
 
-        vm.CapturingHotkey.Should().Be("Toggle");
+        vm.General.CapturingHotkey.Should().Be("Toggle");
     }
 
     [Fact]
     public void StartCapturingPttHotkey_SetsCapturingState()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
 
-        vm.StartCapturingPttHotkeyCommand.Execute(null);
+        vm.General.StartCapturingPttHotkeyCommand.Execute(null);
 
-        vm.CapturingHotkey.Should().Be("PushToTalk");
+        vm.General.CapturingHotkey.Should().Be("PushToTalk");
     }
 
     [Fact]
     public void ApplyNewHotkey_Toggle_UpdatesToggleProperties()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
-        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.StartCapturingToggleHotkeyCommand.Execute(null);
 
-        vm.ApplyNewHotkey("Alt", "F1");
+        vm.General.ApplyNewHotkey("Alt", "F1");
 
-        vm.ToggleModifiers.Should().Be("Alt");
-        vm.ToggleKey.Should().Be("F1");
-        vm.CapturingHotkey.Should().BeEmpty();
-        vm.ToggleBadges.Should().Equal("Alt", "F1");
-        vm.HotkeyDisplayText.Should().Contain("Alt");
-        vm.HotkeyDisplayText.Should().Contain("F1");
+        vm.General.ToggleModifiers.Should().Be("Alt");
+        vm.General.ToggleKey.Should().Be("F1");
+        vm.General.CapturingHotkey.Should().BeEmpty();
+        vm.General.ToggleBadges.Should().Equal("Alt", "F1");
+        vm.General.HotkeyDisplayText.Should().Contain("Alt");
+        vm.General.HotkeyDisplayText.Should().Contain("F1");
         _hotkeyService.Received(1).UpdateToggleHotkey("Alt", "F1");
     }
 
@@ -289,29 +290,29 @@ public class SettingsViewModelTests
     public void ApplyNewHotkey_Toggle_DoesNotChangePttProperties()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
-        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.StartCapturingToggleHotkeyCommand.Execute(null);
 
-        vm.ApplyNewHotkey("Alt", "F1");
+        vm.General.ApplyNewHotkey("Alt", "F1");
 
-        vm.PttModifiers.Should().Be("Control");
-        vm.PttKey.Should().Be("Space");
-        vm.PttBadges.Should().Equal("Ctrl", "Space");
+        vm.General.PttModifiers.Should().Be("Control");
+        vm.General.PttKey.Should().Be("Space");
+        vm.General.PttBadges.Should().Equal("Ctrl", "Space");
     }
 
     [Fact]
     public void ApplyNewHotkey_Ptt_UpdatesPttProperties()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
-        vm.StartCapturingPttHotkeyCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.StartCapturingPttHotkeyCommand.Execute(null);
 
-        vm.ApplyNewHotkey("Shift", "F2");
+        vm.General.ApplyNewHotkey("Shift", "F2");
 
-        vm.PttModifiers.Should().Be("Shift");
-        vm.PttKey.Should().Be("F2");
-        vm.CapturingHotkey.Should().BeEmpty();
-        vm.PttBadges.Should().Equal("Shift", "F2");
+        vm.General.PttModifiers.Should().Be("Shift");
+        vm.General.PttKey.Should().Be("F2");
+        vm.General.CapturingHotkey.Should().BeEmpty();
+        vm.General.PttBadges.Should().Equal("Shift", "F2");
         _hotkeyService.Received(1).UpdatePushToTalkHotkey("Shift", "F2");
     }
 
@@ -319,36 +320,36 @@ public class SettingsViewModelTests
     public void ApplyNewHotkey_Ptt_DoesNotChangeToggleProperties()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
-        vm.StartCapturingPttHotkeyCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.StartCapturingPttHotkeyCommand.Execute(null);
 
-        vm.ApplyNewHotkey("Shift", "F2");
+        vm.General.ApplyNewHotkey("Shift", "F2");
 
-        vm.ToggleModifiers.Should().Be("Control, Shift");
-        vm.ToggleKey.Should().Be("Space");
-        vm.ToggleBadges.Should().Equal("Ctrl", "Shift", "Space");
+        vm.General.ToggleModifiers.Should().Be("Control, Shift");
+        vm.General.ToggleKey.Should().Be("Space");
+        vm.General.ToggleBadges.Should().Equal("Ctrl", "Shift", "Space");
     }
 
     [Fact]
     public void ResetHotkeyToDefault_ResetsBothHotkeys()
     {
         var vm = CreateViewModel();
-        vm.OpenHotkeyDialogCommand.Execute(null);
+        vm.General.OpenHotkeyDialogCommand.Execute(null);
 
         // Change both hotkeys
-        vm.StartCapturingToggleHotkeyCommand.Execute(null);
-        vm.ApplyNewHotkey("Alt", "F1");
-        vm.StartCapturingPttHotkeyCommand.Execute(null);
-        vm.ApplyNewHotkey("Shift", "F2");
+        vm.General.StartCapturingToggleHotkeyCommand.Execute(null);
+        vm.General.ApplyNewHotkey("Alt", "F1");
+        vm.General.StartCapturingPttHotkeyCommand.Execute(null);
+        vm.General.ApplyNewHotkey("Shift", "F2");
 
-        vm.ResetHotkeyToDefaultCommand.Execute(null);
+        vm.General.ResetHotkeyToDefaultCommand.Execute(null);
 
-        vm.ToggleModifiers.Should().Be("Control, Shift");
-        vm.ToggleKey.Should().Be("Space");
-        vm.ToggleBadges.Should().Equal("Ctrl", "Shift", "Space");
-        vm.PttModifiers.Should().Be("Control");
-        vm.PttKey.Should().Be("Space");
-        vm.PttBadges.Should().Equal("Ctrl", "Space");
+        vm.General.ToggleModifiers.Should().Be("Control, Shift");
+        vm.General.ToggleKey.Should().Be("Space");
+        vm.General.ToggleBadges.Should().Equal("Ctrl", "Shift", "Space");
+        vm.General.PttModifiers.Should().Be("Control");
+        vm.General.PttKey.Should().Be("Space");
+        vm.General.PttBadges.Should().Equal("Ctrl", "Space");
     }
 
     // --- Microphone ---
@@ -357,12 +358,12 @@ public class SettingsViewModelTests
     public void SelectMicrophone_UpdatesIndexAndClosesDialog()
     {
         var vm = CreateViewModel();
-        vm.OpenMicrophoneDialogCommand.Execute(null);
+        vm.General.OpenMicrophoneDialogCommand.Execute(null);
 
-        vm.SelectMicrophone(1);
+        vm.General.SelectMicrophone(1);
 
-        vm.SelectedMicrophoneIndex.Should().Be(1);
-        vm.IsDialogOpen.Should().BeFalse();
+        vm.General.SelectedMicrophoneIndex.Should().Be(1);
+        vm.General.IsDialogOpen.Should().BeFalse();
     }
 
     [Fact]
@@ -370,7 +371,7 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
         // NAudio should find at least one device or the fallback entry
-        vm.AvailableMicrophones.Should().NotBeEmpty();
+        vm.General.AvailableMicrophones.Should().NotBeEmpty();
     }
 
     // --- Language ---
@@ -379,12 +380,12 @@ public class SettingsViewModelTests
     public void SelectLanguage_SetsPendingCode()
     {
         var vm = CreateViewModel();
-        vm.OpenLanguageDialogCommand.Execute(null);
+        vm.General.OpenLanguageDialogCommand.Execute(null);
 
-        vm.SelectLanguageCommand.Execute("en");
+        vm.General.SelectLanguageCommand.Execute("en");
 
-        vm.PendingLanguageCode.Should().Be("en");
-        vm.IsAutoDetectLanguage.Should().BeFalse();
+        vm.General.PendingLanguageCode.Should().Be("en");
+        vm.General.IsAutoDetectLanguage.Should().BeFalse();
     }
 
     [Fact]
@@ -392,49 +393,49 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(); // IsAutoDetectLanguage = false (language = "de")
 
-        vm.ToggleAutoDetectLanguageCommand.Execute(null);
+        vm.General.ToggleAutoDetectLanguageCommand.Execute(null);
 
-        vm.IsAutoDetectLanguage.Should().BeTrue();
-        vm.PendingLanguageCode.Should().BeNull();
+        vm.General.IsAutoDetectLanguage.Should().BeTrue();
+        vm.General.PendingLanguageCode.Should().BeNull();
     }
 
     [Fact]
     public void SaveAndCloseLanguage_AppliesSelectedLanguage()
     {
         var vm = CreateViewModel();
-        vm.OpenLanguageDialogCommand.Execute(null);
-        vm.SelectLanguageCommand.Execute("en");
+        vm.General.OpenLanguageDialogCommand.Execute(null);
+        vm.General.SelectLanguageCommand.Execute("en");
 
-        vm.SaveAndCloseLanguageCommand.Execute(null);
+        vm.General.SaveAndCloseLanguageCommand.Execute(null);
 
-        vm.SelectedLanguageCode.Should().Be("en");
-        vm.SelectedLanguageDisplay.Should().Be("English");
-        vm.IsDialogOpen.Should().BeFalse();
+        vm.General.SelectedLanguageCode.Should().Be("en");
+        vm.General.SelectedLanguageDisplay.Should().Be("English");
+        vm.General.IsDialogOpen.Should().BeFalse();
     }
 
     [Fact]
     public void SaveAndCloseLanguage_AutoDetect_SetsNull()
     {
         var vm = CreateViewModel();
-        vm.OpenLanguageDialogCommand.Execute(null);
-        vm.ToggleAutoDetectLanguageCommand.Execute(null);
+        vm.General.OpenLanguageDialogCommand.Execute(null);
+        vm.General.ToggleAutoDetectLanguageCommand.Execute(null);
 
-        vm.SaveAndCloseLanguageCommand.Execute(null);
+        vm.General.SaveAndCloseLanguageCommand.Execute(null);
 
-        vm.SelectedLanguageCode.Should().BeNull();
-        vm.SelectedLanguageDisplay.Should().Be("Auto-detect");
-        vm.IsDialogOpen.Should().BeFalse();
+        vm.General.SelectedLanguageCode.Should().BeNull();
+        vm.General.SelectedLanguageDisplay.Should().Be("Auto-detect");
+        vm.General.IsDialogOpen.Should().BeFalse();
     }
 
     [Fact]
     public void AvailableLanguages_ContainsExpectedLanguages()
     {
         var vm = CreateViewModel();
-        vm.AvailableLanguages.Should().HaveCount(20);
-        vm.AvailableLanguages.Should().Contain(l => l.Code == "de" && l.DisplayName == "German");
-        vm.AvailableLanguages.Should().Contain(l => l.Code == "en" && l.DisplayName == "English");
-        vm.AvailableLanguages.Should().Contain(l => l.Code == "fr" && l.DisplayName == "French");
-        vm.AvailableLanguages.Should().Contain(l => l.Code == "ja" && l.DisplayName == "Japanese");
+        vm.General.AvailableLanguages.Should().HaveCount(20);
+        vm.General.AvailableLanguages.Should().Contain(l => l.Code == "de" && l.DisplayName == "German");
+        vm.General.AvailableLanguages.Should().Contain(l => l.Code == "en" && l.DisplayName == "English");
+        vm.General.AvailableLanguages.Should().Contain(l => l.Code == "fr" && l.DisplayName == "French");
+        vm.General.AvailableLanguages.Should().Contain(l => l.Code == "ja" && l.DisplayName == "Japanese");
     }
 
     // --- System: App Settings ---
@@ -449,9 +450,9 @@ public class SettingsViewModelTests
             o.Overlay.ShowInTaskbar = true;
         });
 
-        vm.LaunchAtLogin.Should().BeTrue();
-        vm.OverlayAlwaysVisible.Should().BeFalse();
-        vm.ShowInTaskbar.Should().BeTrue();
+        vm.System.LaunchAtLogin.Should().BeTrue();
+        vm.System.OverlayAlwaysVisible.Should().BeFalse();
+        vm.System.ShowInTaskbar.Should().BeTrue();
     }
 
     [Fact]
@@ -463,8 +464,8 @@ public class SettingsViewModelTests
             o.Audio.MuteWhileDictating = false;
         });
 
-        vm.SoundEffectsEnabled.Should().BeFalse();
-        vm.MuteWhileDictating.Should().BeFalse();
+        vm.System.SoundEffectsEnabled.Should().BeFalse();
+        vm.System.MuteWhileDictating.Should().BeFalse();
     }
 
     [Fact]
@@ -472,14 +473,13 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.Overlay.AlwaysVisible = true);
 
-        // Simulate ToggleButton: binding flips, then command fires
-        vm.OverlayAlwaysVisible = false;
-        vm.ToggleOverlayAlwaysVisibleCommand.Execute(null);
-        vm.OverlayAlwaysVisible.Should().BeFalse();
+        vm.System.OverlayAlwaysVisible = false;
+        vm.System.ToggleOverlayAlwaysVisibleCommand.Execute(null);
+        vm.System.OverlayAlwaysVisible.Should().BeFalse();
 
-        vm.OverlayAlwaysVisible = true;
-        vm.ToggleOverlayAlwaysVisibleCommand.Execute(null);
-        vm.OverlayAlwaysVisible.Should().BeTrue();
+        vm.System.OverlayAlwaysVisible = true;
+        vm.System.ToggleOverlayAlwaysVisibleCommand.Execute(null);
+        vm.System.OverlayAlwaysVisible.Should().BeTrue();
     }
 
     [Fact]
@@ -487,13 +487,13 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.Overlay.ShowInTaskbar = false);
 
-        vm.ShowInTaskbar = true;
-        vm.ToggleShowInTaskbarCommand.Execute(null);
-        vm.ShowInTaskbar.Should().BeTrue();
+        vm.System.ShowInTaskbar = true;
+        vm.System.ToggleShowInTaskbarCommand.Execute(null);
+        vm.System.ShowInTaskbar.Should().BeTrue();
 
-        vm.ShowInTaskbar = false;
-        vm.ToggleShowInTaskbarCommand.Execute(null);
-        vm.ShowInTaskbar.Should().BeFalse();
+        vm.System.ShowInTaskbar = false;
+        vm.System.ToggleShowInTaskbarCommand.Execute(null);
+        vm.System.ShowInTaskbar.Should().BeFalse();
     }
 
     [Fact]
@@ -501,13 +501,13 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.App.SoundEffects = true);
 
-        vm.SoundEffectsEnabled = false;
-        vm.ToggleSoundEffectsCommand.Execute(null);
-        vm.SoundEffectsEnabled.Should().BeFalse();
+        vm.System.SoundEffectsEnabled = false;
+        vm.System.ToggleSoundEffectsCommand.Execute(null);
+        vm.System.SoundEffectsEnabled.Should().BeFalse();
 
-        vm.SoundEffectsEnabled = true;
-        vm.ToggleSoundEffectsCommand.Execute(null);
-        vm.SoundEffectsEnabled.Should().BeTrue();
+        vm.System.SoundEffectsEnabled = true;
+        vm.System.ToggleSoundEffectsCommand.Execute(null);
+        vm.System.SoundEffectsEnabled.Should().BeTrue();
     }
 
     [Fact]
@@ -515,13 +515,13 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.Audio.MuteWhileDictating = true);
 
-        vm.MuteWhileDictating = false;
-        vm.ToggleMuteWhileDictatingCommand.Execute(null);
-        vm.MuteWhileDictating.Should().BeFalse();
+        vm.System.MuteWhileDictating = false;
+        vm.System.ToggleMuteWhileDictatingCommand.Execute(null);
+        vm.System.MuteWhileDictating.Should().BeFalse();
 
-        vm.MuteWhileDictating = true;
-        vm.ToggleMuteWhileDictatingCommand.Execute(null);
-        vm.MuteWhileDictating.Should().BeTrue();
+        vm.System.MuteWhileDictating = true;
+        vm.System.ToggleMuteWhileDictatingCommand.Execute(null);
+        vm.System.MuteWhileDictating.Should().BeTrue();
     }
 
     // --- System: Transcription Settings ---
@@ -531,35 +531,35 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
 
-        vm.SelectCorrectionProviderCommand.Execute("Cloud");
-        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Cloud);
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("Cloud");
+        vm.Transcription.CorrectionProvider.Should().Be(TextCorrectionProvider.Cloud);
 
-        vm.SelectCorrectionProviderCommand.Execute("Off");
-        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Off);
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("Off");
+        vm.Transcription.CorrectionProvider.Should().Be(TextCorrectionProvider.Off);
     }
 
     [Fact]
     public void ApplyAutoDismiss_UpdatesValue()
     {
         var vm = CreateViewModel();
-        vm.StartEditingAutoDismissCommand.Execute(null);
+        vm.System.StartEditingAutoDismissCommand.Execute(null);
 
-        vm.ApplyAutoDismiss(20);
+        vm.System.ApplyAutoDismiss(20);
 
-        vm.AutoDismissSeconds.Should().Be(20);
-        vm.IsEditingAutoDismiss.Should().BeFalse();
+        vm.System.AutoDismissSeconds.Should().Be(20);
+        vm.System.IsEditingAutoDismiss.Should().BeFalse();
     }
 
     [Fact]
     public void ApplyMaxRecording_UpdatesValue()
     {
         var vm = CreateViewModel();
-        vm.StartEditingMaxRecordingCommand.Execute(null);
+        vm.System.StartEditingMaxRecordingCommand.Execute(null);
 
-        vm.ApplyMaxRecording(600);
+        vm.System.ApplyMaxRecording(600);
 
-        vm.MaxRecordingSeconds.Should().Be(600);
-        vm.IsEditingMaxRecording.Should().BeFalse();
+        vm.System.MaxRecordingSeconds.Should().Be(600);
+        vm.System.IsEditingMaxRecording.Should().BeFalse();
     }
 
     // --- Transcription Settings ---
@@ -569,45 +569,45 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
 
-        vm.ApplyProvider(TranscriptionProvider.Local);
+        vm.Transcription.ApplyProvider(TranscriptionProvider.Local);
 
-        vm.Provider.Should().Be(TranscriptionProvider.Local);
-        vm.IsEditingProvider.Should().BeFalse();
+        vm.Transcription.Provider.Should().Be(TranscriptionProvider.Local);
+        vm.Transcription.IsEditingProvider.Should().BeFalse();
     }
 
     [Fact]
     public void ApplyApiKey_UpdatesDisplayAndClearsFlag()
     {
         var vm = CreateViewModel();
-        vm.StartEditingApiKeyCommand.Execute(null);
+        vm.Transcription.StartEditingApiKeyCommand.Execute(null);
 
-        vm.ApplyApiKey("sk-new-key-abcd");
+        vm.Transcription.ApplyApiKey("sk-new-key-abcd");
 
-        vm.OpenAiApiKey.Should().Be("sk-new-key-abcd");
-        vm.OpenAiApiKeyDisplay.Should().EndWith("abcd");
-        vm.IsEditingApiKey.Should().BeFalse();
+        vm.Transcription.OpenAiApiKey.Should().Be("sk-new-key-abcd");
+        vm.Transcription.OpenAiApiKeyDisplay.Should().EndWith("abcd");
+        vm.Transcription.IsEditingApiKey.Should().BeFalse();
     }
 
     [Fact]
     public void ApplyModel_UpdatesValue()
     {
         var vm = CreateViewModel();
-        vm.StartEditingModelCommand.Execute(null);
+        vm.Transcription.StartEditingModelCommand.Execute(null);
 
-        vm.ApplyModel("gpt-4o-mini-transcribe");
+        vm.Transcription.ApplyModel("gpt-4o-mini-transcribe");
 
-        vm.TranscriptionModel.Should().Be("gpt-4o-mini-transcribe");
-        vm.IsEditingModel.Should().BeFalse();
+        vm.Transcription.TranscriptionModel.Should().Be("gpt-4o-mini-transcribe");
+        vm.Transcription.IsEditingModel.Should().BeFalse();
     }
 
     [Fact]
     public void ToggleGpuAcceleration_FlipsValue()
     {
         var vm = CreateViewModel(o => o.Local.GpuAcceleration = true);
-        vm.GpuAcceleration.Should().BeTrue();
+        vm.Transcription.GpuAcceleration.Should().BeTrue();
 
-        vm.ToggleGpuAccelerationCommand.Execute(null);
-        vm.GpuAcceleration.Should().BeFalse();
+        vm.Transcription.ToggleGpuAccelerationCommand.Execute(null);
+        vm.Transcription.GpuAcceleration.Should().BeFalse();
     }
 
     // --- Audio Compression ---
@@ -616,7 +616,7 @@ public class SettingsViewModelTests
     public void Constructor_LoadsAudioCompressionEnabled()
     {
         var vm = CreateViewModel(o => o.Audio.CompressBeforeUpload = true);
-        vm.AudioCompressionEnabled.Should().BeTrue();
+        vm.System.AudioCompressionEnabled.Should().BeTrue();
     }
 
     [Fact]
@@ -624,13 +624,13 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.Audio.CompressBeforeUpload = true);
 
-        vm.AudioCompressionEnabled = false;
-        vm.ToggleAudioCompressionCommand.Execute(null);
-        vm.AudioCompressionEnabled.Should().BeFalse();
+        vm.System.AudioCompressionEnabled = false;
+        vm.System.ToggleAudioCompressionCommand.Execute(null);
+        vm.System.AudioCompressionEnabled.Should().BeFalse();
 
-        vm.AudioCompressionEnabled = true;
-        vm.ToggleAudioCompressionCommand.Execute(null);
-        vm.AudioCompressionEnabled.Should().BeTrue();
+        vm.System.AudioCompressionEnabled = true;
+        vm.System.ToggleAudioCompressionCommand.Execute(null);
+        vm.System.AudioCompressionEnabled.Should().BeTrue();
     }
 
     // --- Combined Audio Model ---
@@ -639,7 +639,7 @@ public class SettingsViewModelTests
     public void Constructor_LoadsUseCombinedAudioModel()
     {
         var vm = CreateViewModel(o => o.TextCorrection.UseCombinedAudioModel = true);
-        vm.UseCombinedAudioModel.Should().BeTrue();
+        vm.Transcription.UseCombinedAudioModel.Should().BeTrue();
     }
 
     [Fact]
@@ -647,40 +647,40 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.TextCorrection.UseCombinedAudioModel = false);
 
-        vm.UseCombinedAudioModel = true;
-        vm.ToggleCombinedAudioModelCommand.Execute(null);
-        vm.UseCombinedAudioModel.Should().BeTrue();
+        vm.Transcription.UseCombinedAudioModel = true;
+        vm.Transcription.ToggleCombinedAudioModelCommand.Execute(null);
+        vm.Transcription.UseCombinedAudioModel.Should().BeTrue();
 
-        vm.UseCombinedAudioModel = false;
-        vm.ToggleCombinedAudioModelCommand.Execute(null);
-        vm.UseCombinedAudioModel.Should().BeFalse();
+        vm.Transcription.UseCombinedAudioModel = false;
+        vm.Transcription.ToggleCombinedAudioModelCommand.Execute(null);
+        vm.Transcription.UseCombinedAudioModel.Should().BeFalse();
     }
 
     [Fact]
     public void Constructor_LoadsCombinedAudioModel()
     {
         var vm = CreateViewModel(o => o.TextCorrection.CombinedAudioModel = "gpt-4o-audio-preview");
-        vm.CombinedAudioModel.Should().Be("gpt-4o-audio-preview");
+        vm.Transcription.CombinedAudioModel.Should().Be("gpt-4o-audio-preview");
     }
 
     [Fact]
     public void Constructor_LoadsDefaultCombinedAudioModel()
     {
         var vm = CreateViewModel();
-        vm.CombinedAudioModel.Should().Be("gpt-4o-mini-audio-preview");
+        vm.Transcription.CombinedAudioModel.Should().Be("gpt-4o-mini-audio-preview");
     }
 
     [Fact]
     public void ApplyCombinedAudioModel_UpdatesValue()
     {
         var vm = CreateViewModel();
-        vm.StartEditingCombinedAudioModelCommand.Execute(null);
-        vm.IsEditingCombinedAudioModel.Should().BeTrue();
+        vm.Transcription.StartEditingCombinedAudioModelCommand.Execute(null);
+        vm.Transcription.IsEditingCombinedAudioModel.Should().BeTrue();
 
-        vm.ApplyCombinedAudioModel("gpt-4o-audio-preview");
+        vm.Transcription.ApplyCombinedAudioModel("gpt-4o-audio-preview");
 
-        vm.CombinedAudioModel.Should().Be("gpt-4o-audio-preview");
-        vm.IsEditingCombinedAudioModel.Should().BeFalse();
+        vm.Transcription.CombinedAudioModel.Should().Be("gpt-4o-audio-preview");
+        vm.Transcription.IsEditingCombinedAudioModel.Should().BeFalse();
     }
 
     // --- Version ---
@@ -699,7 +699,7 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.Local.ModelName = "ggml-small.bin");
 
-        vm.ApplyProvider(TranscriptionProvider.Local);
+        vm.Transcription.ApplyProvider(TranscriptionProvider.Local);
 
         _preloadService.Received(1).PreloadTranscriptionModel("ggml-small.bin");
     }
@@ -709,7 +709,7 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.Provider = TranscriptionProvider.Local);
 
-        vm.ApplyProvider(TranscriptionProvider.OpenAI);
+        vm.Transcription.ApplyProvider(TranscriptionProvider.OpenAI);
 
         _preloadService.DidNotReceive().PreloadTranscriptionModel(Arg.Any<string?>());
     }
@@ -723,7 +723,7 @@ public class SettingsViewModelTests
             o.TextCorrection.LocalModelName = "gemma-2b.gguf";
         });
 
-        vm.SelectCorrectionProviderCommand.Execute("Local");
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("Local");
 
         _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
     }
@@ -733,7 +733,7 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
 
-        vm.SelectCorrectionProviderCommand.Execute("Cloud");
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("Cloud");
 
         _preloadService.DidNotReceive().PreloadCorrectionModel(Arg.Any<string?>());
     }
@@ -746,7 +746,7 @@ public class SettingsViewModelTests
         var item = new ModelItemViewModel(model, Whisper.net.Ggml.GgmlType.Base);
         item.IsDownloaded = true;
 
-        vm.Models.ActivateModelCommand.Execute(item);
+        vm.Transcription.Models.ActivateModelCommand.Execute(item);
 
         _preloadService.Received(1).PreloadTranscriptionModel("ggml-base.bin");
     }
@@ -762,7 +762,7 @@ public class SettingsViewModelTests
         var item = new CorrectionModelItemViewModel(model);
         item.IsDownloaded = true;
 
-        vm.Models.ActivateCorrectionModelCommand.Execute(item);
+        vm.Transcription.Models.ActivateCorrectionModelCommand.Execute(item);
 
         _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
     }
@@ -774,11 +774,11 @@ public class SettingsViewModelTests
     {
         var vm = CreateViewModel();
 
-        var act = () => vm.StopMicTest();
+        var act = () => vm.General.StopMicTest();
 
         act.Should().NotThrow();
-        vm.IsMicTesting.Should().BeFalse();
-        vm.MicTestLevel.Should().Be(0);
+        vm.General.IsMicTesting.Should().BeFalse();
+        vm.General.MicTestLevel.Should().Be(0);
     }
 
     [Fact]
@@ -787,12 +787,12 @@ public class SettingsViewModelTests
         var vm = CreateViewModel();
 
         // Directly set state to simulate running test (avoids needing real audio device)
-        vm.IsMicTesting = true;
-        vm.MicTestLevel = 0.5f;
+        vm.General.IsMicTesting = true;
+        vm.General.MicTestLevel = 0.5f;
 
-        vm.StopMicTest();
+        vm.General.StopMicTest();
 
-        vm.IsMicTesting.Should().BeFalse();
-        vm.MicTestLevel.Should().Be(0);
+        vm.General.IsMicTesting.Should().BeFalse();
+        vm.General.MicTestLevel.Should().Be(0);
     }
 }

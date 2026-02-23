@@ -1,7 +1,7 @@
 <UserControl x:Class="WhisperShow.App.Views.Settings.SystemPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel>
+    <StackPanel DataContext="{Binding System}">
         <TextBlock Text="System" Style="{StaticResource PageTitleStyle}"/>
 
         <!-- ===== App settings group ===== -->

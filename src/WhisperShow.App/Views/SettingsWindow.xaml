@@ -136,7 +136,7 @@
             </Grid>
 
             <!-- ==================== DIALOG OVERLAY ==================== -->
-            <Grid x:Name="DialogOverlay"
+            <Grid x:Name="DialogOverlay" DataContext="{Binding General}"
                   Visibility="{Binding IsDialogOpen, Converter={StaticResource BoolToVisibility}}">
                 <!-- Dim background -->
                 <Border Background="{DynamicResource OverlayBrush}" MouseLeftButtonDown="DialogOverlay_Click"/>

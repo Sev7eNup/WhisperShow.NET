@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using WhisperShow.App.ViewModels;
-using WhisperShow.Core.Models;
+using WhisperShow.App.ViewModels.Settings;
 
 namespace WhisperShow.App.Views;
 
@@ -19,11 +19,12 @@ public partial class SettingsWindow : Window
         DataContext = viewModel;
 
         ClipBorder.SizeChanged += OnClipBorderSizeChanged;
-        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.General.PropertyChanged += OnGeneralPropertyChanged;
+        _viewModel.System.PropertyChanged += OnSystemPropertyChanged;
         IsVisibleChanged += OnIsVisibleChanged;
 
         // Apply initial theme
-        ApplyTheme(_viewModel.IsDarkMode);
+        ApplyTheme(_viewModel.System.IsDarkMode);
     }
 
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
@@ -34,13 +35,14 @@ public partial class SettingsWindow : Window
 
     private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (!IsVisible) _viewModel.StopMicTest();
+        if (!IsVisible) _viewModel.General.StopMicTest();
     }
 
     public void Cleanup()
     {
         ClipBorder.SizeChanged -= OnClipBorderSizeChanged;
-        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _viewModel.General.PropertyChanged -= OnGeneralPropertyChanged;
+        _viewModel.System.PropertyChanged -= OnSystemPropertyChanged;
         IsVisibleChanged -= OnIsVisibleChanged;
     }
 
@@ -61,7 +63,7 @@ public partial class SettingsWindow : Window
         Hide();
     }
 
-    // --- Dialog highlight management ---
+    // --- Theme management ---
 
     private void ApplyTheme(bool isDark)
     {
@@ -72,7 +74,6 @@ public partial class SettingsWindow : Window
         var themeUri = new Uri(themePath, UriKind.Relative);
         var themeDict = new ResourceDictionary { Source = themeUri };
 
-        // Replace the first merged dictionary (the theme one)
         var merged = Resources.MergedDictionaries;
         if (merged.Count > 0)
             merged[0] = themeDict;
@@ -80,27 +81,32 @@ public partial class SettingsWindow : Window
             merged.Insert(0, themeDict);
     }
 
-    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnSystemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SettingsViewModel.IsDarkMode))
+        if (e.PropertyName == nameof(SystemSettingsViewModel.IsDarkMode))
         {
-            Dispatcher.Invoke(() => ApplyTheme(_viewModel.IsDarkMode));
+            Dispatcher.Invoke(() => ApplyTheme(_viewModel.System.IsDarkMode));
         }
+    }
 
-        if (e.PropertyName is nameof(SettingsViewModel.ActiveDialog) or nameof(SettingsViewModel.IsDialogOpen))
+    // --- Dialog highlight management ---
+
+    private void OnGeneralPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(GeneralSettingsViewModel.ActiveDialog) or nameof(GeneralSettingsViewModel.IsDialogOpen))
         {
-            if (_viewModel.IsDialogOpen)
+            if (_viewModel.General.IsDialogOpen)
             {
-                if (_viewModel.ActiveDialog == "Microphone")
+                if (_viewModel.General.ActiveDialog == "Microphone")
                     Dispatcher.BeginInvoke(UpdateMicrophoneHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
-                else if (_viewModel.ActiveDialog == "Language")
+                else if (_viewModel.General.ActiveDialog == "Language")
                     Dispatcher.BeginInvoke(UpdateLanguageHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
             }
         }
 
-        if (e.PropertyName is nameof(SettingsViewModel.PendingLanguageCode) or nameof(SettingsViewModel.IsAutoDetectLanguage))
+        if (e.PropertyName is nameof(GeneralSettingsViewModel.PendingLanguageCode) or nameof(GeneralSettingsViewModel.IsAutoDetectLanguage))
         {
-            if (_viewModel.IsDialogOpen && _viewModel.ActiveDialog == "Language")
+            if (_viewModel.General.IsDialogOpen && _viewModel.General.ActiveDialog == "Language")
                 UpdateLanguageHighlight();
         }
     }
@@ -115,7 +121,7 @@ public partial class SettingsWindow : Window
             if (VisualTreeHelper.GetChildrenCount(container) == 0) continue;
             if (VisualTreeHelper.GetChild(container, 0) is not Border border) continue;
             var mic = (MicrophoneInfo)MicrophoneList.Items[i]!;
-            border.BorderBrush = mic.DeviceIndex == _viewModel.SelectedMicrophoneIndex
+            border.BorderBrush = mic.DeviceIndex == _viewModel.General.SelectedMicrophoneIndex
                 ? selectedBrush
                 : Brushes.Transparent;
         }
@@ -131,7 +137,7 @@ public partial class SettingsWindow : Window
             if (VisualTreeHelper.GetChildrenCount(container) == 0) continue;
             if (VisualTreeHelper.GetChild(container, 0) is not Border border) continue;
             var lang = (LanguageInfo)LanguageList.Items[i]!;
-            border.BorderBrush = (!_viewModel.IsAutoDetectLanguage && lang.Code == _viewModel.PendingLanguageCode)
+            border.BorderBrush = (!_viewModel.General.IsAutoDetectLanguage && lang.Code == _viewModel.General.PendingLanguageCode)
                 ? selectedBrush
                 : Brushes.Transparent;
         }
@@ -141,7 +147,7 @@ public partial class SettingsWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (string.IsNullOrEmpty(_viewModel.CapturingHotkey)) return;
+        if (string.IsNullOrEmpty(_viewModel.General.CapturingHotkey)) return;
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
 
@@ -153,7 +159,7 @@ public partial class SettingsWindow : Window
         // Escape cancels
         if (key == Key.Escape)
         {
-            _viewModel.CapturingHotkey = "";
+            _viewModel.General.CapturingHotkey = "";
             e.Handled = true;
             return;
         }
@@ -168,7 +174,7 @@ public partial class SettingsWindow : Window
         // Require at least one modifier
         if (modList.Count == 0) return;
 
-        _viewModel.ApplyNewHotkey(string.Join(", ", modList), key.ToString());
+        _viewModel.General.ApplyNewHotkey(string.Join(", ", modList), key.ToString());
         e.Handled = true;
     }
 
@@ -176,28 +182,28 @@ public partial class SettingsWindow : Window
 
     private void DialogOverlay_Click(object sender, MouseButtonEventArgs e)
     {
-        _viewModel.CloseDialogCommand.Execute(null);
+        _viewModel.General.CloseDialogCommand.Execute(null);
     }
 
     private void RebindToggle_Click(object sender, MouseButtonEventArgs e)
     {
-        _viewModel.StartCapturingToggleHotkeyCommand.Execute(null);
+        _viewModel.General.StartCapturingToggleHotkeyCommand.Execute(null);
     }
 
     private void RebindPtt_Click(object sender, MouseButtonEventArgs e)
     {
-        _viewModel.StartCapturingPttHotkeyCommand.Execute(null);
+        _viewModel.General.StartCapturingPttHotkeyCommand.Execute(null);
     }
 
     private void MicrophoneItem_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border { DataContext: MicrophoneInfo mic })
-            _viewModel.SelectMicrophone(mic.DeviceIndex);
+            _viewModel.General.SelectMicrophone(mic.DeviceIndex);
     }
 
     private void LanguageCard_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border border && border.Tag is string code)
-            _viewModel.SelectLanguageCommand.Execute(code);
+            _viewModel.General.SelectLanguageCommand.Execute(code);
     }
 }

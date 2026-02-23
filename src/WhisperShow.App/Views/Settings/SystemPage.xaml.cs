@@ -1,6 +1,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using WhisperShow.App.ViewModels;
+using WhisperShow.App.ViewModels.Settings;
 
 namespace WhisperShow.App.Views.Settings;
 
@@ -11,7 +12,8 @@ public partial class SystemPage : UserControl
         InitializeComponent();
     }
 
-    private SettingsViewModel ViewModel => (SettingsViewModel)DataContext;
+    private SettingsViewModel ParentVM => (SettingsViewModel)DataContext;
+    private SystemSettingsViewModel ViewModel => ParentVM.System;
 
     private void AutoDismissTextBox_KeyDown(object sender, KeyEventArgs e)
     {
