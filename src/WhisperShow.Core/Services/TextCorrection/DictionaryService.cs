@@ -9,6 +9,7 @@ public class DictionaryService : IDictionaryService
     private readonly string _filePath;
     private readonly List<string> _entries = [];
     private readonly Lock _lock = new();
+    private readonly DebouncedSaveHelper _saveHelper;
     private bool _loaded;
 
     public DictionaryService(ILogger<DictionaryService> logger)
@@ -17,6 +18,7 @@ public class DictionaryService : IDictionaryService
         _filePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "WhisperShow", "custom-dictionary.json");
+        _saveHelper = new DebouncedSaveHelper(SaveAsync, logger, 300);
     }
 
     public IReadOnlyList<string> GetEntries()
@@ -37,7 +39,7 @@ public class DictionaryService : IDictionaryService
             _entries.Add(word);
         }
 
-        _ = SaveAsync();
+        _saveHelper.Schedule();
     }
 
     public void RemoveEntry(string word)
@@ -48,7 +50,7 @@ public class DictionaryService : IDictionaryService
             _entries.RemoveAll(e => e.Equals(word, StringComparison.OrdinalIgnoreCase));
         }
 
-        _ = SaveAsync();
+        _saveHelper.Schedule();
     }
 
     public string BuildPromptFragment()

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using WhisperShow.Core.Services;
 using WhisperShow.Core.Services.Audio;
 using WhisperShow.Core.Services.Transcription;
 using WhisperShow.Tests.TestHelpers;
@@ -60,6 +61,7 @@ public class OpenAiTranscriptionServiceTests
         var options = OptionsHelper.CreateMonitor(o => o.OpenAI.ApiKey = apiKey);
         return new OpenAiTranscriptionService(
             NullLogger<OpenAiTranscriptionService>.Instance, options,
-            Substitute.For<IAudioCompressor>());
+            Substitute.For<IAudioCompressor>(),
+            new OpenAiClientFactory(options));
     }
 }

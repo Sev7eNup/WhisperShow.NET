@@ -13,8 +13,10 @@ public class TextCorrectionProviderFactory
 
     public virtual ITextCorrectionService? GetProvider(TextCorrectionProvider provider)
     {
+        if (provider == TextCorrectionProvider.Off) return null;
+
         return _providerMap.TryGetValue(provider, out var service)
             ? service
-            : null;
+            : throw new ArgumentOutOfRangeException(nameof(provider), provider, "Unknown text correction provider");
     }
 }

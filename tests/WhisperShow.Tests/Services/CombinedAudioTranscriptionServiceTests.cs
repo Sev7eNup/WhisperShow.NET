@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using WhisperShow.Core.Services;
 using WhisperShow.Core.Services.Audio;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Tests.TestHelpers;
@@ -26,7 +27,8 @@ public class CombinedAudioTranscriptionServiceTests
             NullLogger<CombinedAudioTranscriptionService>.Instance,
             options,
             _audioCompressor,
-            Substitute.For<IDictionaryService>());
+            Substitute.For<IDictionaryService>(),
+            new OpenAiClientFactory(options));
     }
 
     [Fact]

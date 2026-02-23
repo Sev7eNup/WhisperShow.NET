@@ -10,8 +10,8 @@ public class UsageStatsService : IUsageStatsService
     private readonly string _filePath;
     private UsageStats _stats = new();
     private readonly Lock _lock = new();
+    private readonly DebouncedSaveHelper _saveHelper;
     private bool _loaded;
-    private CancellationTokenSource? _saveCts;
 
     public UsageStatsService(ILogger<UsageStatsService> logger)
     {
@@ -19,6 +19,7 @@ public class UsageStatsService : IUsageStatsService
         _filePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "WhisperShow", "usage-stats.json");
+        _saveHelper = new DebouncedSaveHelper(SaveAsync, logger);
     }
 
     public UsageStats GetStats()
@@ -104,21 +105,7 @@ public class UsageStatsService : IUsageStatsService
         }
     }
 
-    private void ScheduleSave()
-    {
-        _saveCts?.Cancel();
-        _saveCts = new CancellationTokenSource();
-        var token = _saveCts.Token;
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(500, token).ConfigureAwait(false);
-                await SaveAsync().ConfigureAwait(false);
-            }
-            catch (TaskCanceledException) { }
-        }, token);
-    }
+    private void ScheduleSave() => _saveHelper.Schedule();
 
     private void EnsureLoaded()
     {

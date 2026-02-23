@@ -12,8 +12,8 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
     private readonly int _maxEntries;
     private readonly string _filePath;
     private readonly Lock _lock = new();
+    private readonly DebouncedSaveHelper _saveHelper;
     private List<TranscriptionHistoryEntry>? _entries;
-    private CancellationTokenSource? _saveCts;
 
     public TranscriptionHistoryService(
         ILogger<TranscriptionHistoryService> logger,
@@ -24,6 +24,7 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
         _filePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "WhisperShow", "transcription-history.json");
+        _saveHelper = new DebouncedSaveHelper(SaveAsync, logger);
     }
 
     public IReadOnlyList<TranscriptionHistoryEntry> GetEntries()
@@ -113,20 +114,5 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
             $"{nameof(TranscriptionHistoryService)} not initialized. Call LoadAsync() at startup.");
     }
 
-    private void ScheduleSave()
-    {
-        _saveCts?.Cancel();
-        _saveCts = new CancellationTokenSource();
-        var token = _saveCts.Token;
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(500, token).ConfigureAwait(false);
-                await SaveAsync().ConfigureAwait(false);
-            }
-            catch (TaskCanceledException) { }
-        }, token);
-    }
+    private void ScheduleSave() => _saveHelper.Schedule();
 }

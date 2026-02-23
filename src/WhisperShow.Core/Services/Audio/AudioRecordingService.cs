@@ -8,7 +8,7 @@ namespace WhisperShow.Core.Services.Audio;
 public class AudioRecordingService : IAudioRecordingService
 {
     private readonly ILogger<AudioRecordingService> _logger;
-    private readonly AudioOptions _audioOptions;
+    private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private WaveInEvent? _waveIn;
     private MemoryStream? _memoryStream;
     private WaveFileWriter? _waveFileWriter;
@@ -19,10 +19,10 @@ public class AudioRecordingService : IAudioRecordingService
 
     public AudioRecordingService(
         ILogger<AudioRecordingService> logger,
-        IOptions<WhisperShowOptions> options)
+        IOptionsMonitor<WhisperShowOptions> optionsMonitor)
     {
         _logger = logger;
-        _audioOptions = options.Value.Audio;
+        _optionsMonitor = optionsMonitor;
     }
 
     public Task StartRecordingAsync()
@@ -30,7 +30,8 @@ public class AudioRecordingService : IAudioRecordingService
         if (IsRecording)
             throw new InvalidOperationException("Already recording.");
 
-        var waveFormat = new WaveFormat(_audioOptions.SampleRate, 16, 1);
+        var audioOptions = _optionsMonitor.CurrentValue.Audio;
+        var waveFormat = new WaveFormat(audioOptions.SampleRate, 16, 1);
 
         _memoryStream = new MemoryStream();
         _waveFileWriter = new WaveFileWriter(_memoryStream, waveFormat);
@@ -39,7 +40,7 @@ public class AudioRecordingService : IAudioRecordingService
         {
             WaveFormat = waveFormat,
             BufferMilliseconds = 50,
-            DeviceNumber = _audioOptions.DeviceIndex
+            DeviceNumber = audioOptions.DeviceIndex
         };
 
         _waveIn.DataAvailable += OnDataAvailable;
@@ -47,7 +48,7 @@ public class AudioRecordingService : IAudioRecordingService
         _waveIn.StartRecording();
 
         _logger.LogInformation("Recording started (Device: {Device}, SampleRate: {SampleRate}Hz)",
-            _audioOptions.DeviceIndex, _audioOptions.SampleRate);
+            audioOptions.DeviceIndex, audioOptions.SampleRate);
 
         return Task.CompletedTask;
     }

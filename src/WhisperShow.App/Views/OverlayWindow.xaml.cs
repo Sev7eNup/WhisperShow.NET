@@ -30,7 +30,7 @@ public partial class OverlayWindow : Window
     private const int WaveformBarCount = 16;
     private const int ViewModelWaveformCount = 20;
     private readonly Rectangle[] _waveformBars = new Rectangle[WaveformBarCount];
-    private CancellationTokenSource? _saveCts;
+    private WhisperShow.Core.Services.DebouncedSaveHelper? _positionSaveHelper;
 
     // Cached brushes for state changes
     private Brush? _idleGradient;
@@ -117,9 +117,12 @@ public partial class OverlayWindow : Window
         SizeToContent = SizeToContent.Manual;
         SizeToContent = SizeToContent.WidthAndHeight;
 
-        // Position: restore saved or default to bottom-center
-        RestorePosition();
-        _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
+        // Position: defer to after layout pass so ActualWidth/Height are computed
+        Dispatcher.BeginInvoke(() =>
+        {
+            RestorePosition();
+            _logger.LogInformation("Overlay positioned at ({Left}, {Top})", Left, Top);
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private void SetupIdleHoverEffect()
@@ -463,36 +466,28 @@ public partial class OverlayWindow : Window
 
     private void SavePositionAsync()
     {
-        _saveCts?.Cancel();
-        _saveCts = new CancellationTokenSource();
-        var token = _saveCts.Token;
-        var left = Left;
-        var top = Top;
+        _positionSaveHelper ??= new WhisperShow.Core.Services.DebouncedSaveHelper(
+            SavePositionToFileAsync, _logger, 300);
+        _positionSaveHelper.Schedule();
+    }
 
-        _ = Task.Run(async () =>
+    private async Task SavePositionToFileAsync()
+    {
+        var left = _options.Overlay.PositionX;
+        var top = _options.Overlay.PositionY;
+
+        var path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+        var json = await File.ReadAllTextAsync(path);
+        var doc = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions
         {
-            try
-            {
-                await Task.Delay(300, token);
-                var path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-                var json = await File.ReadAllTextAsync(path, token);
-                var doc = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions
-                {
-                    CommentHandling = JsonCommentHandling.Skip
-                })!;
+            CommentHandling = JsonCommentHandling.Skip
+        })!;
 
-                doc["WhisperShow"]!["Overlay"]!["PositionX"] = left;
-                doc["WhisperShow"]!["Overlay"]!["PositionY"] = top;
+        doc["WhisperShow"]!["Overlay"]!["PositionX"] = left;
+        doc["WhisperShow"]!["Overlay"]!["PositionY"] = top;
 
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                await File.WriteAllTextAsync(path, doc.ToJsonString(options), token);
-            }
-            catch (TaskCanceledException) { }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to save overlay position");
-            }
-        }, token);
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        await File.WriteAllTextAsync(path, doc.ToJsonString(options));
     }
 
     protected override void OnClosing(CancelEventArgs e)

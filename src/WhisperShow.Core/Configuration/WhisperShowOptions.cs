@@ -15,6 +15,13 @@ public class WhisperShowOptions
     public OverlayOptions Overlay { get; set; } = new();
     public TextCorrectionOptions TextCorrection { get; set; } = new();
     public AppOptions App { get; set; } = new();
+
+    internal static string ResolveModelDirectory(string? customPath, string subfolder) =>
+        string.IsNullOrEmpty(customPath)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "WhisperShow", subfolder)
+            : customPath;
 }
 
 public class OpenAiOptions
@@ -31,11 +38,7 @@ public class LocalWhisperOptions
     public bool GpuAcceleration { get; set; } = true;
 
     public string GetModelDirectory() =>
-        string.IsNullOrEmpty(ModelDirectory)
-            ? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "WhisperShow", "models")
-            : ModelDirectory;
+        WhisperShowOptions.ResolveModelDirectory(ModelDirectory, "models");
 }
 
 public class HotkeyOptions
@@ -83,11 +86,7 @@ public class TextCorrectionOptions
     public bool LocalGpuAcceleration { get; set; } = true;
 
     public string GetLocalModelDirectory() =>
-        string.IsNullOrEmpty(LocalModelDirectory)
-            ? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "WhisperShow", "correction-models")
-            : LocalModelDirectory;
+        WhisperShowOptions.ResolveModelDirectory(LocalModelDirectory, "correction-models");
 
     // Combined audio model (cloud-only optimization)
     public bool UseCombinedAudioModel { get; set; }

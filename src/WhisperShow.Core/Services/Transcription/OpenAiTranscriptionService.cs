@@ -1,7 +1,5 @@
-using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenAI;
 using OpenAI.Audio;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
@@ -14,10 +12,7 @@ public class OpenAiTranscriptionService : ITranscriptionService
     private readonly ILogger<OpenAiTranscriptionService> _logger;
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private readonly IAudioCompressor _audioCompressor;
-    private AudioClient? _audioClient;
-    private string? _lastApiKey;
-    private string? _lastModel;
-    private string? _lastEndpoint;
+    private readonly OpenAiClientFactory _clientFactory;
 
     public TranscriptionProvider ProviderType => TranscriptionProvider.OpenAI;
     public string ProviderName => "OpenAI API";
@@ -26,11 +21,13 @@ public class OpenAiTranscriptionService : ITranscriptionService
     public OpenAiTranscriptionService(
         ILogger<OpenAiTranscriptionService> logger,
         IOptionsMonitor<WhisperShowOptions> optionsMonitor,
-        IAudioCompressor audioCompressor)
+        IAudioCompressor audioCompressor,
+        OpenAiClientFactory clientFactory)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _audioCompressor = audioCompressor;
+        _clientFactory = clientFactory;
     }
 
     public async Task<TranscriptionResult> TranscribeAsync(
@@ -44,22 +41,7 @@ public class OpenAiTranscriptionService : ITranscriptionService
         if (string.IsNullOrWhiteSpace(openAi.ApiKey))
             throw new InvalidOperationException("OpenAI API key is not configured.");
 
-        // Recreate client if API key, model, or endpoint changed
-        if (_audioClient is null || _lastApiKey != openAi.ApiKey
-            || _lastModel != openAi.Model || _lastEndpoint != openAi.Endpoint)
-        {
-            var clientOptions = new OpenAIClientOptions();
-            if (!string.IsNullOrEmpty(openAi.Endpoint))
-                clientOptions.Endpoint = new Uri(openAi.Endpoint);
-
-            _audioClient = new AudioClient(
-                model: openAi.Model,
-                credential: new ApiKeyCredential(openAi.ApiKey!),
-                options: clientOptions);
-            _lastApiKey = openAi.ApiKey;
-            _lastModel = openAi.Model;
-            _lastEndpoint = openAi.Endpoint;
-        }
+        var audioClient = _clientFactory.GetAudioClient(openAi.Model);
 
         byte[] uploadData;
         string fileName;
@@ -88,7 +70,7 @@ public class OpenAiTranscriptionService : ITranscriptionService
         _logger.LogInformation("Sending audio to OpenAI ({Size} bytes, model: {Model})",
             uploadData.Length, openAi.Model);
 
-        var result = await _audioClient.TranscribeAudioAsync(
+        var result = await audioClient.TranscribeAudioAsync(
             stream, fileName, transcriptionOptions, cancellationToken);
 
         var transcription = result.Value;

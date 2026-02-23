@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using WhisperShow.Core.Models;
+using WhisperShow.Core.Services;
 using WhisperShow.Core.Services.Audio;
 using WhisperShow.Core.Services.Transcription;
 using WhisperShow.Tests.TestHelpers;
@@ -19,7 +20,8 @@ public class TranscriptionProviderFactoryTests
         var optionsWithKey = OptionsHelper.CreateMonitor(o => o.OpenAI.ApiKey = "sk-test");
         _openAiService = new OpenAiTranscriptionService(
             NullLogger<OpenAiTranscriptionService>.Instance, optionsWithKey,
-            Substitute.For<IAudioCompressor>());
+            Substitute.For<IAudioCompressor>(),
+            new OpenAiClientFactory(optionsWithKey));
 
         var optionsNoKey = OptionsHelper.CreateMonitor();
         _localService = new LocalTranscriptionService(
@@ -67,7 +69,8 @@ public class TranscriptionProviderFactoryTests
         var optionsNoKey = OptionsHelper.CreateMonitor();
         var openAi = new OpenAiTranscriptionService(
             NullLogger<OpenAiTranscriptionService>.Instance, optionsNoKey,
-            Substitute.For<IAudioCompressor>());
+            Substitute.For<IAudioCompressor>(),
+            new OpenAiClientFactory(optionsNoKey));
         var local = new LocalTranscriptionService(
             NullLogger<LocalTranscriptionService>.Instance, optionsNoKey);
 

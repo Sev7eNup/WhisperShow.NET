@@ -10,6 +10,7 @@ using NAudio.Wave;
 using WhisperShow.App.ViewModels.Settings;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
+using WhisperShow.Core.Services;
 using WhisperShow.Core.Services.Configuration;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
@@ -38,7 +39,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IGlobalHotkeyService _hotkeyService;
     private readonly IModelPreloadService _preloadService;
     private readonly IAutoStartService _autoStartService;
-    private CancellationTokenSource? _saveCts;
+    private readonly DebouncedSaveHelper _saveHelper;
 
     // --- Sub-ViewModels ---
     public StatisticsViewModel Statistics { get; }
@@ -196,6 +197,7 @@ public partial class SettingsViewModel : ObservableObject
         _hotkeyService = hotkeyService;
         _preloadService = preloadService;
         _autoStartService = autoStartService;
+        _saveHelper = new DebouncedSaveHelper(SaveSettingsAsync, logger, 300);
 
         var opts = options.Value;
 
@@ -696,26 +698,7 @@ public partial class SettingsViewModel : ObservableObject
 
     // --- Persistence ---
 
-    private void ScheduleSave()
-    {
-        _saveCts?.Cancel();
-        _saveCts = new CancellationTokenSource();
-        var token = _saveCts.Token;
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(300, token);
-                await SaveSettingsAsync();
-            }
-            catch (TaskCanceledException) { }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to save settings");
-            }
-        }, token);
-    }
+    private void ScheduleSave() => _saveHelper.Schedule();
 
     private async Task SaveSettingsAsync()
     {

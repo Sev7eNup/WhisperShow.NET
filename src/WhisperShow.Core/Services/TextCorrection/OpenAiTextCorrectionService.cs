@@ -1,7 +1,5 @@
-using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenAI;
 using OpenAI.Chat;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
@@ -23,21 +21,20 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
     private readonly ILogger<OpenAiTextCorrectionService> _logger;
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private readonly IDictionaryService _dictionaryService;
-    private ChatClient? _chatClient;
-    private string? _lastApiKey;
-    private string? _lastModel;
-    private string? _lastEndpoint;
+    private readonly OpenAiClientFactory _clientFactory;
 
     public TextCorrectionProvider ProviderType => TextCorrectionProvider.Cloud;
 
     public OpenAiTextCorrectionService(
         ILogger<OpenAiTextCorrectionService> logger,
         IOptionsMonitor<WhisperShowOptions> optionsMonitor,
-        IDictionaryService dictionaryService)
+        IDictionaryService dictionaryService,
+        OpenAiClientFactory clientFactory)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _dictionaryService = dictionaryService;
+        _clientFactory = clientFactory;
     }
 
     public async Task<string> CorrectAsync(string rawText, string? language, CancellationToken ct = default)
@@ -46,22 +43,7 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
         {
             var options = _optionsMonitor.CurrentValue;
 
-            // Recreate client if API key, model, or endpoint changed
-            if (_chatClient is null || _lastApiKey != options.OpenAI.ApiKey
-                || _lastModel != options.TextCorrection.Model || _lastEndpoint != options.OpenAI.Endpoint)
-            {
-                var clientOptions = new OpenAIClientOptions();
-                if (!string.IsNullOrEmpty(options.OpenAI.Endpoint))
-                    clientOptions.Endpoint = new Uri(options.OpenAI.Endpoint);
-
-                _chatClient = new ChatClient(
-                    model: options.TextCorrection.Model,
-                    credential: new ApiKeyCredential(options.OpenAI.ApiKey!),
-                    options: clientOptions);
-                _lastApiKey = options.OpenAI.ApiKey;
-                _lastModel = options.TextCorrection.Model;
-                _lastEndpoint = options.OpenAI.Endpoint;
-            }
+            var chatClient = _clientFactory.GetChatClient(options.TextCorrection.Model);
 
             var systemPrompt = options.TextCorrection.SystemPrompt ?? DefaultSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
@@ -72,7 +54,7 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
             _logger.LogInformation("Sending text correction request ({Length} chars, model: {Model})",
                 rawText.Length, options.TextCorrection.Model);
 
-            var result = await _chatClient.CompleteChatAsync(
+            var result = await chatClient.CompleteChatAsync(
                 [
                     new SystemChatMessage(systemPrompt),
                     new UserChatMessage(userMessage)

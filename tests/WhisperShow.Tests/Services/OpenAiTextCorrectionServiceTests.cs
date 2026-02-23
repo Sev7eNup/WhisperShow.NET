@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using WhisperShow.Core.Models;
+using WhisperShow.Core.Services;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Tests.TestHelpers;
 
@@ -45,6 +46,7 @@ public class OpenAiTextCorrectionServiceTests
         });
         return new OpenAiTextCorrectionService(
             NullLogger<OpenAiTextCorrectionService>.Instance, options,
-            Substitute.For<IDictionaryService>());
+            Substitute.For<IDictionaryService>(),
+            new OpenAiClientFactory(options));
     }
 }

@@ -21,6 +21,7 @@ using WhisperShow.Core.Services.ModelManagement;
 using WhisperShow.Core.Services.History;
 using WhisperShow.Core.Services.Statistics;
 using WhisperShow.Core.Services.Snippets;
+using WhisperShow.Core.Services;
 using WhisperShow.Core.Services.TextCorrection;
 using WhisperShow.Core.Services.TextInsertion;
 using WhisperShow.Core.Services.Transcription;
@@ -74,6 +75,7 @@ public partial class App : Application
                     context.Configuration.GetSection(WhisperShowOptions.SectionName));
 
                 // Core services
+                services.AddSingleton<OpenAiClientFactory>();
                 services.AddSingleton<IAudioRecordingService, AudioRecordingService>();
                 services.AddSingleton<IAudioMutingService, AudioMutingService>();
                 services.AddSingleton<IAudioCompressor, AudioCompressor>();
@@ -181,7 +183,7 @@ public partial class App : Application
             Shutdown();
         };
 
-        var settingsItem = new System.Windows.Controls.MenuItem { Header = "Einstellungen" };
+        var settingsItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
         settingsItem.Click += (_, _) =>
         {
             var settingsWindow = _host!.Services.GetRequiredService<SettingsWindow>();

@@ -10,6 +10,8 @@ public class SnippetService : ISnippetService
     private readonly string _filePath;
     private readonly List<SnippetEntry> _snippets = [];
     private readonly Lock _lock = new();
+    private readonly DebouncedSaveHelper _saveHelper;
+    private List<(Regex Regex, string Replacement)>? _cachedRegexes;
     private bool _loaded;
 
     public SnippetService(ILogger<SnippetService> logger)
@@ -18,6 +20,7 @@ public class SnippetService : ISnippetService
         _filePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "WhisperShow", "snippets.json");
+        _saveHelper = new DebouncedSaveHelper(SaveAsync, logger, 300);
     }
 
     public IReadOnlyList<SnippetEntry> GetSnippets()
@@ -37,9 +40,10 @@ public class SnippetService : ISnippetService
         {
             if (_snippets.Any(s => s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase))) return;
             _snippets.Add(new SnippetEntry(trigger, replacement));
+            _cachedRegexes = null;
         }
 
-        _ = SaveAsync();
+        _saveHelper.Schedule();
     }
 
     public void RemoveSnippet(string trigger)
@@ -48,9 +52,10 @@ public class SnippetService : ISnippetService
         lock (_lock)
         {
             _snippets.RemoveAll(s => s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase));
+            _cachedRegexes = null;
         }
 
-        _ = SaveAsync();
+        _saveHelper.Schedule();
     }
 
     public string ApplySnippets(string text)
@@ -58,15 +63,22 @@ public class SnippetService : ISnippetService
         if (string.IsNullOrWhiteSpace(text)) return text;
 
         EnsureLoaded();
-        List<SnippetEntry> snapshot;
-        lock (_lock) snapshot = [.. _snippets];
-
-        if (snapshot.Count == 0) return text;
-
-        foreach (var snippet in snapshot)
+        List<(Regex Regex, string Replacement)> regexes;
+        lock (_lock)
         {
-            var pattern = @"\b" + Regex.Escape(snippet.Trigger) + @"\b";
-            text = Regex.Replace(text, pattern, snippet.Replacement, RegexOptions.IgnoreCase);
+            if (_snippets.Count == 0) return text;
+
+            regexes = _cachedRegexes ??= _snippets
+                .Select(s => (
+                    new Regex(@"\b" + Regex.Escape(s.Trigger) + @"\b",
+                        RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                    s.Replacement))
+                .ToList();
+        }
+
+        foreach (var (regex, replacement) in regexes)
+        {
+            text = regex.Replace(text, replacement);
         }
 
         return text;
