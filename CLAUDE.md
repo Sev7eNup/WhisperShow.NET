@@ -47,23 +47,27 @@ src/
       Statistics/             # IUsageStatsService, UsageStatsService
       TextInsertion/          # ITextInsertionService, IWindowFocusService (interfaces only)
       Hotkey/                 # IGlobalHotkeyService (interface only)
-      Configuration/          # IAutoStartService (interface only)
-      OpenAiClientFactory.cs  # Centralized OpenAI client caching (ApiKey+Endpoint keyed)
+      Configuration/          # IAutoStartService, ISettingsPersistenceService (interfaces)
+      IDispatcherService.cs   # UI dispatcher abstraction (testable)
+      OpenAiClientFactory.cs  # Centralized OpenAI client caching (thread-safe, Lock)
       DebouncedSaveHelper.cs  # Reusable debounced async save utility (used by 6 services)
 
   WhisperShow.App/            # WPF application (net10.0-windows)
-    App.xaml.cs               # Host builder, DI, Serilog, system tray, CUDA path discovery, model preloading
+    App.xaml.cs               # Host builder, DI, Serilog, CUDA path discovery, model preloading
     NativeMethods.cs          # Win32 P/Invoke (SendInput, RegisterHotKey, etc.)
     Themes/                   # SettingsStyles.xaml (shared), SettingsDarkTheme.xaml, SettingsLightTheme.xaml
     Converters/               # SettingsConverters.cs (Visibility, Boolean, etc.)
     ViewModels/
       OverlayViewModel.cs     # Main state machine: Idle -> Recording -> Transcribing -> auto-insert
-      SettingsViewModel.cs    # Settings UI state, inline editing, auto-save to appsettings.json
+      SettingsViewModel.cs    # Settings coordinator, page navigation, delegates to sub-VMs
       HistoryViewModel.cs     # Transcription history list
       ModelItemViewModelBase.cs # Abstract base for model download items
       ModelItemViewModel.cs   # Whisper model download item
       CorrectionModelItemViewModel.cs # Correction model download item
       Settings/               # Sub-ViewModels for settings pages
+        GeneralSettingsViewModel.cs   # Hotkey, microphone, language settings
+        SystemSettingsViewModel.cs    # Theme, sound, autostart settings
+        TranscriptionSettingsViewModel.cs # Provider, API key, model settings
         ModelManagementViewModel.cs   # Model download management
         StatisticsViewModel.cs        # Statistics display
         DictionarySnippetsViewModel.cs # Dictionary and snippets management
@@ -82,11 +86,14 @@ src/
         SnippetsPage.xaml      # Snippet trigger→replacement management
         StatisticsPage.xaml    # Usage statistics
     Services/
-      TextInsertionService.cs # Clipboard + SendInput (Ctrl+V simulation)
-      GlobalHotkeyService.cs  # Win32 RegisterHotKey, WndProc hook for WM_HOTKEY
-      SoundEffectService.cs   # Start/stop recording sound effects
-      AutoStartService.cs     # Windows auto-start registry management
-      WindowFocusService.cs   # SetForegroundWindow + AttachThreadInput
+      TextInsertionService.cs       # Clipboard + SendInput (Ctrl+V simulation)
+      GlobalHotkeyService.cs        # Win32 RegisterHotKey, WndProc hook for WM_HOTKEY
+      SoundEffectService.cs         # Start/stop recording sound effects (IOptionsMonitor)
+      AutoStartService.cs           # Windows auto-start registry management
+      WindowFocusService.cs         # SetForegroundWindow + AttachThreadInput
+      WpfDispatcherService.cs       # IDispatcherService impl (wraps WPF Dispatcher)
+      SettingsPersistenceService.cs  # Centralized appsettings.json persistence
+      TrayIconManager.cs            # System tray icon setup and context menu
 
 tests/
   WhisperShow.Tests/          # xUnit + NSubstitute + FluentAssertions tests
@@ -114,10 +121,19 @@ All core services use `IOptionsMonitor<WhisperShowOptions>` (not `IOptions<T>`!)
 - Switched via `TextCorrectionProviderFactory` (Off/Cloud/Local)
 
 ### OpenAI Client Caching (OpenAiClientFactory)
-Centralized factory that caches `OpenAIClient` instances by ApiKey+Endpoint. Used by `OpenAiTranscriptionService`, `OpenAiTextCorrectionService`, and `CombinedAudioTranscriptionService`. Provides typed accessors `GetAudioClient(model)` and `GetChatClient(model)`.
+Centralized factory that caches `OpenAIClient` instances by ApiKey+Endpoint. Thread-safe via `Lock`. Used by `OpenAiTranscriptionService`, `OpenAiTextCorrectionService`, and `CombinedAudioTranscriptionService`. Provides typed accessors `GetAudioClient(model)` and `GetChatClient(model)`.
 
 ### Debounced Save (DebouncedSaveHelper)
-Reusable utility for debounced async persistence. Used by 6 services: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `SettingsViewModel`, `OverlayWindow` (position saving). Manages `CancellationTokenSource` lifecycle internally, implements `IDisposable`.
+Reusable utility for debounced async persistence. Used by 6 services: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `SettingsPersistenceService`, `OverlayViewModel` (position saving). Manages `CancellationTokenSource` lifecycle internally, implements `IDisposable`.
+
+### Centralized Settings Persistence (ISettingsPersistenceService)
+`SettingsPersistenceService` provides `ScheduleUpdate(Action<JsonNode> mutator)`. Multiple mutators are composed — if several `ScheduleUpdate()` calls arrive before the debounce flush, all mutations apply to the same JSON document. Thread-safe via `Lock` + `DebouncedSaveHelper`.
+
+### IDispatcherService
+Abstraction over WPF `Dispatcher.Invoke()`. `WpfDispatcherService` wraps `Application.Current.Dispatcher`; tests use `SynchronousDispatcherService` that executes actions inline. All ViewModels use this instead of direct `Dispatcher` access.
+
+### Settings Sub-ViewModels
+`SettingsViewModel` delegates to `GeneralSettingsViewModel`, `SystemSettingsViewModel`, and `TranscriptionSettingsViewModel`. Each sub-VM receives `WhisperShowOptions` in constructor (not individual primitives) and implements `WriteSettings(JsonNode)` for persistence.
 
 ### Model Info Hierarchy (ModelInfoBase)
 Abstract base class shared by `WhisperModel` and `CorrectionModelInfo`. Provides `Name`, `FileName`, `SizeBytes`, `FilePath`, `IsDownloaded`, `SizeDisplay`. `CorrectionModelInfo` extends with `DownloadUrl`.
@@ -151,11 +167,11 @@ This is necessary because `CUDA_PATH` may point to an older CUDA version while W
 - **AttachThreadInput**: Required for reliable `SetForegroundWindow` across processes.
 - **WS_EX_NOACTIVATE + WS_EX_TOOLWINDOW**: Overlay doesn't steal focus or appear in taskbar.
 
-### System Tray (H.NotifyIcon.Wpf)
-`TaskbarIcon` created programmatically in `App.xaml.cs`. Requires `ForceCreate()` when not placed in WPF visual tree. Context menu shown manually via `TrayRightMouseDown` handler (Win32 KB135788 workaround — temporarily removes `WS_EX_NOACTIVATE` to allow `SetForegroundWindow`).
+### System Tray (TrayIconManager)
+`TrayIconManager` handles `TaskbarIcon` creation, context menu, and left/right click behavior. Requires `ForceCreate()` when not placed in WPF visual tree. KB135788 workaround isolated in `SetupRightClickBehavior()` — temporarily removes `WS_EX_NOACTIVATE` to allow `SetForegroundWindow`.
 
 ### Audio Muting (AudioMutingService)
-Uses NAudio `CoreAudioApi` (`MMDeviceEnumerator` -> `AudioSessionManager.Sessions`). Mutes all audio sessions except own process (PID) and system sounds (PID 0).
+Uses NAudio `CoreAudioApi` (`MMDeviceEnumerator` -> `AudioSessionManager.Sessions`). Mutes all audio sessions except own process (PID) and system sounds (PID 0). Thread-safe via `Lock`.
 
 ### Audio Compression (AudioCompressor)
 Compresses WAV to MP3 (64 kbps) via NAudio.Lame before uploading to cloud APIs.
