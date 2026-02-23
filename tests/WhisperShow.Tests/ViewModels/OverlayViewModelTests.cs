@@ -493,6 +493,41 @@ public class OverlayViewModelTests : IDisposable
         vm.CurrentProviderName.Should().Be("Test Provider");
     }
 
+    // --- Dispose ---
+
+    [Fact]
+    public void Dispose_DoesNotThrow()
+    {
+        var vm = CreateViewModel();
+        var act = () => vm.Dispose();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public async Task Dispose_CancelsAutoDismissTimer()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[500]); // too short → Error
+
+        var vm = CreateViewModel(o => o.Overlay = new OverlayOptions { AutoDismissSeconds = 60 });
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Recording
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Error (starts auto-dismiss)
+
+        vm.Dispose();
+
+        // After dispose, the auto-dismiss should be cancelled — state stays Error
+        await Task.Delay(200);
+        vm.State.Should().Be(RecordingState.Error);
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var vm = CreateViewModel();
+        vm.Dispose();
+        var act = () => vm.Dispose();
+        act.Should().NotThrow();
+    }
+
     public void Dispose()
     {
         // Cleanup if needed

@@ -1,0 +1,140 @@
+using FluentAssertions;
+using WhisperShow.App.Views;
+
+namespace WhisperShow.Tests.Views;
+
+public class OverlayWindowTests
+{
+    // --- Waveform Interpolation ---
+
+    [Fact]
+    public void InterpolateWaveformLevels_AllZeros_ReturnsMinimumHeights()
+    {
+        var levels = new float[20];
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        heights.Should().HaveCount(16);
+        heights.Should().AllSatisfy(h => h.Should().Be(2.0));
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_AllMax_ReturnsMaxHeights()
+    {
+        var levels = Enumerable.Repeat(1.0f, 20).ToArray();
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        heights.Should().HaveCount(16);
+        // 1.0 * 3.5 = 3.5 → clamped to 1.0 → 1.0 * 28 = 28
+        heights.Should().AllSatisfy(h => h.Should().Be(28.0));
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_GradualRamp_ProducesIncreasingHeights()
+    {
+        var levels = new float[20];
+        for (int i = 0; i < 20; i++)
+            levels[i] = i / 19.0f; // 0.0 to 1.0
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        // Heights should be monotonically non-decreasing
+        for (int i = 1; i < heights.Length; i++)
+            heights[i].Should().BeGreaterThanOrEqualTo(heights[i - 1]);
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_SingleSpike_InterpolatesNeighbors()
+    {
+        var levels = new float[20];
+        levels[10] = 0.5f; // spike in the middle
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        // Bars near the spike should have some height > minimum
+        var hasElevatedBar = heights.Any(h => h > 2.0);
+        hasElevatedBar.Should().BeTrue();
+
+        // Bars far from the spike should be at minimum
+        heights[0].Should().Be(2.0);
+        heights[15].Should().Be(2.0);
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_AmplificationClamps()
+    {
+        // 0.3 * 3.5 = 1.05 → should clamp to 1.0
+        var levels = Enumerable.Repeat(0.3f, 20).ToArray();
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        // level = min(0.3 * 3.5, 1.0) = 1.0 → height = max(2, 1.0 * 28) = 28
+        heights.Should().AllSatisfy(h => h.Should().Be(28.0));
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_LowLevel_AmplifiedButNotClamped()
+    {
+        // 0.1 * 3.5 = 0.35 → not clamped → height = 0.35 * 28 = 9.8
+        var levels = Enumerable.Repeat(0.1f, 20).ToArray();
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        heights.Should().AllSatisfy(h => h.Should().BeApproximately(9.8, 0.01));
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_AllEqual_AllBarsEqual()
+    {
+        var levels = Enumerable.Repeat(0.2f, 20).ToArray();
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        var firstHeight = heights[0];
+        heights.Should().AllSatisfy(h => h.Should().Be(firstHeight));
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_FirstAndLastMatch()
+    {
+        // Use low values so amplification (3.5x) doesn't clamp both to 1.0
+        var levels = new float[20];
+        levels[0] = 0.05f;
+        levels[19] = 0.2f;
+
+        var heights = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+
+        // First bar uses levels[0]: 0.05 * 3.5 = 0.175 → height = 0.175 * 28 = 4.9
+        // Last bar uses levels[19]: 0.2 * 3.5 = 0.7 → height = 0.7 * 28 = 19.6
+        heights[0].Should().BeGreaterThan(2.0);
+        heights[15].Should().BeGreaterThan(heights[0]);
+    }
+
+    // --- Scale Clamping ---
+
+    [Fact]
+    public void ClampOverlayScale_BelowMinimum_ClampsTo075()
+    {
+        OverlayWindow.ClampOverlayScale(0.5).Should().Be(0.75);
+    }
+
+    [Fact]
+    public void ClampOverlayScale_AboveMaximum_ClampsTo2()
+    {
+        OverlayWindow.ClampOverlayScale(3.0).Should().Be(2.0);
+    }
+
+    [Fact]
+    public void ClampOverlayScale_InRange_ReturnsUnchanged()
+    {
+        OverlayWindow.ClampOverlayScale(1.5).Should().Be(1.5);
+    }
+
+    [Fact]
+    public void ClampOverlayScale_AtBoundaries_ReturnsExact()
+    {
+        OverlayWindow.ClampOverlayScale(0.75).Should().Be(0.75);
+        OverlayWindow.ClampOverlayScale(2.0).Should().Be(2.0);
+    }
+}

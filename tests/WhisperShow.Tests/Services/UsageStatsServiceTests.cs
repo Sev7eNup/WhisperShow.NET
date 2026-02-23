@@ -106,4 +106,24 @@ public class UsageStatsServiceTests : IDisposable
         stats.TotalTranscriptions.Should().Be(1);
         stats.TranscriptionsByProvider.Should().ContainKey("Local");
     }
+
+    [Fact]
+    public async Task Dispose_DoesNotThrow()
+    {
+        var service = CreateService();
+        await service.LoadAsync();
+        service.RecordTranscription(1.0, 1000, "OpenAI");
+
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var service = CreateService();
+        service.Dispose();
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
 }

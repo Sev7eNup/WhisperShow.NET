@@ -115,4 +115,24 @@ public class TranscriptionHistoryServiceTests : IDisposable
 
         service.GetEntries().Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task Dispose_DoesNotThrow()
+    {
+        var service = CreateService();
+        await service.LoadAsync();
+        service.AddEntry("Test", "OpenAI", 1);
+
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var service = CreateService();
+        service.Dispose();
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
 }

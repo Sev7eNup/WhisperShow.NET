@@ -105,6 +105,8 @@ public class UsageStatsService : IUsageStatsService
         }
     }
 
+    public void Dispose() => _saveHelper.Dispose();
+
     private void ScheduleSave() => _saveHelper.Schedule();
 
     private void EnsureLoaded()

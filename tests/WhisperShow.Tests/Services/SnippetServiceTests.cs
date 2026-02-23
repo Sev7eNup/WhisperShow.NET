@@ -141,4 +141,19 @@ public class SnippetServiceTests : IDisposable
         // the service must not throw due to unescaped regex characters
         result.Should().NotBeNull();
     }
+
+    [Fact]
+    public void Dispose_DoesNotThrow()
+    {
+        var act = () => _service.Dispose();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        _service.Dispose();
+        var act = () => _service.Dispose();
+        act.Should().NotThrow();
+    }
 }
