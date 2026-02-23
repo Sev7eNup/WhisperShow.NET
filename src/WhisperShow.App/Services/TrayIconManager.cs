@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using H.NotifyIcon;
 using WhisperShow.App.Views;
@@ -26,21 +27,45 @@ public class TrayIconManager : IDisposable
         _trayIcon.ForceCreate();
     }
 
-    private System.Windows.Controls.ContextMenu BuildContextMenu(
+    private static ContextMenu BuildContextMenu(
         OverlayWindow overlayWindow,
         Func<SettingsWindow> settingsFactory,
         Func<HistoryWindow> historyFactory,
         Action shutdown)
     {
-        var contextMenu = new System.Windows.Controls.ContextMenu();
+        var styles = new ResourceDictionary
+        {
+            Source = new Uri("/Themes/TrayMenuStyles.xaml", UriKind.Relative)
+        };
 
-        var showItem = new System.Windows.Controls.MenuItem { Header = "Show Overlay" };
+        var contextMenu = new ContextMenu();
+        contextMenu.Resources.MergedDictionaries.Add(styles);
+        contextMenu.Style = (Style)styles["TrayContextMenuStyle"];
+
+        var menuItemStyle = (Style)styles["TrayMenuItemStyle"];
+        var separatorStyle = (Style)styles["TraySeparatorStyle"];
+
+        // Header label
+        var header = new TextBlock
+        {
+            Text = "WhisperShow",
+            FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
+            FontSize = 11,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (System.Windows.Media.Brush)styles["TrayMenuTextSecondary"],
+            Margin = new Thickness(12, 4, 12, 4),
+            IsHitTestVisible = false
+        };
+        contextMenu.Items.Add(header);
+        contextMenu.Items.Add(CreateSeparator(separatorStyle));
+
+        var showItem = CreateMenuItem("Show Overlay", "\uE7B3", menuItemStyle);
         showItem.Click += (_, _) => { overlayWindow.Show(); overlayWindow.Activate(); };
 
-        var hideItem = new System.Windows.Controls.MenuItem { Header = "Hide Overlay" };
+        var hideItem = CreateMenuItem("Hide Overlay", "\uED1A", menuItemStyle);
         hideItem.Click += (_, _) => overlayWindow.Hide();
 
-        var settingsItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
+        var settingsItem = CreateMenuItem("Settings", "\uE713", menuItemStyle);
         settingsItem.Click += (_, _) =>
         {
             var w = settingsFactory();
@@ -48,29 +73,42 @@ public class TrayIconManager : IDisposable
             w.Activate();
         };
 
-        var historyItem = new System.Windows.Controls.MenuItem { Header = "History" };
+        var historyItem = CreateMenuItem("History", "\uE81C", menuItemStyle);
         historyItem.Click += (_, _) => historyFactory().ShowAndRefresh();
 
-        var exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
+        var exitItem = CreateMenuItem("Exit", "\uE7E8", menuItemStyle);
         exitItem.Click += (_, _) =>
         {
-            Dispose();
             shutdown();
         };
 
         contextMenu.Items.Add(showItem);
         contextMenu.Items.Add(hideItem);
-        contextMenu.Items.Add(new System.Windows.Controls.Separator());
+        contextMenu.Items.Add(CreateSeparator(separatorStyle));
         contextMenu.Items.Add(settingsItem);
         contextMenu.Items.Add(historyItem);
-        contextMenu.Items.Add(new System.Windows.Controls.Separator());
+        contextMenu.Items.Add(CreateSeparator(separatorStyle));
         contextMenu.Items.Add(exitItem);
 
         return contextMenu;
     }
 
-    private void SetupRightClickBehavior(OverlayWindow overlayWindow,
-        System.Windows.Controls.ContextMenu contextMenu)
+    private static MenuItem CreateMenuItem(string header, string iconGlyph, Style style)
+    {
+        return new MenuItem
+        {
+            Header = header,
+            Tag = iconGlyph,
+            Style = style
+        };
+    }
+
+    private static Separator CreateSeparator(Style style)
+    {
+        return new Separator { Style = style };
+    }
+
+    private void SetupRightClickBehavior(OverlayWindow overlayWindow, ContextMenu contextMenu)
     {
         _trayIcon!.TrayRightMouseDown += (_, _) =>
         {
