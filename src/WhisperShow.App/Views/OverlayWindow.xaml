@@ -142,11 +142,11 @@
                     <Grid x:Name="IdlePanel" Visibility="Visible">
                         <Button Click="RecordButton_Click" Cursor="Hand"
                                 Width="44" Height="44" BorderThickness="0"
-                                RenderTransformOrigin="0.5,0.5">
+                                RenderTransformOrigin="0.5,0.5"
+                                ToolTipService.Placement="Top">
                             <Button.ToolTip>
                                 <ToolTip Style="{StaticResource DarkToolTipStyle}"
-                                         Content="{Binding PushToTalkHotkeyText}"
-                                         Placement="Top"/>
+                                         Content="{Binding PushToTalkHotkeyText}"/>
                             </Button.ToolTip>
                             <Button.RenderTransform>
                                 <ScaleTransform x:Name="IdleButtonScale" ScaleX="1" ScaleY="1"/>
