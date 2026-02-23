@@ -36,11 +36,13 @@ src/
                               # LocalTextCorrectionService (LLamaSharp)
                               # ICombinedTranscriptionCorrectionService, CombinedAudioTranscriptionService
                               # TextCorrectionProviderFactory (Off/Cloud/Local)
+                              # TextCorrectionDefaults (shared system prompt constants)
                               # IDictionaryService, DictionaryService (custom word dictionary)
       Snippets/               # ISnippetService, SnippetService (trigger→replacement with cached regex)
       ModelManagement/        # IModelManager, ModelManager (Whisper GGML model download)
                               # ICorrectionModelManager, CorrectionModelManager (GGUF model download)
-                              # IModelPreloadService, ModelPreloadService, ModelDownloadHelper
+                              # IModelPreloadService, ModelPreloadService
+                              # ModelDownloadHelper (shared download logic, uses IHttpClientFactory)
       History/                # ITranscriptionHistoryService, TranscriptionHistoryService
       Statistics/             # IUsageStatsService, UsageStatsService
       TextInsertion/          # ITextInsertionService, IWindowFocusService (interfaces only)
@@ -108,6 +110,7 @@ All core services use `IOptionsMonitor<WhisperShowOptions>` (not `IOptions<T>`!)
 - **Local**: Uses `LLamaSharp` with GGUF models for offline correction
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
 - **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/WhisperShow/custom-dictionary.json`)
+- **Shared prompts**: Default system prompts live in `TextCorrectionDefaults` (not duplicated per service)
 - Switched via `TextCorrectionProviderFactory` (Off/Cloud/Local)
 
 ### OpenAI Client Caching (OpenAiClientFactory)
@@ -207,6 +210,7 @@ Environment variables prefixed with `WHISPERSHOW_` also bind to config.
 | Whisper.net.Runtime.Cuda 1.9.0 | Whisper CUDA GPU runtime |
 | LLamaSharp 0.26.0 | Local text correction via GGUF LLM models |
 | LLamaSharp.Backend.Cuda12 0.26.0 | CUDA backend for LLamaSharp |
+| Microsoft.Extensions.Http 10.0.3 | IHttpClientFactory for model downloads |
 | CommunityToolkit.Mvvm 8.4.0 | Source generators ([ObservableProperty], [RelayCommand]) |
 | H.NotifyIcon.Wpf 2.4.1 | System tray icon |
 | Serilog | File logging to `%APPDATA%/WhisperShow/logs/` |
