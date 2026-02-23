@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using H.NotifyIcon;
 using Microsoft.Extensions.Options;
 using NAudio.Wave;
@@ -24,13 +25,28 @@ public class TrayIconManager : IDisposable
     private TaskbarIcon? _trayIcon;
     private IntPtr _previousForegroundWindow;
 
-    private static readonly (string Code, string Name)[] Languages =
+    private static readonly (string Code, string Name, string Flag)[] Languages =
     [
-        ("de", "German"), ("en", "English"), ("fr", "French"), ("es", "Spanish"),
-        ("it", "Italian"), ("pt", "Portuguese"), ("nl", "Dutch"), ("pl", "Polish"),
-        ("ru", "Russian"), ("uk", "Ukrainian"), ("zh", "Chinese"), ("ja", "Japanese"),
-        ("ko", "Korean"), ("ar", "Arabic"), ("tr", "Turkish"), ("sv", "Swedish"),
-        ("da", "Danish"), ("no", "Norwegian"), ("fi", "Finnish"), ("cs", "Czech"),
+        ("de", "German", "/Resources/Flags/de.png"),
+        ("en", "English", "/Resources/Flags/en.png"),
+        ("fr", "French", "/Resources/Flags/fr.png"),
+        ("es", "Spanish", "/Resources/Flags/es.png"),
+        ("it", "Italian", "/Resources/Flags/it.png"),
+        ("pt", "Portuguese", "/Resources/Flags/pt.png"),
+        ("nl", "Dutch", "/Resources/Flags/nl.png"),
+        ("pl", "Polish", "/Resources/Flags/pl.png"),
+        ("ru", "Russian", "/Resources/Flags/ru.png"),
+        ("uk", "Ukrainian", "/Resources/Flags/uk.png"),
+        ("zh", "Chinese", "/Resources/Flags/zh.png"),
+        ("ja", "Japanese", "/Resources/Flags/ja.png"),
+        ("ko", "Korean", "/Resources/Flags/ko.png"),
+        ("ar", "Arabic", "/Resources/Flags/ar.png"),
+        ("tr", "Turkish", "/Resources/Flags/tr.png"),
+        ("sv", "Swedish", "/Resources/Flags/sv.png"),
+        ("da", "Danish", "/Resources/Flags/da.png"),
+        ("no", "Norwegian", "/Resources/Flags/no.png"),
+        ("fi", "Finnish", "/Resources/Flags/fi.png"),
+        ("cs", "Czech", "/Resources/Flags/cs.png"),
     ];
 
     public TrayIconManager(
@@ -185,11 +201,11 @@ public class TrayIconManager : IDisposable
             Style = (Style)parent.FindResource("TraySeparatorStyle")
         });
 
-        foreach (var (code, name) in Languages)
+        foreach (var (code, name, flag) in Languages)
         {
             var item = new MenuItem
             {
-                Header = name,
+                Header = CreateFlagHeader(name, flag),
                 IsCheckable = true,
                 IsChecked = string.Equals(currentLang, code, StringComparison.OrdinalIgnoreCase),
                 Style = checkMenuStyle
@@ -237,6 +253,25 @@ public class TrayIconManager : IDisposable
             };
             parent.Items.Add(emptyItem);
         }
+    }
+
+    private static StackPanel CreateFlagHeader(string name, string flagPath)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        panel.Children.Add(new Image
+        {
+            Source = new BitmapImage(new Uri(flagPath, UriKind.Relative)),
+            Width = 18,
+            Height = 12,
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = name,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        return panel;
     }
 
     private static MenuItem CreateMenuItem(string header, string iconGlyph, Style style)
