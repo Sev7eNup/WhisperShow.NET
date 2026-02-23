@@ -71,6 +71,22 @@ public class GeneralSettingsViewModelTests
         json["Language"].Should().BeNull();
     }
 
+    [Fact]
+    public void WriteSettings_MissingSections_CreatesThemAutomatically()
+    {
+        var vm = CreateViewModel();
+        var json = JsonNode.Parse("{}")!;
+
+        var act = () => vm.WriteSettings(json);
+
+        act.Should().NotThrow();
+        json["Hotkey"]!["Toggle"]!["Modifiers"]!.GetValue<string>().Should().Be("Control, Shift");
+        json["Hotkey"]!["Toggle"]!["Key"]!.GetValue<string>().Should().Be("Space");
+        json["Hotkey"]!["PushToTalk"]!["Modifiers"]!.GetValue<string>().Should().Be("Control");
+        json["Hotkey"]!["PushToTalk"]!["Key"]!.GetValue<string>().Should().Be("Space");
+        json["Audio"]!["DeviceIndex"]!.GetValue<int>().Should().Be(0);
+    }
+
     // --- Hotkey changes trigger save ---
 
     [Fact]

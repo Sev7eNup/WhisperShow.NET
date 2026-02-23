@@ -191,4 +191,20 @@ public class SystemSettingsViewModelTests
 
         json["App"]!["Theme"]!.GetValue<string>().Should().Be("Light");
     }
+
+    [Fact]
+    public void WriteSettings_MissingSections_CreatesThemAutomatically()
+    {
+        var vm = CreateViewModel();
+        var json = JsonNode.Parse("{}")!;
+
+        var act = () => vm.WriteSettings(json);
+
+        act.Should().NotThrow();
+        json["App"]!["LaunchAtLogin"]!.GetValue<bool>().Should().BeFalse();
+        json["App"]!["Theme"]!.GetValue<string>().Should().Be("Dark");
+        json["Audio"]!["MaxRecordingSeconds"]!.GetValue<int>().Should().Be(300);
+        json["Overlay"]!["AutoDismissSeconds"]!.GetValue<int>().Should().Be(10);
+        json["Overlay"]!["ShowResultOverlay"]!.GetValue<bool>().Should().BeTrue();
+    }
 }

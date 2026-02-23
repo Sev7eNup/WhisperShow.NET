@@ -230,16 +230,22 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     public void WriteSettings(JsonNode section)
     {
         section["Provider"] = Provider.ToString();
-        section["OpenAI"]!["ApiKey"] = OpenAiApiKey;
-        section["OpenAI"]!["Model"] = _openAiModelName;
-        section["OpenAI"]!["Endpoint"] = string.IsNullOrWhiteSpace(OpenAiEndpoint) ? null : OpenAiEndpoint;
-        section["Local"]!["ModelName"] = _localModelName;
-        section["Local"]!["GpuAcceleration"] = GpuAcceleration;
-        section["TextCorrection"]!["Provider"] = CorrectionProvider.ToString();
-        section["TextCorrection"]!["Model"] = CorrectionCloudModel;
-        section["TextCorrection"]!["LocalModelName"] = CorrectionLocalModelName;
-        section["TextCorrection"]!["LocalGpuAcceleration"] = CorrectionGpuAcceleration;
-        section["TextCorrection"]!["UseCombinedAudioModel"] = UseCombinedAudioModel;
-        section["TextCorrection"]!["CombinedAudioModel"] = CombinedAudioModel;
+
+        var openAi = SettingsViewModel.EnsureObject(section, "OpenAI");
+        openAi["ApiKey"] = OpenAiApiKey;
+        openAi["Model"] = _openAiModelName;
+        openAi["Endpoint"] = string.IsNullOrWhiteSpace(OpenAiEndpoint) ? null : OpenAiEndpoint;
+
+        var local = SettingsViewModel.EnsureObject(section, "Local");
+        local["ModelName"] = _localModelName;
+        local["GpuAcceleration"] = GpuAcceleration;
+
+        var correction = SettingsViewModel.EnsureObject(section, "TextCorrection");
+        correction["Provider"] = CorrectionProvider.ToString();
+        correction["Model"] = CorrectionCloudModel;
+        correction["LocalModelName"] = CorrectionLocalModelName;
+        correction["LocalGpuAcceleration"] = CorrectionGpuAcceleration;
+        correction["UseCombinedAudioModel"] = UseCombinedAudioModel;
+        correction["CombinedAudioModel"] = CombinedAudioModel;
     }
 }

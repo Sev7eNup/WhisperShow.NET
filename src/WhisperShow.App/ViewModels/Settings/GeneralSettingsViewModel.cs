@@ -353,10 +353,15 @@ public partial class GeneralSettingsViewModel : ObservableObject
     public void WriteSettings(JsonNode section)
     {
         section["Language"] = SelectedLanguageCode;
-        section["Hotkey"]!["Toggle"]!["Modifiers"] = ToggleModifiers;
-        section["Hotkey"]!["Toggle"]!["Key"] = ToggleKey;
-        section["Hotkey"]!["PushToTalk"]!["Modifiers"] = PttModifiers;
-        section["Hotkey"]!["PushToTalk"]!["Key"] = PttKey;
-        section["Audio"]!["DeviceIndex"] = SelectedMicrophoneIndex;
+
+        var hotkey = SettingsViewModel.EnsureObject(section, "Hotkey");
+        var toggle = SettingsViewModel.EnsureObject(hotkey, "Toggle");
+        toggle["Modifiers"] = ToggleModifiers;
+        toggle["Key"] = ToggleKey;
+        var ptt = SettingsViewModel.EnsureObject(hotkey, "PushToTalk");
+        ptt["Modifiers"] = PttModifiers;
+        ptt["Key"] = PttKey;
+
+        SettingsViewModel.EnsureObject(section, "Audio")["DeviceIndex"] = SelectedMicrophoneIndex;
     }
 }

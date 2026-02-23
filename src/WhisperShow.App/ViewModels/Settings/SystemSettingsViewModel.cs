@@ -117,16 +117,21 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     public void WriteSettings(JsonNode section)
     {
-        section["App"]!["LaunchAtLogin"] = LaunchAtLogin;
-        section["App"]!["SoundEffects"] = SoundEffectsEnabled;
-        section["App"]!["Theme"] = IsDarkMode ? "Dark" : "Light";
-        section["Audio"]!["MaxRecordingSeconds"] = MaxRecordingSeconds;
-        section["Audio"]!["CompressBeforeUpload"] = AudioCompressionEnabled;
-        section["Audio"]!["MuteWhileDictating"] = MuteWhileDictating;
-        section["Overlay"]!["AutoDismissSeconds"] = AutoDismissSeconds;
-        section["Overlay"]!["AlwaysVisible"] = OverlayAlwaysVisible;
-        section["Overlay"]!["ShowResultOverlay"] = ShowResultOverlay;
-        section["Overlay"]!["ShowInTaskbar"] = ShowInTaskbar;
-        section["Overlay"]!["Scale"] = OverlayScale;
+        var app = SettingsViewModel.EnsureObject(section, "App");
+        app["LaunchAtLogin"] = LaunchAtLogin;
+        app["SoundEffects"] = SoundEffectsEnabled;
+        app["Theme"] = IsDarkMode ? "Dark" : "Light";
+
+        var audio = SettingsViewModel.EnsureObject(section, "Audio");
+        audio["MaxRecordingSeconds"] = MaxRecordingSeconds;
+        audio["CompressBeforeUpload"] = AudioCompressionEnabled;
+        audio["MuteWhileDictating"] = MuteWhileDictating;
+
+        var overlay = SettingsViewModel.EnsureObject(section, "Overlay");
+        overlay["AutoDismissSeconds"] = AutoDismissSeconds;
+        overlay["AlwaysVisible"] = OverlayAlwaysVisible;
+        overlay["ShowResultOverlay"] = ShowResultOverlay;
+        overlay["ShowInTaskbar"] = ShowInTaskbar;
+        overlay["Scale"] = OverlayScale;
     }
 }

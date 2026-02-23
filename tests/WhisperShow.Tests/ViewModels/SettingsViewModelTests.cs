@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -767,6 +768,40 @@ public class SettingsViewModelTests
         vm.Transcription.Models.ActivateCorrectionModelCommand.Execute(item);
 
         _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
+    }
+
+    // --- EnsureObject helper ---
+
+    [Fact]
+    public void EnsureObject_CreatesNewObjectWhenMissing()
+    {
+        var parent = JsonNode.Parse("{}")!;
+
+        var result = SettingsViewModel.EnsureObject(parent, "Child");
+
+        result.Should().NotBeNull();
+        parent["Child"].Should().NotBeNull();
+    }
+
+    [Fact]
+    public void EnsureObject_ReturnsExistingObject()
+    {
+        var parent = JsonNode.Parse("""{ "Child": { "Key": "value" } }""")!;
+
+        var result = SettingsViewModel.EnsureObject(parent, "Child");
+
+        result["Key"]!.GetValue<string>().Should().Be("value");
+    }
+
+    [Fact]
+    public void EnsureObject_ReplacesNonObjectNode()
+    {
+        var parent = JsonNode.Parse("""{ "Child": "not an object" }""")!;
+
+        var result = SettingsViewModel.EnsureObject(parent, "Child");
+
+        result.Should().NotBeNull();
+        result.Count.Should().Be(0);
     }
 
     // --- Mic Test ---

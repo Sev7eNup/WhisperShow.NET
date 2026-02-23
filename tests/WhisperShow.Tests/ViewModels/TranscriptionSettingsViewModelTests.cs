@@ -327,4 +327,19 @@ public class TranscriptionSettingsViewModelTests
 
         json["OpenAI"]!["Endpoint"].Should().BeNull();
     }
+
+    [Fact]
+    public void WriteSettings_MissingSections_CreatesThemAutomatically()
+    {
+        var vm = CreateViewModel();
+        var json = JsonNode.Parse("{}")!;
+
+        var act = () => vm.WriteSettings(json);
+
+        act.Should().NotThrow();
+        json["Provider"]!.GetValue<string>().Should().Be("OpenAI");
+        json["OpenAI"]!["ApiKey"]!.GetValue<string>().Should().Be("sk-test1234567890abcdef");
+        json["Local"]!["ModelName"]!.GetValue<string>().Should().Be("ggml-small.bin");
+        json["TextCorrection"]!["Provider"]!.GetValue<string>().Should().Be("Off");
+    }
 }

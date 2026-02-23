@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -95,5 +96,19 @@ public partial class SettingsViewModel : ObservableObject
             System.WriteSettings(section);
             Transcription.WriteSettings(section);
         });
+    }
+
+    /// <summary>
+    /// Ensures a child JsonObject exists at the given key, creating it if missing.
+    /// Used by sub-VM WriteSettings methods for defensive null-safety.
+    /// </summary>
+    internal static JsonObject EnsureObject(JsonNode parent, string key)
+    {
+        if (parent[key] is not JsonObject obj)
+        {
+            obj = new JsonObject();
+            parent[key] = obj;
+        }
+        return obj;
     }
 }
