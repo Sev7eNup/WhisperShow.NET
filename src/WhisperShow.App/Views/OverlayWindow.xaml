@@ -140,7 +140,7 @@
                     <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.3" Direction="270"/>
                 </Border.Effect>
                 <Border.RenderTransform>
-                    <ScaleTransform x:Name="BubbleScale" ScaleX="1" ScaleY="1"/>
+                    <ScaleTransform x:Name="BubbleScale" ScaleX="0.85" ScaleY="0.85"/>
                 </Border.RenderTransform>
 
                 <Grid>

@@ -124,27 +124,26 @@ public partial class OverlayWindow : Window
 
     private void SetupIdleHoverEffect()
     {
-        var idleButton = IdlePanel.Children[0] as Button;
-        if (idleButton == null) return;
-
-        idleButton.MouseEnter += (_, _) =>
+        MouseEnter += (_, _) =>
         {
-            var scaleUp = new DoubleAnimation(1.05, TimeSpan.FromMilliseconds(150))
+            if (_viewModel.State != RecordingState.Idle) return;
+            var scaleUp = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
-            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
-            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
+            BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
+            BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
         };
 
-        idleButton.MouseLeave += (_, _) =>
+        MouseLeave += (_, _) =>
         {
-            var scaleDown = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(150))
+            if (_viewModel.State != RecordingState.Idle) return;
+            var scaleDown = new DoubleAnimation(0.85, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
-            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
-            IdleButtonScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
+            BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
+            BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
         };
     }
 
@@ -246,6 +245,12 @@ public partial class OverlayWindow : Window
             case RecordingState.Idle:
                 IdlePanel.Visibility = Visibility.Visible;
                 _viewModel.ClearWaveform();
+                var shrink = new DoubleAnimation(0.85, TimeSpan.FromMilliseconds(200))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, shrink);
+                BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, shrink);
                 break;
             case RecordingState.Recording:
                 RecordingPanel.Visibility = Visibility.Visible;
