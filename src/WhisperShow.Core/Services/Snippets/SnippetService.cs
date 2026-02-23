@@ -46,6 +46,30 @@ public class SnippetService : ISnippetService
         _saveHelper.Schedule();
     }
 
+    public void UpdateSnippet(string oldTrigger, string newTrigger, string newReplacement)
+    {
+        if (string.IsNullOrWhiteSpace(newTrigger) || string.IsNullOrWhiteSpace(newReplacement)) return;
+        newTrigger = newTrigger.Trim();
+        newReplacement = newReplacement.Trim();
+
+        EnsureLoaded();
+        lock (_lock)
+        {
+            var index = _snippets.FindIndex(s => s.Trigger.Equals(oldTrigger, StringComparison.OrdinalIgnoreCase));
+            if (index < 0) return;
+
+            // If trigger changed, check the new trigger doesn't conflict with another entry
+            if (!oldTrigger.Equals(newTrigger, StringComparison.OrdinalIgnoreCase)
+                && _snippets.Any(s => s.Trigger.Equals(newTrigger, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            _snippets[index] = new SnippetEntry(newTrigger, newReplacement);
+            _cachedRegexes = null;
+        }
+
+        _saveHelper.Schedule();
+    }
+
     public void RemoveSnippet(string trigger)
     {
         EnsureLoaded();

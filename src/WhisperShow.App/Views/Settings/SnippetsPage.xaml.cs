@@ -25,7 +25,7 @@ public partial class SnippetsPage : UserControl
         }
         else if (e.Key == Key.Enter)
         {
-            ViewModel.DictionarySnippets.AddSnippetCommand.Execute(null);
+            ViewModel.DictionarySnippets.SaveSnippetCommand.Execute(null);
             e.Handled = true;
         }
     }
@@ -34,7 +34,7 @@ public partial class SnippetsPage : UserControl
     {
         if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
-            ViewModel.DictionarySnippets.AddSnippetCommand.Execute(null);
+            ViewModel.DictionarySnippets.SaveSnippetCommand.Execute(null);
             e.Handled = true;
         }
     }

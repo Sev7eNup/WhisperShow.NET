@@ -94,13 +94,13 @@ public class DictionarySnippetsViewModelTests
     }
 
     [Fact]
-    public void AddSnippet_AddsToService_AndClearsInputs()
+    public void SaveSnippet_InAddMode_AddsToService_AndClearsInputs()
     {
         var vm = CreateViewModel();
         vm.NewSnippetTrigger = "addr";
         vm.NewSnippetReplacement = "123 Main Street";
 
-        vm.AddSnippetCommand.Execute(null);
+        vm.SaveSnippetCommand.Execute(null);
 
         _snippetService.Received(1).AddSnippet("addr", "123 Main Street");
         vm.SnippetItems.Should().ContainSingle(s => s.Trigger == "addr" && s.Replacement == "123 Main Street");
@@ -109,13 +109,13 @@ public class DictionarySnippetsViewModelTests
     }
 
     [Fact]
-    public void AddSnippet_SkipsWhenTriggerEmpty()
+    public void SaveSnippet_SkipsWhenTriggerEmpty()
     {
         var vm = CreateViewModel();
         vm.NewSnippetTrigger = "";
         vm.NewSnippetReplacement = "some replacement";
 
-        vm.AddSnippetCommand.Execute(null);
+        vm.SaveSnippetCommand.Execute(null);
 
         _snippetService.DidNotReceive().AddSnippet(Arg.Any<string>(), Arg.Any<string>());
         vm.SnippetItems.Should().BeEmpty();
@@ -138,5 +138,87 @@ public class DictionarySnippetsViewModelTests
         _snippetService.Received(1).RemoveSnippet("brb");
         vm.SnippetItems.Should().NotContain(s => s.Trigger == "brb");
         vm.SnippetItems.Should().ContainSingle(s => s.Trigger == "omw");
+    }
+
+    // --- Edit Snippets ---
+
+    [Fact]
+    public void EditSnippet_FillsInputsAndEntersEditMode()
+    {
+        _snippetService.GetSnippets().Returns(new List<SnippetEntry>
+        {
+            new("brb", "be right back")
+        });
+        var vm = CreateViewModel();
+
+        vm.EditSnippetCommand.Execute(vm.SnippetItems[0]);
+
+        vm.IsEditingSnippet.Should().BeTrue();
+        vm.NewSnippetTrigger.Should().Be("brb");
+        vm.NewSnippetReplacement.Should().Be("be right back");
+    }
+
+    [Fact]
+    public void SaveSnippet_InEditMode_UpdatesServiceAndCollection()
+    {
+        _snippetService.GetSnippets().Returns(new List<SnippetEntry>
+        {
+            new("brb", "be right back"),
+            new("omw", "on my way")
+        });
+        var vm = CreateViewModel();
+
+        // Enter edit mode for first snippet
+        vm.EditSnippetCommand.Execute(vm.SnippetItems[0]);
+
+        // Change the values
+        vm.NewSnippetTrigger = "bbiab";
+        vm.NewSnippetReplacement = "be back in a bit";
+
+        vm.SaveSnippetCommand.Execute(null);
+
+        _snippetService.Received(1).UpdateSnippet("brb", "bbiab", "be back in a bit");
+        vm.SnippetItems[0].Trigger.Should().Be("bbiab");
+        vm.SnippetItems[0].Replacement.Should().Be("be back in a bit");
+        vm.IsEditingSnippet.Should().BeFalse();
+        vm.NewSnippetTrigger.Should().BeEmpty();
+        vm.NewSnippetReplacement.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CancelEditSnippet_ClearsInputsAndExitsEditMode()
+    {
+        _snippetService.GetSnippets().Returns(new List<SnippetEntry>
+        {
+            new("brb", "be right back")
+        });
+        var vm = CreateViewModel();
+
+        vm.EditSnippetCommand.Execute(vm.SnippetItems[0]);
+        vm.NewSnippetTrigger = "changed";
+
+        vm.CancelEditSnippetCommand.Execute(null);
+
+        vm.IsEditingSnippet.Should().BeFalse();
+        vm.NewSnippetTrigger.Should().BeEmpty();
+        vm.NewSnippetReplacement.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RemoveSnippet_WhileEditing_ExitsEditMode()
+    {
+        _snippetService.GetSnippets().Returns(new List<SnippetEntry>
+        {
+            new("brb", "be right back")
+        });
+        var vm = CreateViewModel();
+        var snippet = vm.SnippetItems[0];
+
+        vm.EditSnippetCommand.Execute(snippet);
+        vm.RemoveSnippetCommand.Execute(snippet);
+
+        vm.IsEditingSnippet.Should().BeFalse();
+        vm.NewSnippetTrigger.Should().BeEmpty();
+        vm.SnippetItems.Should().BeEmpty();
     }
 }

@@ -17,6 +17,8 @@ public partial class DictionarySnippetsViewModel : ObservableObject
     public ObservableCollection<SnippetEntry> SnippetItems { get; } = [];
     [ObservableProperty] private string _newSnippetTrigger = "";
     [ObservableProperty] private string _newSnippetReplacement = "";
+    [ObservableProperty] private bool _isEditingSnippet;
+    private SnippetEntry? _editingSnippet;
 
     public DictionarySnippetsViewModel(IDictionaryService dictionaryService, ISnippetService snippetService)
     {
@@ -60,14 +62,48 @@ public partial class DictionarySnippetsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddSnippet()
+    private void SaveSnippet()
     {
         if (string.IsNullOrWhiteSpace(NewSnippetTrigger) || string.IsNullOrWhiteSpace(NewSnippetReplacement)) return;
         var trigger = NewSnippetTrigger.Trim();
         var replacement = NewSnippetReplacement.Trim();
-        _snippetService.AddSnippet(trigger, replacement);
-        if (!SnippetItems.Any(s => s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase)))
-            SnippetItems.Add(new SnippetEntry(trigger, replacement));
+
+        if (IsEditingSnippet && _editingSnippet is not null)
+        {
+            // Update existing snippet
+            _snippetService.UpdateSnippet(_editingSnippet.Trigger, trigger, replacement);
+            var index = SnippetItems.IndexOf(_editingSnippet);
+            if (index >= 0)
+                SnippetItems[index] = new SnippetEntry(trigger, replacement);
+            _editingSnippet = null;
+            IsEditingSnippet = false;
+        }
+        else
+        {
+            // Add new snippet
+            _snippetService.AddSnippet(trigger, replacement);
+            if (!SnippetItems.Any(s => s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase)))
+                SnippetItems.Add(new SnippetEntry(trigger, replacement));
+        }
+
+        NewSnippetTrigger = "";
+        NewSnippetReplacement = "";
+    }
+
+    [RelayCommand]
+    private void EditSnippet(SnippetEntry snippet)
+    {
+        _editingSnippet = snippet;
+        IsEditingSnippet = true;
+        NewSnippetTrigger = snippet.Trigger;
+        NewSnippetReplacement = snippet.Replacement;
+    }
+
+    [RelayCommand]
+    private void CancelEditSnippet()
+    {
+        _editingSnippet = null;
+        IsEditingSnippet = false;
         NewSnippetTrigger = "";
         NewSnippetReplacement = "";
     }
@@ -77,5 +113,9 @@ public partial class DictionarySnippetsViewModel : ObservableObject
     {
         _snippetService.RemoveSnippet(snippet.Trigger);
         SnippetItems.Remove(snippet);
+
+        // If we were editing the removed snippet, exit edit mode
+        if (_editingSnippet == snippet)
+            CancelEditSnippet();
     }
 }
