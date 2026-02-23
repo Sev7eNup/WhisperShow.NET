@@ -115,6 +115,8 @@ public class DictionaryService : IDictionaryService
         }
     }
 
+    public void Dispose() => _saveHelper.Dispose();
+
     private void EnsureLoaded()
     {
         if (_loaded) return;

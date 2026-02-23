@@ -183,21 +183,32 @@ public partial class OverlayWindow : Window
     private void UpdateWaveformBars()
     {
         var levels = _viewModel.GetWaveformLevels();
+        var heights = InterpolateWaveformLevels(levels, WaveformBarCount);
         for (int i = 0; i < WaveformBarCount; i++)
         {
-            // Map 20 ViewModel levels to 16 bars via linear interpolation
-            double srcIndex = i * (ViewModelWaveformCount - 1.0) / (WaveformBarCount - 1.0);
+            _waveformBars[i].Height = heights[i];
+            Canvas.SetTop(_waveformBars[i], (30 - heights[i]) / 2); // center vertically
+        }
+    }
+
+    internal static double[] InterpolateWaveformLevels(float[] levels, int barCount)
+    {
+        var heights = new double[barCount];
+        int srcCount = levels.Length;
+        for (int i = 0; i < barCount; i++)
+        {
+            // Map barCount bars to srcCount levels via linear interpolation
+            double srcIndex = i * (srcCount - 1.0) / (barCount - 1.0);
             int lo = (int)srcIndex;
-            int hi = Math.Min(lo + 1, ViewModelWaveformCount - 1);
+            int hi = Math.Min(lo + 1, srcCount - 1);
             double frac = srcIndex - lo;
             float interpolated = (float)(levels[lo] * (1 - frac) + levels[hi] * frac);
 
             // Amplify: typical speech is 0.0-0.3, scale up for visibility
             float level = Math.Min(interpolated * 3.5f, 1.0f);
-            double height = Math.Max(2, level * 28);
-            _waveformBars[i].Height = height;
-            Canvas.SetTop(_waveformBars[i], (30 - height) / 2); // center vertically
+            heights[i] = Math.Max(2, level * 28);
         }
+        return heights;
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -347,9 +358,11 @@ public partial class OverlayWindow : Window
         ErrorTranslate.BeginAnimation(TranslateTransform.XProperty, shake);
     }
 
+    internal static double ClampOverlayScale(double scale) => Math.Clamp(scale, 0.75, 2.0);
+
     private void ApplyOverlayScale(double scale)
     {
-        scale = Math.Clamp(scale, 0.75, 2.0);
+        scale = ClampOverlayScale(scale);
         OverlayScaleTransform.ScaleX = scale;
         OverlayScaleTransform.ScaleY = scale;
     }

@@ -117,4 +117,24 @@ public class DictionaryServiceTests : IDisposable
 
         service2.GetEntries().Should().ContainSingle().Which.Should().Be("CustomWord");
     }
+
+    [Fact]
+    public async Task Dispose_DoesNotThrow()
+    {
+        var service = CreateService();
+        await service.LoadAsync();
+        service.AddEntry("TestWord");
+
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var service = CreateService();
+        service.Dispose();
+        var act = () => service.Dispose();
+        act.Should().NotThrow();
+    }
 }

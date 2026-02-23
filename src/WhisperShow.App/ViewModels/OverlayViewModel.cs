@@ -17,7 +17,7 @@ using WhisperShow.Core.Services.Transcription;
 
 namespace WhisperShow.App.ViewModels;
 
-public partial class OverlayViewModel : ObservableObject
+public partial class OverlayViewModel : ObservableObject, IDisposable
 {
     private readonly IAudioRecordingService _audioService;
     private readonly IAudioMutingService _mutingService;
@@ -34,6 +34,7 @@ public partial class OverlayViewModel : ObservableObject
     private readonly ISettingsPersistenceService _persistenceService;
     private readonly ILogger<OverlayViewModel> _logger;
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
+    private readonly IDisposable? _optionsChangeRegistration;
     private IntPtr _previousForegroundWindow;
     private CancellationTokenSource? _autoDismissCts;
     private DateTime _recordingStartTime;
@@ -108,7 +109,7 @@ public partial class OverlayViewModel : ObservableObject
         _audioService.AudioLevelChanged += (_, level) =>
             _dispatcher.Invoke(() => AudioLevel = level);
 
-        _optionsMonitor.OnChange(OnOptionsChanged);
+        _optionsChangeRegistration = _optionsMonitor.OnChange(OnOptionsChanged);
 
         UpdateProviderName();
     }
@@ -387,5 +388,16 @@ public partial class OverlayViewModel : ObservableObject
     {
         var provider = _providerFactory.GetProvider(Options.Provider);
         CurrentProviderName = provider.ProviderName;
+    }
+
+    public void Dispose()
+    {
+        _autoDismissCts?.Cancel();
+        _autoDismissCts?.Dispose();
+        _autoDismissCts = null;
+        _recordingTimer?.Stop();
+        _recordingTimer?.Dispose();
+        _recordingTimer = null;
+        _optionsChangeRegistration?.Dispose();
     }
 }

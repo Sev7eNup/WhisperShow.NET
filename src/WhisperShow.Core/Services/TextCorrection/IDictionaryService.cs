@@ -1,6 +1,6 @@
 namespace WhisperShow.Core.Services.TextCorrection;
 
-public interface IDictionaryService
+public interface IDictionaryService : IDisposable
 {
     IReadOnlyList<string> GetEntries();
     void AddEntry(string word);

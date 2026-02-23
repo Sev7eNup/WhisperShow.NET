@@ -135,6 +135,8 @@ public class SnippetService : ISnippetService
         }
     }
 
+    public void Dispose() => _saveHelper.Dispose();
+
     private void EnsureLoaded()
     {
         if (_loaded) return;

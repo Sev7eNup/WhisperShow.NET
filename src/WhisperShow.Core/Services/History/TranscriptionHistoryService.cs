@@ -107,6 +107,8 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
         }
     }
 
+    public void Dispose() => _saveHelper.Dispose();
+
     private void EnsureLoaded()
     {
         if (_entries is not null) return;

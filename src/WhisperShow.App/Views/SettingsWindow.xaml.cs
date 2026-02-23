@@ -165,17 +165,23 @@ public partial class SettingsWindow : Window
         }
 
         var modifiers = Keyboard.Modifiers;
-        var modList = new List<string>();
-        if (modifiers.HasFlag(ModifierKeys.Control)) modList.Add("Control");
-        if (modifiers.HasFlag(ModifierKeys.Shift)) modList.Add("Shift");
-        if (modifiers.HasFlag(ModifierKeys.Alt)) modList.Add("Alt");
-        if (modifiers.HasFlag(ModifierKeys.Windows)) modList.Add("Windows");
+        var modList = ParseModifiers(modifiers);
 
         // Require at least one modifier
         if (modList.Count == 0) return;
 
         _viewModel.General.ApplyNewHotkey(string.Join(", ", modList), key.ToString());
         e.Handled = true;
+    }
+
+    internal static List<string> ParseModifiers(ModifierKeys modifiers)
+    {
+        var modList = new List<string>();
+        if (modifiers.HasFlag(ModifierKeys.Control)) modList.Add("Control");
+        if (modifiers.HasFlag(ModifierKeys.Shift)) modList.Add("Shift");
+        if (modifiers.HasFlag(ModifierKeys.Alt)) modList.Add("Alt");
+        if (modifiers.HasFlag(ModifierKeys.Windows)) modList.Add("Windows");
+        return modList;
     }
 
     // --- Dialog overlay ---

@@ -2,7 +2,7 @@ using WhisperShow.Core.Models;
 
 namespace WhisperShow.Core.Services.Statistics;
 
-public interface IUsageStatsService
+public interface IUsageStatsService : IDisposable
 {
     UsageStats GetStats();
     void RecordTranscription(double durationSeconds, long audioBytesProcessed, string provider);

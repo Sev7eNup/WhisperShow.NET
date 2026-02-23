@@ -2,7 +2,7 @@ using WhisperShow.Core.Models;
 
 namespace WhisperShow.Core.Services.History;
 
-public interface ITranscriptionHistoryService
+public interface ITranscriptionHistoryService : IDisposable
 {
     IReadOnlyList<TranscriptionHistoryEntry> GetEntries();
     void AddEntry(string text, string provider, double durationSeconds);
