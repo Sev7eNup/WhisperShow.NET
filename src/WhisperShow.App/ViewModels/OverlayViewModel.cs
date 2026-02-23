@@ -261,10 +261,19 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
             // Auto-insert into the previously focused window
             await InsertTextAsync();
-            // Show result panel with transcribed text, auto-dismiss after configured timeout
-            State = RecordingState.Result;
-            _logger.LogInformation("State: Transcribing -> Result");
-            StartAutoDismissTimer();
+
+            if (Options.Overlay.ShowResultOverlay)
+            {
+                // Show result panel with transcribed text, auto-dismiss after configured timeout
+                State = RecordingState.Result;
+                _logger.LogInformation("State: Transcribing -> Result");
+                StartAutoDismissTimer();
+            }
+            else
+            {
+                State = RecordingState.Idle;
+                _logger.LogInformation("State: Transcribing -> Idle (result overlay disabled)");
+            }
         }
         catch (Exception ex)
         {

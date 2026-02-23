@@ -32,6 +32,7 @@ public class SystemSettingsViewModelTests
         {
             o.App.LaunchAtLogin = true;
             o.Overlay.AlwaysVisible = false;
+            o.Overlay.ShowResultOverlay = false;
             o.Overlay.ShowInTaskbar = true;
             o.App.Theme = "Dark";
             o.App.SoundEffects = false;
@@ -44,6 +45,7 @@ public class SystemSettingsViewModelTests
 
         vm.LaunchAtLogin.Should().BeTrue();
         vm.OverlayAlwaysVisible.Should().BeFalse();
+        vm.ShowResultOverlay.Should().BeFalse();
         vm.ShowInTaskbar.Should().BeTrue();
         vm.IsDarkMode.Should().BeTrue();
         vm.SoundEffectsEnabled.Should().BeFalse();
@@ -72,6 +74,14 @@ public class SystemSettingsViewModelTests
     {
         var vm = CreateViewModel();
         vm.ToggleOverlayAlwaysVisibleCommand.Execute(null);
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ToggleShowResultOverlay_TriggersSave()
+    {
+        var vm = CreateViewModel();
+        vm.ToggleShowResultOverlayCommand.Execute(null);
         _saveCalled.Should().BeTrue();
     }
 
@@ -134,6 +144,7 @@ public class SystemSettingsViewModelTests
             o.Audio.MuteWhileDictating = false;
             o.Audio.CompressBeforeUpload = false;
             o.Overlay.AlwaysVisible = false;
+            o.Overlay.ShowResultOverlay = false;
             o.Overlay.ShowInTaskbar = true;
             o.Overlay.Scale = 1.5;
             o.Overlay.AutoDismissSeconds = 15;
@@ -144,7 +155,7 @@ public class SystemSettingsViewModelTests
         {
             "App": { "LaunchAtLogin": false, "SoundEffects": true, "Theme": "Light" },
             "Audio": { "MaxRecordingSeconds": 300, "CompressBeforeUpload": true, "MuteWhileDictating": true },
-            "Overlay": { "AutoDismissSeconds": 10, "AlwaysVisible": true, "ShowInTaskbar": false, "Scale": 1.0 }
+            "Overlay": { "AutoDismissSeconds": 10, "AlwaysVisible": true, "ShowResultOverlay": true, "ShowInTaskbar": false, "Scale": 1.0 }
         }
         """)!;
 
@@ -158,6 +169,7 @@ public class SystemSettingsViewModelTests
         json["Audio"]!["MuteWhileDictating"]!.GetValue<bool>().Should().BeFalse();
         json["Overlay"]!["AutoDismissSeconds"]!.GetValue<int>().Should().Be(15);
         json["Overlay"]!["AlwaysVisible"]!.GetValue<bool>().Should().BeFalse();
+        json["Overlay"]!["ShowResultOverlay"]!.GetValue<bool>().Should().BeFalse();
         json["Overlay"]!["ShowInTaskbar"]!.GetValue<bool>().Should().BeTrue();
         json["Overlay"]!["Scale"]!.GetValue<double>().Should().Be(1.5);
     }
@@ -171,7 +183,7 @@ public class SystemSettingsViewModelTests
         {
             "App": { "LaunchAtLogin": false, "SoundEffects": true, "Theme": "Dark" },
             "Audio": { "MaxRecordingSeconds": 300, "CompressBeforeUpload": true, "MuteWhileDictating": true },
-            "Overlay": { "AutoDismissSeconds": 10, "AlwaysVisible": true, "ShowInTaskbar": false, "Scale": 1.0 }
+            "Overlay": { "AutoDismissSeconds": 10, "AlwaysVisible": true, "ShowResultOverlay": true, "ShowInTaskbar": false, "Scale": 1.0 }
         }
         """)!;
 
