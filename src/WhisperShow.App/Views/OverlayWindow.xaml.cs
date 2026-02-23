@@ -31,10 +31,8 @@ public partial class OverlayWindow : Window
     // Cached brushes for state changes
     private Brush? _idleGradient;
     private Brush? _recordingGradient;
-    private Brush? _transcribingGradient;
     private Brush? _idleTailBrush;
     private Brush? _recordingTailBrush;
-    private Brush? _transcribingTailBrush;
 
     public OverlayWindow(OverlayViewModel viewModel,
         IGlobalHotkeyService hotkeyService,
@@ -104,10 +102,8 @@ public partial class OverlayWindow : Window
         // Cache brushes
         _idleGradient = (Brush)FindResource("IdleGradient");
         _recordingGradient = (Brush)FindResource("RecordingGradient");
-        _transcribingGradient = (Brush)FindResource("TranscribingGradient");
         _idleTailBrush = (Brush)FindResource("IdleTailBrush");
         _recordingTailBrush = (Brush)FindResource("RecordingTailBrush");
-        _transcribingTailBrush = (Brush)FindResource("TranscribingTailBrush");
 
         // Create waveform bars
         CreateWaveformBars();
@@ -304,11 +300,7 @@ public partial class OverlayWindow : Window
                 BubbleBody.Background = _recordingGradient;
                 BubbleTail.Fill = _recordingTailBrush;
                 break;
-            case RecordingState.Transcribing:
-                BubbleBody.Background = _transcribingGradient;
-                BubbleTail.Fill = _transcribingTailBrush;
-                break;
-            default: // Idle, Result, Error
+            default: // Idle, Transcribing, Result, Error
                 BubbleBody.Background = _idleGradient;
                 BubbleTail.Fill = _idleTailBrush;
                 break;

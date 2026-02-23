@@ -53,6 +53,7 @@
                             </StackPanel>
                             <Button Grid.Column="1" Content="&#xE711;" FontFamily="Segoe MDL2 Assets"
                                     FontSize="10" Cursor="Hand" VerticalAlignment="Center"
+                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                     Command="{Binding DataContext.RemoveSnippetCommand,
                                         RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                     CommandParameter="{Binding}">
