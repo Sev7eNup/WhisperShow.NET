@@ -101,6 +101,7 @@ public partial class App : Application
                 services.AddSingleton<ISettingsPersistenceService, SettingsPersistenceService>();
                 services.AddSingleton<IWindowFocusService, WindowFocusService>();
                 services.AddSingleton<IAutoStartService, AutoStartService>();
+                services.AddSingleton<TrayIconManager>();
 
                 // ViewModels
                 services.AddSingleton<OverlayViewModel>();
@@ -134,7 +135,7 @@ public partial class App : Application
             overlayWindow.Show();
 
             // Setup system tray
-            _trayIconManager = new TrayIconManager();
+            _trayIconManager = _host.Services.GetRequiredService<TrayIconManager>();
             _trayIconManager.Initialize(
                 overlayWindow,
                 () => _host!.Services.GetRequiredService<SettingsWindow>(),

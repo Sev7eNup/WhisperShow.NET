@@ -1,14 +1,51 @@
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using H.NotifyIcon;
+using Microsoft.Extensions.Options;
+using NAudio.Wave;
 using WhisperShow.App.Views;
+using WhisperShow.Core.Configuration;
+using WhisperShow.Core.Services.Configuration;
+using WhisperShow.Core.Services.History;
+using WhisperShow.Core.Services.TextInsertion;
 
 namespace WhisperShow.App.Services;
 
 public class TrayIconManager : IDisposable
 {
+    private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
+    private readonly ISettingsPersistenceService _settingsPersistence;
+    private readonly ITranscriptionHistoryService _historyService;
+    private readonly ITextInsertionService _textInsertionService;
+    private readonly IWindowFocusService _windowFocusService;
+
     private TaskbarIcon? _trayIcon;
+    private IntPtr _previousForegroundWindow;
+
+    private static readonly (string Code, string Name)[] Languages =
+    [
+        ("de", "German"), ("en", "English"), ("fr", "French"), ("es", "Spanish"),
+        ("it", "Italian"), ("pt", "Portuguese"), ("nl", "Dutch"), ("pl", "Polish"),
+        ("ru", "Russian"), ("uk", "Ukrainian"), ("zh", "Chinese"), ("ja", "Japanese"),
+        ("ko", "Korean"), ("ar", "Arabic"), ("tr", "Turkish"), ("sv", "Swedish"),
+        ("da", "Danish"), ("no", "Norwegian"), ("fi", "Finnish"), ("cs", "Czech"),
+    ];
+
+    public TrayIconManager(
+        IOptionsMonitor<WhisperShowOptions> optionsMonitor,
+        ISettingsPersistenceService settingsPersistence,
+        ITranscriptionHistoryService historyService,
+        ITextInsertionService textInsertionService,
+        IWindowFocusService windowFocusService)
+    {
+        _optionsMonitor = optionsMonitor;
+        _settingsPersistence = settingsPersistence;
+        _historyService = historyService;
+        _textInsertionService = textInsertionService;
+        _windowFocusService = windowFocusService;
+    }
 
     public void Initialize(OverlayWindow overlayWindow, Func<SettingsWindow> settingsFactory,
         Func<HistoryWindow> historyFactory, Action shutdown)
@@ -27,7 +64,7 @@ public class TrayIconManager : IDisposable
         _trayIcon.ForceCreate();
     }
 
-    private static ContextMenu BuildContextMenu(
+    private ContextMenu BuildContextMenu(
         OverlayWindow overlayWindow,
         Func<SettingsWindow> settingsFactory,
         Func<HistoryWindow> historyFactory,
@@ -43,6 +80,8 @@ public class TrayIconManager : IDisposable
         contextMenu.Style = (Style)styles["TrayContextMenuStyle"];
 
         var menuItemStyle = (Style)styles["TrayMenuItemStyle"];
+        var subMenuStyle = (Style)styles["TraySubMenuItemStyle"];
+        var checkMenuStyle = (Style)styles["TrayCheckMenuItemStyle"];
         var separatorStyle = (Style)styles["TraySeparatorStyle"];
 
         // Header label
@@ -59,12 +98,41 @@ public class TrayIconManager : IDisposable
         contextMenu.Items.Add(header);
         contextMenu.Items.Add(CreateSeparator(separatorStyle));
 
+        // Show/Hide Overlay
         var showItem = CreateMenuItem("Show Overlay", "\uE7B3", menuItemStyle);
         showItem.Click += (_, _) => { overlayWindow.Show(); overlayWindow.Activate(); };
 
         var hideItem = CreateMenuItem("Hide Overlay", "\uED1A", menuItemStyle);
         hideItem.Click += (_, _) => overlayWindow.Hide();
 
+        contextMenu.Items.Add(showItem);
+        contextMenu.Items.Add(hideItem);
+        contextMenu.Items.Add(CreateSeparator(separatorStyle));
+
+        // Language submenu
+        var languageItem = CreateMenuItem("Language", "\uE775", subMenuStyle);
+        contextMenu.Items.Add(languageItem);
+
+        // Microphone submenu
+        var microphoneItem = CreateMenuItem("Microphone", "\uE720", subMenuStyle);
+        contextMenu.Items.Add(microphoneItem);
+
+        // Paste Last Transcript
+        var pasteItem = CreateMenuItem("Paste Last Transcript", "\uE77F", menuItemStyle);
+        pasteItem.Click += async (_, _) =>
+        {
+            var entries = _historyService.GetEntries();
+            if (entries.Count == 0) return;
+
+            contextMenu.IsOpen = false;
+            await Task.Delay(100);
+            await _windowFocusService.RestoreFocusAsync(_previousForegroundWindow);
+            await _textInsertionService.InsertTextAsync(entries[0].Text);
+        };
+        contextMenu.Items.Add(pasteItem);
+        contextMenu.Items.Add(CreateSeparator(separatorStyle));
+
+        // Settings / History
         var settingsItem = CreateMenuItem("Settings", "\uE713", menuItemStyle);
         settingsItem.Click += (_, _) =>
         {
@@ -76,21 +144,99 @@ public class TrayIconManager : IDisposable
         var historyItem = CreateMenuItem("History", "\uE81C", menuItemStyle);
         historyItem.Click += (_, _) => historyFactory().ShowAndRefresh();
 
-        var exitItem = CreateMenuItem("Exit", "\uE7E8", menuItemStyle);
-        exitItem.Click += (_, _) =>
-        {
-            shutdown();
-        };
-
-        contextMenu.Items.Add(showItem);
-        contextMenu.Items.Add(hideItem);
-        contextMenu.Items.Add(CreateSeparator(separatorStyle));
         contextMenu.Items.Add(settingsItem);
         contextMenu.Items.Add(historyItem);
         contextMenu.Items.Add(CreateSeparator(separatorStyle));
+
+        // Exit
+        var exitItem = CreateMenuItem("Exit", "\uE7E8", menuItemStyle);
+        exitItem.Click += (_, _) => shutdown();
         contextMenu.Items.Add(exitItem);
 
+        // Rebuild dynamic submenus each time the context menu opens
+        contextMenu.Opened += (_, _) =>
+        {
+            RebuildLanguageSubmenu(languageItem, checkMenuStyle);
+            RebuildMicrophoneSubmenu(microphoneItem, checkMenuStyle);
+            pasteItem.IsEnabled = _historyService.GetEntries().Count > 0;
+        };
+
         return contextMenu;
+    }
+
+    private void RebuildLanguageSubmenu(MenuItem parent, Style checkMenuStyle)
+    {
+        parent.Items.Clear();
+        var currentLang = _optionsMonitor.CurrentValue.Language;
+
+        var autoItem = new MenuItem
+        {
+            Header = "Auto-detect",
+            IsCheckable = true,
+            IsChecked = string.IsNullOrEmpty(currentLang),
+            Style = checkMenuStyle
+        };
+        autoItem.Click += (_, _) =>
+            _settingsPersistence.ScheduleUpdate(node => node["Language"] = (string?)null);
+        parent.Items.Add(autoItem);
+
+        parent.Items.Add(new Separator
+        {
+            Style = (Style)parent.FindResource("TraySeparatorStyle")
+        });
+
+        foreach (var (code, name) in Languages)
+        {
+            var item = new MenuItem
+            {
+                Header = name,
+                IsCheckable = true,
+                IsChecked = string.Equals(currentLang, code, StringComparison.OrdinalIgnoreCase),
+                Style = checkMenuStyle
+            };
+            var langCode = code;
+            item.Click += (_, _) =>
+                _settingsPersistence.ScheduleUpdate(node => node["Language"] = langCode);
+            parent.Items.Add(item);
+        }
+    }
+
+    private void RebuildMicrophoneSubmenu(MenuItem parent, Style checkMenuStyle)
+    {
+        parent.Items.Clear();
+        var currentIndex = _optionsMonitor.CurrentValue.Audio.DeviceIndex;
+        var deviceCount = WaveInEvent.DeviceCount;
+
+        for (int i = 0; i < deviceCount; i++)
+        {
+            var caps = WaveInEvent.GetCapabilities(i);
+            var item = new MenuItem
+            {
+                Header = caps.ProductName,
+                IsCheckable = true,
+                IsChecked = i == currentIndex,
+                Style = checkMenuStyle
+            };
+            var deviceIndex = i;
+            item.Click += (_, _) =>
+                _settingsPersistence.ScheduleUpdate(node =>
+                {
+                    node["Audio"] ??= new JsonObject();
+                    node["Audio"]!["DeviceIndex"] = deviceIndex;
+                });
+            parent.Items.Add(item);
+        }
+
+        if (deviceCount == 0)
+        {
+            var emptyItem = new MenuItem
+            {
+                Header = "No devices found",
+                IsEnabled = false,
+                Style = checkMenuStyle
+            };
+            parent.Items.Add(emptyItem);
+        }
     }
 
     private static MenuItem CreateMenuItem(string header, string iconGlyph, Style style)
@@ -112,6 +258,9 @@ public class TrayIconManager : IDisposable
     {
         _trayIcon!.TrayRightMouseDown += (_, _) =>
         {
+            // Capture the foreground window before we manipulate focus (for Paste Last Transcript)
+            _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
+
             // Win32 KB135788 workaround: the process must own a foreground window
             // before showing a tray context menu, otherwise it closes immediately.
             // The overlay has WS_EX_NOACTIVATE, so temporarily remove it.
