@@ -61,7 +61,7 @@ public class DictionaryService : IDictionaryService
 
         if (snapshot.Count == 0) return "";
 
-        return $"\nIMPORTANT: Use these exact spellings when they appear in the transcription: {string.Join(", ", snapshot)}";
+        return $"\nCustom vocabulary (use these exact spellings ONLY if the word was actually spoken — do NOT insert them otherwise): {string.Join(", ", snapshot)}";
     }
 
     public async Task LoadAsync()
