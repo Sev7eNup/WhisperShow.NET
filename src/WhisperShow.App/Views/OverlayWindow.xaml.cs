@@ -22,7 +22,6 @@ public partial class OverlayWindow : Window
     private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private readonly ILogger<OverlayWindow> _logger;
     private readonly WhisperShowOptions _options;
-    private Storyboard? _glowPulseStoryboard;
     private Storyboard? _typingDotsStoryboard;
     private const int WaveformBarCount = 16;
     private const int ViewModelWaveformCount = 20;
@@ -96,7 +95,6 @@ public partial class OverlayWindow : Window
         _hotkeyService.Register(handle);
 
         // Cache storyboards
-        _glowPulseStoryboard = (Storyboard)FindResource("GlowPulseAnimation");
         _typingDotsStoryboard = (Storyboard)FindResource("TypingDotsAnimation");
 
         // Cache brushes
@@ -226,9 +224,7 @@ public partial class OverlayWindow : Window
             _hotkeyService.UnregisterEscapeHotkey();
 
         // Stop all animations
-        _glowPulseStoryboard?.Stop(this);
         _typingDotsStoryboard?.Stop(this);
-        GlowBorder.Opacity = 0;
 
         // Hide all panels
         IdlePanel.Visibility = Visibility.Collapsed;
@@ -273,7 +269,6 @@ public partial class OverlayWindow : Window
                 break;
             case RecordingState.Recording:
                 RecordingPanel.Visibility = Visibility.Visible;
-                _glowPulseStoryboard?.Begin(this, true);
                 AnimateStateTransition();
                 break;
             case RecordingState.Transcribing:

@@ -32,17 +32,6 @@
         <SolidColorBrush x:Key="SubtleBrush" Color="#AAFFFFFF"/>
         <SolidColorBrush x:Key="ErrorBrush" Color="#FFE53935"/>
 
-        <!-- Breathing glow for recording -->
-        <Storyboard x:Key="GlowPulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
-            <DoubleAnimation Storyboard.TargetName="GlowBorder"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0" To="0.4" Duration="0:0:0.8">
-                <DoubleAnimation.EasingFunction>
-                    <SineEase EasingMode="EaseInOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-
         <!-- Typing dots for transcribing -->
         <Storyboard x:Key="TypingDotsAnimation" RepeatBehavior="Forever">
             <!-- Dot 1 -->
@@ -107,17 +96,6 @@
         <Grid.LayoutTransform>
             <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1"/>
         </Grid.LayoutTransform>
-
-        <!-- Glow border behind bubble (for recording breathing effect) -->
-        <Border x:Name="GlowBorder" Opacity="0" CornerRadius="14"
-                Margin="-4,-4,-4,-2" IsHitTestVisible="False">
-            <Border.Background>
-                <SolidColorBrush Color="#FFEF5350"/>
-            </Border.Background>
-            <Border.Effect>
-                <BlurEffect Radius="15"/>
-            </Border.Effect>
-        </Border>
 
         <!-- Speech bubble: body + tail -->
         <Grid>
