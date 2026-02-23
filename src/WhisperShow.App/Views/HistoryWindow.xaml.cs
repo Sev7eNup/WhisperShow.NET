@@ -2,21 +2,50 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Extensions.Options;
 using WhisperShow.App.ViewModels;
+using WhisperShow.Core.Configuration;
 
 namespace WhisperShow.App.Views;
 
 public partial class HistoryWindow : Window
 {
     private readonly HistoryViewModel _viewModel;
+    private readonly IDisposable? _optionsChangeRegistration;
 
-    public HistoryWindow(HistoryViewModel viewModel)
+    public HistoryWindow(HistoryViewModel viewModel, IOptionsMonitor<WhisperShowOptions> optionsMonitor)
     {
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = _viewModel;
 
         ClipBorder.SizeChanged += OnClipBorderSizeChanged;
+
+        // Apply initial theme
+        ApplyTheme(string.Equals(optionsMonitor.CurrentValue.App.Theme, "Dark", StringComparison.OrdinalIgnoreCase));
+
+        // Listen for theme changes
+        _optionsChangeRegistration = optionsMonitor.OnChange(opts =>
+        {
+            Dispatcher.Invoke(() =>
+                ApplyTheme(string.Equals(opts.App.Theme, "Dark", StringComparison.OrdinalIgnoreCase)));
+        });
+    }
+
+    private void ApplyTheme(bool isDark)
+    {
+        var themePath = isDark
+            ? "/Themes/SettingsDarkTheme.xaml"
+            : "/Themes/SettingsLightTheme.xaml";
+
+        var themeUri = new Uri(themePath, UriKind.Relative);
+        var themeDict = new ResourceDictionary { Source = themeUri };
+
+        var merged = Resources.MergedDictionaries;
+        if (merged.Count > 0)
+            merged[0] = themeDict;
+        else
+            merged.Insert(0, themeDict);
     }
 
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
@@ -28,6 +57,7 @@ public partial class HistoryWindow : Window
     public void Cleanup()
     {
         ClipBorder.SizeChanged -= OnClipBorderSizeChanged;
+        _optionsChangeRegistration?.Dispose();
     }
 
     public void ShowAndRefresh()

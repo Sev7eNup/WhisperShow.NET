@@ -13,24 +13,22 @@
         Title="Transcription History">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="BgBrush" Color="#FAF8F5"/>
-        <SolidColorBrush x:Key="SidebarBgBrush" Color="#F5F0EB"/>
-        <SolidColorBrush x:Key="CardBgBrush" Color="#F0EBE4"/>
-        <SolidColorBrush x:Key="ButtonBgBrush" Color="#EAE4DC"/>
-        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#DED8D0"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1A1A1A"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#8A8A8A"/>
-        <SolidColorBrush x:Key="DividerBrush" Color="#E8E0D8"/>
-        <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibility"/>
-        <converters:NonEmptyStringToVisibilityConverter x:Key="NonEmptyStringToVisibility"/>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/SettingsDarkTheme.xaml"/>
+                <ResourceDictionary Source="/Themes/SettingsStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibility"/>
+            <converters:NonEmptyStringToVisibilityConverter x:Key="NonEmptyStringToVisibility"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Border CornerRadius="12">
         <Border.Effect>
             <DropShadowEffect BlurRadius="20" ShadowDepth="2" Opacity="0.12" Color="#000000"/>
         </Border.Effect>
-        <Border x:Name="ClipBorder" CornerRadius="12" Background="{StaticResource BgBrush}" ClipToBounds="True">
+        <Border x:Name="ClipBorder" CornerRadius="12" Background="{DynamicResource BgBrush}" ClipToBounds="True">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -40,10 +38,10 @@
                 </Grid.RowDefinitions>
 
                 <!-- Title bar -->
-                <Grid Grid.Row="0" Height="40" Background="{StaticResource SidebarBgBrush}"
+                <Grid Grid.Row="0" Height="40" Background="{DynamicResource SidebarBgBrush}"
                       MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                     <TextBlock Text="Transcription History" FontSize="13" FontWeight="SemiBold"
-                               FontFamily="Segoe UI" Foreground="{StaticResource TextPrimaryBrush}"
+                               FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
                                HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0"/>
                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
                             Cursor="Hand" Click="CloseButton_Click">
@@ -51,12 +49,12 @@
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Width="28" Height="28">
                                     <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonBgBrush}"/>
+                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBgBrush}"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -66,7 +64,7 @@
 
                 <!-- Search box -->
                 <Grid Grid.Row="1" Margin="12,8,12,0">
-                    <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="0">
+                    <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="0">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -74,17 +72,18 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="SearchBox" Grid.Column="1"
                                      Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
                                      FontSize="12" FontFamily="Segoe UI"
-                                     Foreground="{StaticResource TextPrimaryBrush}"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     CaretBrush="{DynamicResource TextPrimaryBrush}"
                                      VerticalAlignment="Center" Margin="6,0,0,0"
                                      BorderThickness="0" Background="Transparent" Padding="0,6"/>
                             <TextBlock Grid.Column="1" Text="Search transcriptions..."
                                        FontSize="12" FontFamily="Segoe UI"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="6,0,0,0" Padding="0,6"
                                        IsHitTestVisible="False"
                                        Visibility="{Binding SearchQuery, Converter={StaticResource EmptyStringToVisibility}}"/>
@@ -96,12 +95,12 @@
                                         <Border x:Name="Bd" Background="Transparent" CornerRadius="6"
                                                 Width="26" Height="26" Margin="0,0,4,0">
                                             <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="9"
-                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonBgBrush}"/>
+                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBgBrush}"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -116,7 +115,7 @@
                     <ItemsControl ItemsSource="{Binding Entries}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource CardBgBrush}" CornerRadius="10"
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="10"
                                         Padding="14,10" Margin="0,0,0,6">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -132,57 +131,59 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding Preview}" FontSize="12" FontFamily="Segoe UI"
-                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                                        MaxHeight="38"/>
-                                            <Border Grid.Column="1" Background="{StaticResource ButtonBgBrush}"
+                                            <Border Grid.Column="1" Background="{DynamicResource ButtonBgBrush}"
                                                     CornerRadius="4" Padding="5,1" VerticalAlignment="Top"
                                                     Margin="6,0,0,0">
                                                 <TextBlock Text="{Binding Provider}" FontSize="9"
                                                            FontFamily="Segoe UI"
-                                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
                                             </Border>
                                             <TextBlock Grid.Column="2" Text="{Binding TimeAgo}" FontSize="10"
-                                                       FontFamily="Segoe UI" Foreground="{StaticResource TextSecondaryBrush}"
+                                                       FontFamily="Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                                        VerticalAlignment="Top" Margin="6,0,0,0"/>
                                         </Grid>
 
                                         <!-- Action buttons -->
                                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0">
                                             <Button Content="Copy" Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
+                                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                                     Command="{Binding DataContext.CopyEntryCommand,
                                                         RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Bd" Background="{StaticResource ButtonBgBrush}"
+                                                        <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
                                                                 CornerRadius="6" Padding="10,4"
-                                                                BorderBrush="{StaticResource ButtonBorderBrush}" BorderThickness="1">
+                                                                BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
                                                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonBorderBrush}"/>
+                                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
                                             <Button Content="Insert" Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
+                                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                                     Margin="6,0,0,0"
                                                     Command="{Binding DataContext.InsertEntryCommand,
                                                         RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Bd" Background="{StaticResource ButtonBgBrush}"
+                                                        <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
                                                                 CornerRadius="6" Padding="10,4"
-                                                                BorderBrush="{StaticResource ButtonBorderBrush}" BorderThickness="1">
+                                                                BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
                                                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonBorderBrush}"/>
+                                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -198,12 +199,12 @@
                                                         <Border x:Name="Bd" Background="Transparent"
                                                                 CornerRadius="6" Width="26" Height="26">
                                                             <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonBgBrush}"/>
+                                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBgBrush}"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -220,31 +221,32 @@
                 <!-- No results message -->
                 <TextBlock Grid.Row="2" Text="No matching transcriptions found."
                            FontSize="12" FontFamily="Segoe UI"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            Visibility="{Binding ShowNoResults, Converter={StaticResource BoolToVisibility}}"/>
 
                 <!-- Bottom bar -->
-                <Border Grid.Row="3" Background="{StaticResource SidebarBgBrush}" Padding="12,8"
+                <Border Grid.Row="3" Background="{DynamicResource SidebarBgBrush}" Padding="12,8"
                         CornerRadius="0,0,12,12">
                     <Grid>
                         <TextBlock Text="{Binding EntryCountDisplay}"
                                    FontSize="11" FontFamily="Segoe UI"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center"/>
                         <Button Content="Clear all" HorizontalAlignment="Right" Cursor="Hand"
                                 FontSize="11" FontFamily="Segoe UI"
+                                Foreground="{DynamicResource TextPrimaryBrush}"
                                 Command="{Binding ClearAllCommand}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{StaticResource ButtonBgBrush}"
+                                    <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
                                             CornerRadius="8" Padding="12,5"
-                                            BorderBrush="{StaticResource ButtonBorderBrush}" BorderThickness="1">
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonBorderBrush}"/>
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
