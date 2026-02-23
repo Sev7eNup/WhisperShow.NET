@@ -160,13 +160,60 @@
 
     <!-- TextBox style for inline editing -->
     <Style x:Key="SettingsTextBoxStyle" TargetType="TextBox">
-        <Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="MinWidth" Value="180"/>
         <Setter Property="MaxWidth" Value="300"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Bd"
+                            Background="{DynamicResource ButtonBgBrush}"
+                            BorderBrush="{DynamicResource ButtonBorderBrush}"
+                            BorderThickness="1" CornerRadius="8"
+                            Padding="10,8" SnapsToDevicePixels="True">
+                        <Grid>
+                            <TextBlock x:Name="Placeholder"
+                                       Text="{TemplateBinding Tag}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                       IsHitTestVisible="False" Visibility="Collapsed"/>
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Placeholder visible when empty and unfocused -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Text" Value=""/>
+                                <Condition Property="IsFocused" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Placeholder" Property="Visibility" Value="Visible"/>
+                        </MultiTrigger>
+                        <!-- Hover -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsFocused" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+                        </MultiTrigger>
+                        <!-- Focus -->
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ComboBox style -->
