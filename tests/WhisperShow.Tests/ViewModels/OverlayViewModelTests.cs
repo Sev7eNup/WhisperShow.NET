@@ -23,6 +23,7 @@ public class OverlayViewModelTests : IDisposable
     private readonly ITextInsertionService _textInsertionService;
     private readonly ITextCorrectionService _textCorrectionService;
     private readonly ICombinedTranscriptionCorrectionService _combinedService;
+    private readonly ISnippetService _snippetService;
     private readonly ITranscriptionService _transcriptionProvider;
     private readonly WhisperShowOptions _optionsValue;
 
@@ -35,10 +36,15 @@ public class OverlayViewModelTests : IDisposable
         _textInsertionService = Substitute.For<ITextInsertionService>();
         _textCorrectionService = Substitute.For<ITextCorrectionService>();
         _combinedService = Substitute.For<ICombinedTranscriptionCorrectionService>();
+        _snippetService = Substitute.For<ISnippetService>();
+        _snippetService.ApplySnippets(Arg.Any<string>()).Returns(x => x.Arg<string>());
 
         _transcriptionProvider = Substitute.For<ITranscriptionService>();
         _transcriptionProvider.ProviderName.Returns("Test Provider");
         _transcriptionProvider.IsAvailable.Returns(true);
+        _transcriptionProvider.IsModelLoaded.Returns(true);
+        _textCorrectionService.IsModelLoaded.Returns(true);
+        _combinedService.IsModelLoaded.Returns(true);
 
         _optionsValue = new WhisperShowOptions();
     }
@@ -68,7 +74,7 @@ public class OverlayViewModelTests : IDisposable
             _textInsertionService,
             correctionFactory,
             _combinedService,
-            Substitute.For<ISnippetService>(),
+            _snippetService,
             Substitute.For<ISoundEffectService>(),
             Substitute.For<IUsageStatsService>(),
             Substitute.For<ITranscriptionHistoryService>(),
@@ -491,6 +497,123 @@ public class OverlayViewModelTests : IDisposable
     {
         var vm = CreateViewModel();
         vm.CurrentProviderName.Should().Be("Test Provider");
+    }
+
+    // --- Status Text ---
+
+    [Fact]
+    public void InitialStatusText_IsEmpty()
+    {
+        var vm = CreateViewModel();
+        vm.StatusText.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task StandardPipeline_ModelLoaded_ShowsTranscribing()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new TranscriptionResult { Text = "hello" });
+
+        var statusTexts = new List<string>();
+        var vm = CreateViewModel();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(OverlayViewModel.StatusText))
+                statusTexts.Add(vm.StatusText);
+        };
+
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Recording
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Transcribing → Result
+
+        statusTexts.Should().Contain("Transcribing...");
+    }
+
+    [Fact]
+    public async Task StandardPipeline_ModelNotLoaded_ShowsLoadingStatus()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(false);
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new TranscriptionResult { Text = "hello" });
+
+        var statusTexts = new List<string>();
+        var vm = CreateViewModel();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(OverlayViewModel.StatusText))
+                statusTexts.Add(vm.StatusText);
+        };
+
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+
+        statusTexts.Should().Contain("Loading transcription model...");
+    }
+
+    [Fact]
+    public async Task StandardPipeline_WithCorrection_ShowsCorrecting()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new TranscriptionResult { Text = "raw text" });
+        _textCorrectionService.CorrectAsync("raw text", Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns("Corrected text.");
+
+        var statusTexts = new List<string>();
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Cloud);
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(OverlayViewModel.StatusText))
+                statusTexts.Add(vm.StatusText);
+        };
+
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+
+        statusTexts.Should().Contain("Transcribing...");
+        statusTexts.Should().Contain("Correcting text...");
+    }
+
+    [Fact]
+    public async Task CombinedModel_ShowsTranscribingAndCorrecting()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _combinedService.IsAvailable.Returns(true);
+        _combinedService.TranscribeAndCorrectAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns("corrected text");
+
+        var statusTexts = new List<string>();
+        var vm = CreateViewModel(o =>
+        {
+            o.TextCorrection.Provider = TextCorrectionProvider.Cloud;
+            o.TextCorrection.UseCombinedAudioModel = true;
+        });
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(OverlayViewModel.StatusText))
+                statusTexts.Add(vm.StatusText);
+        };
+
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+
+        statusTexts.Should().Contain("Transcribing & correcting...");
+    }
+
+    [Fact]
+    public async Task StatusText_ClearedAfterTranscription()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new TranscriptionResult { Text = "hello" });
+
+        var vm = CreateViewModel();
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+
+        vm.State.Should().Be(RecordingState.Result);
+        vm.StatusText.Should().BeEmpty();
     }
 
     // --- Dispose ---

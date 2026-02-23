@@ -12,4 +12,5 @@ public interface ITranscriptionService
     TranscriptionProvider ProviderType { get; }
     string ProviderName { get; }
     bool IsAvailable { get; }
+    bool IsModelLoaded { get; }
 }

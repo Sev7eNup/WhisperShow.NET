@@ -8,4 +8,5 @@ public interface ICombinedTranscriptionCorrectionService
 {
     Task<string> TranscribeAndCorrectAsync(byte[] audioData, string? language, CancellationToken ct = default);
     bool IsAvailable { get; }
+    bool IsModelLoaded { get; }
 }

@@ -26,6 +26,8 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
         }
     }
 
+    public bool IsModelLoaded => true;
+
     public CombinedAudioTranscriptionService(
         ILogger<CombinedAudioTranscriptionService> logger,
         IOptionsMonitor<WhisperShowOptions> optionsMonitor,

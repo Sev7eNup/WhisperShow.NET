@@ -17,6 +17,7 @@ public class OpenAiTranscriptionService : ITranscriptionService
     public TranscriptionProvider ProviderType => TranscriptionProvider.OpenAI;
     public string ProviderName => "OpenAI API";
     public bool IsAvailable => !string.IsNullOrWhiteSpace(_optionsMonitor.CurrentValue.OpenAI.ApiKey);
+    public bool IsModelLoaded => true;
 
     public OpenAiTranscriptionService(
         ILogger<OpenAiTranscriptionService> logger,

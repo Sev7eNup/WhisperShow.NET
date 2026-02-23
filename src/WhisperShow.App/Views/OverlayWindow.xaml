@@ -196,27 +196,33 @@
 
                     <!-- Transcribing State -->
                     <Grid x:Name="TranscribingPanel" Visibility="Collapsed"
-                          Width="56" Height="44">
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
-                                     Margin="0,0,5,0" RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform>
-                                    <TranslateTransform x:Name="Dot1Transform"/>
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
-                            <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
-                                     Margin="0,0,5,0" RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform>
-                                    <TranslateTransform x:Name="Dot2Transform"/>
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
-                            <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
-                                     RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform>
-                                    <TranslateTransform x:Name="Dot3Transform"/>
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
+                          MinWidth="56" Height="44">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
+                                         Margin="0,0,5,0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform x:Name="Dot1Transform"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
+                                         Margin="0,0,5,0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform x:Name="Dot2Transform"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource TextBrush}"
+                                         RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform x:Name="Dot3Transform"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </StackPanel>
+                            <TextBlock Text="{Binding StatusText}"
+                                       Foreground="{StaticResource SubtleBrush}"
+                                       FontSize="9" FontFamily="Segoe UI"
+                                       HorizontalAlignment="Center"
+                                       Margin="6,2,6,0"/>
                         </StackPanel>
                     </Grid>
 

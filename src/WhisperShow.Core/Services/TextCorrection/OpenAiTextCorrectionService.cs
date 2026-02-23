@@ -14,6 +14,7 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
     private readonly OpenAiClientFactory _clientFactory;
 
     public TextCorrectionProvider ProviderType => TextCorrectionProvider.Cloud;
+    public bool IsModelLoaded => true;
 
     public OpenAiTextCorrectionService(
         ILogger<OpenAiTextCorrectionService> logger,

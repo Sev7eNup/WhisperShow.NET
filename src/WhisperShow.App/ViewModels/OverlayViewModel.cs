@@ -66,6 +66,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _recordingTimerText = "0:00";
 
+    [ObservableProperty]
+    private string _statusText = string.Empty;
+
     // --- Overlay position ---
     public double PositionX { get; private set; }
     public double PositionY { get; private set; }
@@ -119,6 +122,12 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         UpdateProviderName();
         OnPropertyChanged(nameof(MuteWhileDictating));
         OnPropertyChanged(nameof(IsOverlayAlwaysVisible));
+    }
+
+    partial void OnStateChanged(RecordingState value)
+    {
+        if (value != RecordingState.Transcribing)
+            StatusText = string.Empty;
     }
 
     [RelayCommand]
@@ -213,6 +222,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             if (Options.TextCorrection.UseCombinedAudioModel && _combinedService.IsAvailable)
             {
                 _logger.LogInformation("Using combined transcription+correction pipeline");
+                StatusText = "Transcribing & correcting...";
                 try
                 {
                     text = await _combinedService.TranscribeAndCorrectAsync(audioData, Options.Language);
@@ -270,6 +280,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private async Task<string> StandardTranscribeAsync(byte[] audioData)
     {
         var provider = _providerFactory.GetProvider(Options.Provider);
+        StatusText = provider.IsModelLoaded ? "Transcribing..." : "Loading transcription model...";
         var result = await provider.TranscribeAsync(audioData, Options.Language);
 
         var text = result.Text;
@@ -278,6 +289,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _logger.LogInformation("Text correction: {Provider}", Options.TextCorrection.Provider);
         if (corrector is not null && !string.IsNullOrWhiteSpace(text))
         {
+            StatusText = corrector.IsModelLoaded ? "Correcting text..." : "Loading correction model...";
             text = await corrector.CorrectAsync(text, Options.Language);
         }
 

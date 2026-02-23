@@ -28,6 +28,8 @@ public class LocalTranscriptionService : ITranscriptionService, IDisposable
         }
     }
 
+    public bool IsModelLoaded => _factory is not null;
+
     public LocalTranscriptionService(
         ILogger<LocalTranscriptionService> logger,
         IOptionsMonitor<WhisperShowOptions> optionsMonitor)

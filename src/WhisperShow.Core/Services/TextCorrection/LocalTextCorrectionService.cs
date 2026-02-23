@@ -20,6 +20,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private bool _disposed;
 
     public TextCorrectionProvider ProviderType => TextCorrectionProvider.Local;
+    public bool IsModelLoaded => _model is not null;
 
     public LocalTextCorrectionService(
         ILogger<LocalTextCorrectionService> logger,
