@@ -126,7 +126,8 @@ public class SnippetService : ISnippetService
     private void EnsureLoaded()
     {
         if (_loaded) return;
-        LoadAsync().GetAwaiter().GetResult();
+        throw new InvalidOperationException(
+            $"{nameof(SnippetService)} not initialized. Call LoadAsync() at startup.");
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()

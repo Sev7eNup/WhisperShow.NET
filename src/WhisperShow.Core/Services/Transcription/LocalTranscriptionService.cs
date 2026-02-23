@@ -16,6 +16,7 @@ public class LocalTranscriptionService : ITranscriptionService, IDisposable
     private string? _loadedModelPath;
     private bool _disposed;
 
+    public TranscriptionProvider ProviderType => TranscriptionProvider.Local;
     public string ProviderName => "Lokal (Whisper.net)";
 
     public bool IsAvailable

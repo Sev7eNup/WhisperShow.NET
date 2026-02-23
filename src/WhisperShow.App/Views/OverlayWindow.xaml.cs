@@ -21,8 +21,8 @@ namespace WhisperShow.App.Views;
 public partial class OverlayWindow : Window
 {
     private readonly OverlayViewModel _viewModel;
-    private readonly SettingsViewModel _settingsViewModel;
     private readonly IGlobalHotkeyService _hotkeyService;
+    private readonly IOptionsMonitor<WhisperShowOptions> _optionsMonitor;
     private readonly ILogger<OverlayWindow> _logger;
     private readonly WhisperShowOptions _options;
     private Storyboard? _glowPulseStoryboard;
@@ -40,17 +40,17 @@ public partial class OverlayWindow : Window
     private Brush? _recordingTailBrush;
     private Brush? _transcribingTailBrush;
 
-    public OverlayWindow(OverlayViewModel viewModel, SettingsViewModel settingsViewModel,
+    public OverlayWindow(OverlayViewModel viewModel,
         IGlobalHotkeyService hotkeyService,
-        IOptions<WhisperShowOptions> options, ILogger<OverlayWindow> logger)
+        IOptionsMonitor<WhisperShowOptions> optionsMonitor, ILogger<OverlayWindow> logger)
     {
         InitializeComponent();
 
         _viewModel = viewModel;
-        _settingsViewModel = settingsViewModel;
         _hotkeyService = hotkeyService;
+        _optionsMonitor = optionsMonitor;
         _logger = logger;
-        _options = options.Value;
+        _options = optionsMonitor.CurrentValue;
         DataContext = _viewModel;
 
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -59,9 +59,22 @@ public partial class OverlayWindow : Window
         _hotkeyService.PushToTalkHotkeyPressed += OnPushToTalkHotkeyPressed;
         _hotkeyService.PushToTalkHotkeyReleased += OnPushToTalkHotkeyReleased;
         _hotkeyService.EscapePressed += OnEscapePressed;
-        _settingsViewModel.PropertyChanged += OnSettingsChanged;
+
+        _optionsMonitor.OnChange(OnOptionsChanged);
 
         Loaded += OverlayWindow_Loaded;
+    }
+
+    private void OnOptionsChanged(WhisperShowOptions options, string? name)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            ApplyOverlayScale(options.Overlay.Scale);
+
+            var handle = new WindowInteropHelper(this).Handle;
+            if (handle != IntPtr.Zero)
+                ApplyTaskbarVisibility(handle, options.Overlay.ShowInTaskbar);
+        });
     }
 
     private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
@@ -346,23 +359,6 @@ public partial class OverlayWindow : Window
     {
         _logger.LogDebug("Escape hotkey event received in OverlayWindow");
         Dispatcher.Invoke(() => _viewModel.DismissResultCommand.Execute(null));
-    }
-
-    private void OnSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(SettingsViewModel.OverlayScale))
-        {
-            Dispatcher.Invoke(() => ApplyOverlayScale(_settingsViewModel.OverlayScale));
-        }
-        else if (e.PropertyName == nameof(SettingsViewModel.ShowInTaskbar))
-        {
-            Dispatcher.Invoke(() =>
-            {
-                var handle = new WindowInteropHelper(this).Handle;
-                if (handle != IntPtr.Zero)
-                    ApplyTaskbarVisibility(handle, _settingsViewModel.ShowInTaskbar);
-            });
-        }
     }
 
     private void ApplyTaskbarVisibility(IntPtr handle, bool showInTaskbar)

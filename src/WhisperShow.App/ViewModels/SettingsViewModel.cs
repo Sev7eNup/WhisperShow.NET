@@ -7,9 +7,10 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NAudio.Wave;
+using WhisperShow.App.ViewModels.Settings;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
-using Whisper.net.Ggml;
+using WhisperShow.Core.Services.Configuration;
 using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.ModelManagement;
 using WhisperShow.Core.Services.Snippets;
@@ -35,13 +36,14 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly IGlobalHotkeyService _hotkeyService;
-    private readonly IDictionaryService _dictionaryService;
-    private readonly ISnippetService _snippetService;
-    private readonly IUsageStatsService _statsService;
-    private readonly IModelManager _modelManager;
-    private readonly ICorrectionModelManager _correctionModelManager;
     private readonly IModelPreloadService _preloadService;
+    private readonly IAutoStartService _autoStartService;
     private CancellationTokenSource? _saveCts;
+
+    // --- Sub-ViewModels ---
+    public StatisticsViewModel Statistics { get; }
+    public DictionarySnippetsViewModel DictionarySnippets { get; }
+    public ModelManagementViewModel Models { get; }
 
     // --- Page navigation ---
     [ObservableProperty]
@@ -168,26 +170,8 @@ public partial class SettingsViewModel : ObservableObject
     // --- Transcription: GPU ---
     [ObservableProperty] private bool _gpuAcceleration = true;
 
-    // --- Dictionary ---
-    public ObservableCollection<string> DictionaryEntries { get; } = [];
-    [ObservableProperty] private string _newDictionaryWord = "";
-
-    // --- Snippets ---
-    public ObservableCollection<SnippetEntry> SnippetItems { get; } = [];
-    [ObservableProperty] private string _newSnippetTrigger = "";
-    [ObservableProperty] private string _newSnippetReplacement = "";
-
-    // --- Models ---
-    public ObservableCollection<ModelItemViewModel> ModelItems { get; } = [];
-    public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];
-
-    // --- Statistics ---
-    [ObservableProperty] private int _totalTranscriptions;
-    [ObservableProperty] private string _totalRecordingTimeDisplay = "0:00";
-    [ObservableProperty] private string _averageDurationDisplay = "0.0s";
-    [ObservableProperty] private string _estimatedCostDisplay = "$0.00";
-    [ObservableProperty] private int _errorCount;
-    [ObservableProperty] private string _providerBreakdownDisplay = "";
+    // --- Correction local model name (shared with Models sub-VM) ---
+    [ObservableProperty] private string _correctionLocalModelName = "";
 
     // --- Cloud usage hint ---
     public bool ShowCloudUsageHint =>
@@ -205,16 +189,13 @@ public partial class SettingsViewModel : ObservableObject
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
         IModelPreloadService preloadService,
+        IAutoStartService autoStartService,
         ILogger<SettingsViewModel> logger)
     {
         _logger = logger;
         _hotkeyService = hotkeyService;
-        _dictionaryService = dictionaryService;
-        _snippetService = snippetService;
-        _statsService = statsService;
-        _modelManager = modelManager;
-        _correctionModelManager = correctionModelManager;
         _preloadService = preloadService;
+        _autoStartService = autoStartService;
 
         var opts = options.Value;
 
@@ -262,9 +243,17 @@ public partial class SettingsViewModel : ObservableObject
             : _localModelName;
         _gpuAcceleration = opts.Local.GpuAcceleration;
 
+        // Create sub-ViewModels
+        Statistics = new StatisticsViewModel(statsService);
+        DictionarySnippets = new DictionarySnippetsViewModel(dictionaryService, snippetService);
+        Models = new ModelManagementViewModel(
+            modelManager, correctionModelManager, preloadService, logger, ScheduleSave,
+            () => TranscriptionModel,
+            name => { TranscriptionModel = name; _localModelName = name; },
+            () => CorrectionLocalModelName,
+            name => CorrectionLocalModelName = name);
+
         LoadMicrophones();
-        LoadDictionaryEntries();
-        LoadSnippets();
         UpdateDisplayTexts();
         UpdateToggleBadges();
         UpdatePttBadges();
@@ -340,11 +329,11 @@ public partial class SettingsViewModel : ObservableObject
     {
         SelectedPage = page;
         if (page == SettingsPage.Statistics)
-            RefreshStats();
+            Statistics.Refresh();
         else if (page == SettingsPage.Models)
         {
-            RefreshModels();
-            RefreshCorrectionModels();
+            Models.RefreshModels();
+            Models.RefreshCorrectionModels();
         }
     }
 
@@ -542,7 +531,6 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ToggleLaunchAtLogin()
     {
-        // IsChecked two-way binding already flipped the value
         SetAutoStart(LaunchAtLogin);
         ScheduleSave();
     }
@@ -558,36 +546,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ToggleDarkMode() => ScheduleSave();
 
-    private void SetAutoStart(bool enable)
-    {
-        try
-        {
-            var exePath = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(exePath))
-            {
-                _logger.LogWarning("Cannot set autostart: ProcessPath is null");
-                return;
-            }
-
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
-            if (key is null)
-            {
-                _logger.LogWarning("Cannot open Run registry key for writing");
-                return;
-            }
-
-            if (enable)
-                key.SetValue("WhisperShow", $"\"{exePath}\"");
-            else
-                key.DeleteValue("WhisperShow", throwOnMissingValue: false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to {Action} autostart registry entry",
-                enable ? "set" : "remove");
-        }
-    }
+    private void SetAutoStart(bool enable) => _autoStartService.SetAutoStart(enable);
 
     // --- System: Sound ---
 
@@ -629,7 +588,6 @@ public partial class SettingsViewModel : ObservableObject
 
     public void ApplyProvider(TranscriptionProvider provider)
     {
-        // Persist current model name before switching
         if (Provider == TranscriptionProvider.OpenAI) _openAiModelName = TranscriptionModel;
         else if (Provider == TranscriptionProvider.Local) _localModelName = TranscriptionModel;
 
@@ -735,302 +693,6 @@ public partial class SettingsViewModel : ObservableObject
         IsEditingCombinedAudioModel = false;
         ScheduleSave();
     }
-
-    // --- Correction Models ---
-
-    [ObservableProperty] private string _correctionLocalModelName = "";
-
-    [RelayCommand]
-    private void RefreshCorrectionModels()
-    {
-        CorrectionModelItems.Clear();
-        foreach (var model in _correctionModelManager.GetAllModels())
-        {
-            var item = new CorrectionModelItemViewModel(model);
-            item.IsActive = model.FileName == CorrectionLocalModelName && model.IsDownloaded;
-            if (item.IsActive) item.StatusText = "Active";
-            CorrectionModelItems.Add(item);
-        }
-    }
-
-    [RelayCommand]
-    private async Task DownloadCorrectionModel(CorrectionModelItemViewModel item)
-    {
-        if (item.IsDownloading) return;
-
-        item.IsDownloading = true;
-        item.StatusText = "Downloading...";
-        item.DownloadProgress = 0;
-
-        try
-        {
-            var progress = new Progress<float>(p =>
-            {
-                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    item.DownloadProgress = p;
-                    item.StatusText = $"Downloading... {p * 100:F0}%";
-                });
-            });
-
-            await _correctionModelManager.DownloadModelAsync(item.FileName, progress);
-
-            item.IsDownloaded = true;
-            item.StatusText = "Downloaded";
-            _logger.LogInformation("Correction model {Name} downloaded successfully", item.Name);
-
-            // Auto-activate if no model is currently active
-            if (!CorrectionModelItems.Any(m => m.IsActive))
-                ActivateCorrectionModel(item);
-        }
-        catch (Exception ex)
-        {
-            item.StatusText = $"Error: {ex.Message}";
-            _logger.LogError(ex, "Failed to download correction model {Name}", item.Name);
-        }
-        finally
-        {
-            item.IsDownloading = false;
-        }
-    }
-
-    [RelayCommand]
-    private void ActivateCorrectionModel(CorrectionModelItemViewModel item)
-    {
-        if (!item.IsDownloaded) return;
-        foreach (var m in CorrectionModelItems)
-        {
-            m.IsActive = false;
-            if (m.IsDownloaded) m.StatusText = "Downloaded";
-        }
-        item.IsActive = true;
-        item.StatusText = "Active";
-        CorrectionLocalModelName = item.FileName;
-        ScheduleSave();
-
-        _preloadService.PreloadCorrectionModel(item.FileName);
-    }
-
-    [RelayCommand]
-    private void DeleteCorrectionModel(CorrectionModelItemViewModel item)
-    {
-        try
-        {
-            var model = _correctionModelManager.GetAllModels().FirstOrDefault(m => m.FileName == item.FileName);
-            if (model is not null)
-            {
-                _correctionModelManager.DeleteModel(model);
-                item.IsDownloaded = false;
-                item.IsActive = false;
-                item.StatusText = "Not downloaded";
-                _logger.LogInformation("Correction model {Name} deleted", item.Name);
-            }
-        }
-        catch (Exception ex)
-        {
-            item.StatusText = $"Error: {ex.Message}";
-            _logger.LogError(ex, "Failed to delete correction model {Name}", item.Name);
-        }
-    }
-
-    // --- Dictionary ---
-
-    private void LoadDictionaryEntries()
-    {
-        DictionaryEntries.Clear();
-        foreach (var entry in _dictionaryService.GetEntries())
-            DictionaryEntries.Add(entry);
-    }
-
-    [RelayCommand]
-    private void AddDictionaryEntry()
-    {
-        if (string.IsNullOrWhiteSpace(NewDictionaryWord)) return;
-        var word = NewDictionaryWord.Trim();
-        _dictionaryService.AddEntry(word);
-        if (!DictionaryEntries.Contains(word, StringComparer.OrdinalIgnoreCase))
-            DictionaryEntries.Add(word);
-        NewDictionaryWord = "";
-    }
-
-    [RelayCommand]
-    private void RemoveDictionaryEntry(string word)
-    {
-        _dictionaryService.RemoveEntry(word);
-        DictionaryEntries.Remove(word);
-    }
-
-    // --- Snippets ---
-
-    private void LoadSnippets()
-    {
-        SnippetItems.Clear();
-        foreach (var entry in _snippetService.GetSnippets())
-            SnippetItems.Add(entry);
-    }
-
-    [RelayCommand]
-    private void AddSnippet()
-    {
-        if (string.IsNullOrWhiteSpace(NewSnippetTrigger) || string.IsNullOrWhiteSpace(NewSnippetReplacement)) return;
-        var trigger = NewSnippetTrigger.Trim();
-        var replacement = NewSnippetReplacement.Trim();
-        _snippetService.AddSnippet(trigger, replacement);
-        if (!SnippetItems.Any(s => s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase)))
-            SnippetItems.Add(new SnippetEntry(trigger, replacement));
-        NewSnippetTrigger = "";
-        NewSnippetReplacement = "";
-    }
-
-    [RelayCommand]
-    private void RemoveSnippet(SnippetEntry snippet)
-    {
-        _snippetService.RemoveSnippet(snippet.Trigger);
-        SnippetItems.Remove(snippet);
-    }
-
-    // --- Statistics ---
-
-    [RelayCommand]
-    private void RefreshStats()
-    {
-        var stats = _statsService.GetStats();
-        TotalTranscriptions = stats.TotalTranscriptions;
-        ErrorCount = stats.ErrorCount;
-        TotalRecordingTimeDisplay = FormatDuration(stats.TotalRecordingSeconds);
-        AverageDurationDisplay = $"{stats.AverageRecordingSeconds:F1}s";
-        EstimatedCostDisplay = $"${stats.EstimatedApiCost:F4}";
-
-        if (stats.TranscriptionsByProvider.Count > 0)
-        {
-            ProviderBreakdownDisplay = string.Join(", ",
-                stats.TranscriptionsByProvider.Select(kv => $"{kv.Key}: {kv.Value}"));
-        }
-        else
-        {
-            ProviderBreakdownDisplay = "No data yet";
-        }
-    }
-
-    [RelayCommand]
-    private void ResetStats()
-    {
-        _statsService.Reset();
-        RefreshStats();
-    }
-
-    private static string FormatDuration(double totalSeconds)
-    {
-        var ts = TimeSpan.FromSeconds(totalSeconds);
-        return ts.TotalHours >= 1
-            ? $"{(int)ts.TotalHours}h {ts.Minutes}m"
-            : $"{ts.Minutes}m {ts.Seconds}s";
-    }
-
-    // --- Models ---
-
-    [RelayCommand]
-    private void RefreshModels()
-    {
-        ModelItems.Clear();
-        foreach (var model in _modelManager.GetAllModels())
-        {
-            var ggmlType = FileNameToGgmlType(model.FileName);
-            var item = new ModelItemViewModel(model, ggmlType);
-            item.IsActive = model.FileName == TranscriptionModel && model.IsDownloaded;
-            ModelItems.Add(item);
-        }
-    }
-
-    [RelayCommand]
-    private async Task DownloadModel(ModelItemViewModel item)
-    {
-        if (item.IsDownloading) return;
-
-        item.IsDownloading = true;
-        item.StatusText = "Downloading...";
-        item.DownloadProgress = 0;
-
-        try
-        {
-            var progress = new Progress<float>(p =>
-            {
-                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    item.DownloadProgress = p;
-                    item.StatusText = $"Downloading... {p * 100:F0}%";
-                });
-            });
-
-            await _modelManager.DownloadModelAsync(item.GgmlType, progress);
-
-            item.IsDownloaded = true;
-            item.StatusText = "Downloaded";
-            _logger.LogInformation("Model {Name} downloaded successfully", item.Name);
-
-            // Auto-activate if no model is currently active
-            if (!ModelItems.Any(m => m.IsActive))
-                ActivateModel(item);
-        }
-        catch (Exception ex)
-        {
-            item.StatusText = $"Error: {ex.Message}";
-            _logger.LogError(ex, "Failed to download model {Name}", item.Name);
-        }
-        finally
-        {
-            item.IsDownloading = false;
-        }
-    }
-
-    [RelayCommand]
-    private void ActivateModel(ModelItemViewModel item)
-    {
-        if (!item.IsDownloaded) return;
-        foreach (var m in ModelItems)
-        {
-            m.IsActive = false;
-            if (m.IsDownloaded) m.StatusText = "Downloaded";
-        }
-        item.IsActive = true;
-        item.StatusText = "Active";
-        TranscriptionModel = item.FileName;
-        _localModelName = item.FileName;
-        ScheduleSave();
-
-        _preloadService.PreloadTranscriptionModel(item.FileName);
-    }
-
-    [RelayCommand]
-    private void DeleteModel(ModelItemViewModel item)
-    {
-        try
-        {
-            var model = _modelManager.GetAllModels().FirstOrDefault(m => m.FileName == item.FileName);
-            if (model is not null)
-            {
-                _modelManager.DeleteModel(model);
-                item.IsDownloaded = false;
-                item.StatusText = "Not downloaded";
-                _logger.LogInformation("Model {Name} deleted", item.Name);
-            }
-        }
-        catch (Exception ex)
-        {
-            item.StatusText = $"Error: {ex.Message}";
-            _logger.LogError(ex, "Failed to delete model {Name}", item.Name);
-        }
-    }
-
-    private static GgmlType FileNameToGgmlType(string fileName) => fileName switch
-    {
-        "ggml-tiny.bin" => GgmlType.Tiny,
-        "ggml-base.bin" => GgmlType.Base,
-        "ggml-small.bin" => GgmlType.Small,
-        "ggml-medium.bin" => GgmlType.Medium,
-        "ggml-large-v3.bin" => GgmlType.LargeV3,
-        _ => throw new ArgumentException($"Unknown model: {fileName}")
-    };
 
     // --- Persistence ---
 

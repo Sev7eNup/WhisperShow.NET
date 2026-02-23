@@ -19,6 +19,7 @@ public class OpenAiTranscriptionService : ITranscriptionService
     private string? _lastModel;
     private string? _lastEndpoint;
 
+    public TranscriptionProvider ProviderType => TranscriptionProvider.OpenAI;
     public string ProviderName => "OpenAI API";
     public bool IsAvailable => !string.IsNullOrWhiteSpace(_optionsMonitor.CurrentValue.OpenAI.ApiKey);
 

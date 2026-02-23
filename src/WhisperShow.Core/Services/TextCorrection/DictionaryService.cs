@@ -116,6 +116,7 @@ public class DictionaryService : IDictionaryService
     private void EnsureLoaded()
     {
         if (_loaded) return;
-        LoadAsync().GetAwaiter().GetResult();
+        throw new InvalidOperationException(
+            $"{nameof(DictionaryService)} not initialized. Call LoadAsync() at startup.");
     }
 }

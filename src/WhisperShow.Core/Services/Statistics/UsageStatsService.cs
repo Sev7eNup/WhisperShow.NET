@@ -123,7 +123,8 @@ public class UsageStatsService : IUsageStatsService
     private void EnsureLoaded()
     {
         if (_loaded) return;
-        LoadAsync().GetAwaiter().GetResult();
+        throw new InvalidOperationException(
+            $"{nameof(UsageStatsService)} not initialized. Call LoadAsync() at startup.");
     }
 
     private static UsageStats Clone(UsageStats s) => new()

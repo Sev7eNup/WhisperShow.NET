@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:WhisperShow.App.ViewModels"
         xmlns:views="clr-namespace:WhisperShow.App.Views"
+        xmlns:converters="clr-namespace:WhisperShow.App.Converters"
         xmlns:models="clr-namespace:WhisperShow.Core.Models;assembly=WhisperShow.Core"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -278,15 +279,15 @@
 
         <!-- Value Converters -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-        <views:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility"/>
-        <views:BoolToEnabledDisabledConverter x:Key="BoolToEnabledDisabled"/>
-        <views:SecondsToMinutesConverter x:Key="SecondsToMinutes"/>
-        <views:ProviderToVisibilityConverter x:Key="ProviderToVisibility"/>
-        <views:ModelUseVisibilityConverter x:Key="ModelUseVisibility"/>
-        <views:ModelActionVisibilityConverter x:Key="ModelActionVisibility"/>
-        <views:ModelDeleteVisibilityConverter x:Key="ModelDeleteVisibility"/>
-        <views:StringEqualsToVisibilityConverter x:Key="StringToVisibility"/>
-        <views:CapturingHotkeyTextConverter x:Key="StringToCapturingText"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility"/>
+        <converters:BoolToEnabledDisabledConverter x:Key="BoolToEnabledDisabled"/>
+        <converters:SecondsToMinutesConverter x:Key="SecondsToMinutes"/>
+        <converters:ProviderToVisibilityConverter x:Key="ProviderToVisibility"/>
+        <converters:ModelUseVisibilityConverter x:Key="ModelUseVisibility"/>
+        <converters:ModelActionVisibilityConverter x:Key="ModelActionVisibility"/>
+        <converters:ModelDeleteVisibilityConverter x:Key="ModelDeleteVisibility"/>
+        <converters:StringEqualsToVisibilityConverter x:Key="StringToVisibility"/>
+        <converters:CapturingHotkeyTextConverter x:Key="StringToCapturingText"/>
 
         <!-- ==================== PAGE TEMPLATES ==================== -->
 
@@ -580,7 +581,7 @@
 
         <!-- DICTIONARY PAGE -->
         <DataTemplate x:Key="DictionaryPageTemplate">
-            <StackPanel>
+            <StackPanel DataContext="{Binding DictionarySnippets}">
                 <TextBlock Text="Custom Dictionary" Style="{StaticResource PageTitleStyle}"/>
                 <TextBlock Text="Add custom words, names, and technical terms to improve transcription accuracy."
                            FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
@@ -648,7 +649,7 @@
 
         <!-- SNIPPETS PAGE -->
         <DataTemplate x:Key="SnippetsPageTemplate">
-            <StackPanel>
+            <StackPanel DataContext="{Binding DictionarySnippets}">
                 <TextBlock Text="Snippets" Style="{StaticResource PageTitleStyle}"/>
                 <TextBlock Text="Define keywords that automatically expand into text blocks during transcription."
                            FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
@@ -913,7 +914,7 @@
 
                     <!-- Available models -->
                     <TextBlock Text="Available models" Style="{StaticResource GroupHeaderStyle}"/>
-                    <ItemsControl ItemsSource="{Binding ModelItems}">
+                    <ItemsControl ItemsSource="{Binding Models.ModelItems}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12"
@@ -957,13 +958,13 @@
                                             <Button Grid.Column="1" Content="Download" Cursor="Hand"
                                                     FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
                                                     VerticalAlignment="Center"
-                                                    Command="{Binding DataContext.DownloadModelCommand,
+                                                    Command="{Binding DataContext.Models.DownloadModelCommand,
                                                         RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Visibility>
                                                     <MultiBinding>
                                                         <MultiBinding.Converter>
-                                                            <views:ModelActionVisibilityConverter/>
+                                                            <converters:ModelActionVisibilityConverter/>
                                                         </MultiBinding.Converter>
                                                         <Binding Path="IsDownloaded"/>
                                                         <Binding Path="IsDownloading"/>
@@ -989,13 +990,13 @@
                                             <Button Grid.Column="1" Content="Use" Cursor="Hand"
                                                     FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
                                                     VerticalAlignment="Center"
-                                                    Command="{Binding DataContext.ActivateModelCommand,
+                                                    Command="{Binding DataContext.Models.ActivateModelCommand,
                                                         RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Visibility>
                                                     <MultiBinding>
                                                         <MultiBinding.Converter>
-                                                            <views:ModelUseVisibilityConverter/>
+                                                            <converters:ModelUseVisibilityConverter/>
                                                         </MultiBinding.Converter>
                                                         <Binding Path="IsDownloaded"/>
                                                         <Binding Path="IsDownloading"/>
@@ -1024,13 +1025,13 @@
                                             <Button Grid.Column="2" Content="Delete" Cursor="Hand"
                                                     FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
                                                     VerticalAlignment="Center" Margin="6,0,0,0"
-                                                    Command="{Binding DataContext.DeleteModelCommand,
+                                                    Command="{Binding DataContext.Models.DeleteModelCommand,
                                                         RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Visibility>
                                                     <MultiBinding>
                                                         <MultiBinding.Converter>
-                                                            <views:ModelDeleteVisibilityConverter/>
+                                                            <converters:ModelDeleteVisibilityConverter/>
                                                         </MultiBinding.Converter>
                                                         <Binding Path="IsDownloaded"/>
                                                         <Binding Path="IsDownloading"/>
@@ -1207,7 +1208,7 @@
                     </Border>
 
                     <!-- Correction model list -->
-                    <ItemsControl ItemsSource="{Binding CorrectionModelItems}" Margin="0,8,0,0">
+                    <ItemsControl ItemsSource="{Binding Models.CorrectionModelItems}" Margin="0,8,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Margin="0,0,0,6" Padding="16,12"
@@ -1248,7 +1249,7 @@
                                         <!-- Download -->
                                         <Button Grid.Column="1" Content="Download" Cursor="Hand"
                                                 FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" Margin="10,0,0,0"
-                                                Command="{Binding DataContext.DownloadCorrectionModelCommand,
+                                                Command="{Binding DataContext.Models.DownloadCorrectionModelCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}">
                                             <Button.Visibility>
@@ -1275,7 +1276,7 @@
                                         <!-- Use -->
                                         <Button Grid.Column="1" Content="Use" Cursor="Hand"
                                                 FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" Margin="10,0,0,0"
-                                                Command="{Binding DataContext.ActivateCorrectionModelCommand,
+                                                Command="{Binding DataContext.Models.ActivateCorrectionModelCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}">
                                             <Button.Visibility>
@@ -1302,7 +1303,7 @@
                                         <!-- Delete -->
                                         <Button Grid.Column="2" Content="Delete" Cursor="Hand"
                                                 FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" Margin="6,0,0,0"
-                                                Command="{Binding DataContext.DeleteCorrectionModelCommand,
+                                                Command="{Binding DataContext.Models.DeleteCorrectionModelCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}">
                                             <Button.Visibility>
@@ -1408,7 +1409,7 @@
 
         <!-- STATISTICS PAGE -->
         <DataTemplate x:Key="StatisticsPageTemplate">
-            <StackPanel>
+            <StackPanel DataContext="{Binding Statistics}">
                 <TextBlock Text="Statistics" Style="{StaticResource PageTitleStyle}"/>
                 <TextBlock Text="Usage statistics for your transcription sessions."
                            FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
@@ -1509,9 +1510,9 @@
                 <!-- Action buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
                     <Button Content="Refresh" Style="{StaticResource PillButtonStyle}"
-                            Command="{Binding RefreshStatsCommand}" Margin="0,0,10,0"/>
+                            Command="{Binding RefreshCommand}" Margin="0,0,10,0"/>
                     <Button Content="Reset all" Style="{StaticResource PillButtonStyle}"
-                            Command="{Binding ResetStatsCommand}"/>
+                            Command="{Binding ResetCommand}"/>
                 </StackPanel>
             </StackPanel>
         </DataTemplate>

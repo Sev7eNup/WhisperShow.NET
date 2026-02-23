@@ -1,15 +1,11 @@
-using System.Windows;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using WhisperShow.App.Services;
 using WhisperShow.App.ViewModels;
 using WhisperShow.Core.Configuration;
 using WhisperShow.Core.Models;
 using WhisperShow.Core.Services.Audio;
-using WhisperShow.Core.Services.Hotkey;
 using WhisperShow.Core.Services.History;
-using WhisperShow.Core.Services.ModelManagement;
 using WhisperShow.Core.Services.Snippets;
 using WhisperShow.Core.Services.Statistics;
 using WhisperShow.Core.Services.TextCorrection;
@@ -50,11 +46,10 @@ public class OverlayViewModelTests : IDisposable
     {
         configure?.Invoke(_optionsValue);
 
-        // Build a factory that returns our mock provider for both provider types.
-        // Since we can't use OfType<> matching with mocks, we wrap it.
         var providerFactory = new TestProviderFactory(_transcriptionProvider);
+        var correctionFactory = new TestCorrectionProviderFactory(_textCorrectionService);
 
-        var opts = OptionsHelper.Create(o =>
+        var optionsMonitor = OptionsHelper.CreateMonitor(o =>
         {
             o.Provider = _optionsValue.Provider;
             o.Language = _optionsValue.Language;
@@ -65,19 +60,6 @@ public class OverlayViewModelTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        var settingsVm = new SettingsViewModel(
-            opts,
-            Substitute.For<IGlobalHotkeyService>(),
-            Substitute.For<IDictionaryService>(),
-            Substitute.For<ISnippetService>(),
-            Substitute.For<IUsageStatsService>(),
-            Substitute.For<IModelManager>(),
-            Substitute.For<ICorrectionModelManager>(),
-            Substitute.For<IModelPreloadService>(),
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<SettingsViewModel>.Instance);
-
-        var correctionFactory = new TestCorrectionProviderFactory(_textCorrectionService);
-
         return new OverlayViewModel(
             _audioService,
             _mutingService,
@@ -86,11 +68,12 @@ public class OverlayViewModelTests : IDisposable
             correctionFactory,
             _combinedService,
             Substitute.For<ISnippetService>(),
-            new SoundEffectService(Microsoft.Extensions.Logging.Abstractions.NullLogger<SoundEffectService>.Instance, false),
+            Substitute.For<ISoundEffectService>(),
             Substitute.For<IUsageStatsService>(),
             Substitute.For<ITranscriptionHistoryService>(),
+            Substitute.For<IWindowFocusService>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<OverlayViewModel>.Instance,
-            settingsVm);
+            optionsMonitor);
     }
 
     // --- State Machine Tests ---
