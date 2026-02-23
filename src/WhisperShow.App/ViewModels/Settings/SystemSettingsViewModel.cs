@@ -14,6 +14,7 @@ public partial class SystemSettingsViewModel : ObservableObject
     // --- App settings ---
     [ObservableProperty] private bool _launchAtLogin;
     [ObservableProperty] private bool _overlayAlwaysVisible = true;
+    [ObservableProperty] private bool _showResultOverlay = true;
     [ObservableProperty] private bool _showInTaskbar;
     [ObservableProperty] private bool _isDarkMode;
 
@@ -45,6 +46,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 
         _launchAtLogin = options.App.LaunchAtLogin;
         _overlayAlwaysVisible = options.Overlay.AlwaysVisible;
+        _showResultOverlay = options.Overlay.ShowResultOverlay;
         _showInTaskbar = options.Overlay.ShowInTaskbar;
         _isDarkMode = string.Equals(options.App.Theme, "Dark", StringComparison.OrdinalIgnoreCase);
         _soundEffectsEnabled = options.App.SoundEffects;
@@ -68,6 +70,9 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     [RelayCommand]
     private void ToggleOverlayAlwaysVisible() => _scheduleSave();
+
+    [RelayCommand]
+    private void ToggleShowResultOverlay() => _scheduleSave();
 
     [RelayCommand]
     private void ToggleShowInTaskbar() => _scheduleSave();
@@ -120,6 +125,7 @@ public partial class SystemSettingsViewModel : ObservableObject
         section["Audio"]!["MuteWhileDictating"] = MuteWhileDictating;
         section["Overlay"]!["AutoDismissSeconds"] = AutoDismissSeconds;
         section["Overlay"]!["AlwaysVisible"] = OverlayAlwaysVisible;
+        section["Overlay"]!["ShowResultOverlay"] = ShowResultOverlay;
         section["Overlay"]!["ShowInTaskbar"] = ShowInTaskbar;
         section["Overlay"]!["Scale"] = OverlayScale;
     }

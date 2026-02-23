@@ -290,6 +290,38 @@ public class OverlayViewModelTests : IDisposable
         levels[0].Should().Be(0f);
     }
 
+    // --- ShowResultOverlay ---
+
+    [Fact]
+    public async Task StopRecording_ShowResultOverlayDisabled_GoesDirectlyToIdle()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new TranscriptionResult { Text = "hello world" });
+
+        var vm = CreateViewModel(o => o.Overlay.ShowResultOverlay = false);
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Recording
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Transcribing → Idle (skip Result)
+
+        vm.State.Should().Be(RecordingState.Idle);
+        await _textInsertionService.Received(1).InsertTextAsync("hello world");
+    }
+
+    [Fact]
+    public async Task StopRecording_ShowResultOverlayEnabled_ShowsResult()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[2000]);
+        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new TranscriptionResult { Text = "hello world" });
+
+        var vm = CreateViewModel(o => o.Overlay.ShowResultOverlay = true);
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Recording
+        await vm.ToggleRecordingCommand.ExecuteAsync(null); // → Transcribing → Result
+
+        vm.State.Should().Be(RecordingState.Result);
+        vm.TranscribedText.Should().Be("hello world");
+    }
+
     // --- Dismiss ---
 
     [Fact]

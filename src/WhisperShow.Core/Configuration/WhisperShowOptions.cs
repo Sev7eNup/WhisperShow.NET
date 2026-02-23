@@ -69,6 +69,7 @@ public class OverlayOptions
     public int AutoDismissSeconds { get; set; } = 10;
     public bool AlwaysVisible { get; set; } = true;
     public bool ShowInTaskbar { get; set; }
+    public bool ShowResultOverlay { get; set; } = true;
     public double Scale { get; set; } = 1.0;
 }
 
