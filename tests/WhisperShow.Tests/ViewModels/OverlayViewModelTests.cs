@@ -528,7 +528,7 @@ public class OverlayViewModelTests : IDisposable
     public void PushToTalkHotkeyText_FormatsCorrectly()
     {
         var vm = CreateViewModel();
-        vm.PushToTalkHotkeyText.Should().Be("Ctrl + Space");
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Space to start dictating");
     }
 
     [Fact]
@@ -539,7 +539,7 @@ public class OverlayViewModelTests : IDisposable
             o.Hotkey.PushToTalk.Modifiers = "Control, Alt";
             o.Hotkey.PushToTalk.Key = "F1";
         });
-        vm.PushToTalkHotkeyText.Should().Be("Ctrl + Alt + F1");
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Alt + F1 to start dictating");
     }
 
     // --- Provider Name ---

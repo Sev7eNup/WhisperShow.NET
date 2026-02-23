@@ -45,7 +45,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     public bool MuteWhileDictating => Options.Audio.MuteWhileDictating;
     public bool IsOverlayAlwaysVisible => Options.Overlay.AlwaysVisible;
     public string PushToTalkHotkeyText =>
-        $"{Options.Hotkey.PushToTalk.Modifiers.Replace(",", " +").Replace("Control", "Ctrl")} + {Options.Hotkey.PushToTalk.Key}";
+        $"Click or hold {Options.Hotkey.PushToTalk.Modifiers.Replace(",", " +").Replace("Control", "Ctrl")} + {Options.Hotkey.PushToTalk.Key} to start dictating";
 
     [ObservableProperty]
     private RecordingState _state = RecordingState.Idle;
