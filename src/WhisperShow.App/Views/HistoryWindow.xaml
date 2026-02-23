@@ -29,7 +29,7 @@
         <Border.Effect>
             <DropShadowEffect BlurRadius="20" ShadowDepth="2" Opacity="0.12" Color="#000000"/>
         </Border.Effect>
-        <Border CornerRadius="12" Background="{StaticResource BgBrush}" ClipToBounds="True">
+        <Border x:Name="ClipBorder" CornerRadius="12" Background="{StaticResource BgBrush}" ClipToBounds="True">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
