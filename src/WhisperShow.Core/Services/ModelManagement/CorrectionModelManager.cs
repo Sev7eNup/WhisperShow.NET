@@ -14,10 +14,16 @@ public class CorrectionModelManager : ICorrectionModelManager
     private static readonly (string Name, string FileName, long SizeBytes, string DownloadUrl)[] KnownModels =
     [
         (
-            "Phi-3.5 Mini 3.8B",
-            "Phi-3.5-mini-instruct-Q4_K_M.gguf",
-            2_400_000_000L,
-            "https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf"
+            "Gemma 3 1B IT",
+            "google_gemma-3-1b-it-Q4_K_M.gguf",
+            806_000_000L,
+            "https://huggingface.co/bartowski/google_gemma-3-1b-it-GGUF/resolve/main/google_gemma-3-1b-it-Q4_K_M.gguf"
+        ),
+        (
+            "Gemma 2 2B IT",
+            "gemma-2-2b-it-Q4_K_M.gguf",
+            1_600_000_000L,
+            "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
         ),
         (
             "Qwen 2.5 3B Instruct",
@@ -26,10 +32,10 @@ public class CorrectionModelManager : ICorrectionModelManager
             "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
         ),
         (
-            "Gemma 2 2B IT",
-            "gemma-2-2b-it-Q4_K_M.gguf",
-            1_600_000_000L,
-            "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
+            "Phi-3.5 Mini 3.8B",
+            "Phi-3.5-mini-instruct-Q4_K_M.gguf",
+            2_400_000_000L,
+            "https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf"
         ),
     ];
 
