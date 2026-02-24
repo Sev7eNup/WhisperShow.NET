@@ -56,8 +56,9 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
             systemPrompt += _dictionaryService.BuildPromptFragment();
             systemPrompt += _ideContextService.BuildPromptFragment();
 
-            if (correctionOpts.AutoAddToDictionary)
-                systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
+            // Note: VocabExtractionInstruction is NOT appended for local models —
+            // small models (e.g. Gemma 1B) can't follow complex multi-part instructions
+            // and produce meta-commentary, translations, or hallucinated vocab instead.
 
             var languageHint = string.IsNullOrEmpty(language)
                 ? "Keep the SAME language as the input — do NOT translate"
@@ -100,13 +101,6 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
 
             if (string.IsNullOrWhiteSpace(corrected))
                 return rawText;
-
-            if (correctionOpts.AutoAddToDictionary)
-            {
-                var (cleanText, vocab) = VocabResponseParser.Parse(corrected);
-                VocabResponseParser.AddExtractedVocabulary(vocab, _dictionaryService, _logger);
-                return string.IsNullOrWhiteSpace(cleanText) ? rawText : cleanText;
-            }
 
             return corrected;
         }
