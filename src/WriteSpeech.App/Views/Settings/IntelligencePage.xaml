@@ -101,6 +101,26 @@
             </Border>
         </Grid>
 
+        <!-- What text correction does -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,10,0,0">
+            <Grid Margin="16,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource AccentBrush}"
+                           VerticalAlignment="Top" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                           Foreground="{DynamicResource TextSecondaryBrush}">
+                    <Run FontWeight="SemiBold">When enabled, text correction:</Run><LineBreak/>
+                    <Run Text="&#x2022; Fixes punctuation, capitalization, and grammar"/><LineBreak/>
+                    <Run Text="&#x2022; Preserves the original language (no translation)"/><LineBreak/>
+                    <Run Text="&#x2022; Considers custom dictionary entries (Dictionary page)"/><LineBreak/>
+                    <Run Text="&#x2022; Uses IDE context like variable names (Integrations page)"/>
+                </TextBlock>
+            </Grid>
+        </Border>
+
         <!-- Cloud correction settings -->
         <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Cloud}"
                     Margin="0,8,0,0">
