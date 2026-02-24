@@ -108,7 +108,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource AccentBrush}"
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Top" Margin="0,0,10,0"/>
                 <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
                            Foreground="{DynamicResource TextSecondaryBrush}">
@@ -324,7 +324,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource AccentBrush}"
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Top" Margin="0,0,10,0"/>
                 <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
                            Foreground="{DynamicResource TextSecondaryBrush}"
