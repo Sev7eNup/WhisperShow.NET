@@ -293,6 +293,47 @@ public class OverlayViewModelTests : IDisposable
         levels[0].Should().Be(0f);
     }
 
+    [Fact]
+    public void GetWaveformLevels_ReturnsCopy_NotReference()
+    {
+        var vm = CreateViewModel();
+        vm.AudioLevel = 0.5f;
+
+        var first = vm.GetWaveformLevels();
+        var second = vm.GetWaveformLevels();
+
+        first.Should().NotBeSameAs(second);
+        first.Should().BeEquivalentTo(second);
+    }
+
+    [Fact]
+    public void GetWaveformLevels_ModifyingCopy_DoesNotAffectOriginal()
+    {
+        var vm = CreateViewModel();
+        vm.AudioLevel = 0.5f;
+
+        var copy = vm.GetWaveformLevels();
+        copy[19] = 999f;
+
+        vm.GetWaveformLevels()[19].Should().Be(0.5f);
+    }
+
+    // --- CancelAutoDismissTimer CTS Dispose ---
+
+    [Fact]
+    public void Dispose_CalledMultipleTimes_DoesNotThrow()
+    {
+        var vm = CreateViewModel();
+
+        var act = () =>
+        {
+            vm.Dispose();
+            vm.Dispose();
+        };
+
+        act.Should().NotThrow();
+    }
+
     // --- ShowResultOverlay ---
 
     [Fact]

@@ -60,6 +60,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private float _audioLevel;
 
     private readonly float[] _waveformLevels = new float[20];
+    private readonly Lock _waveformLock = new();
     public event EventHandler? WaveformUpdated;
 
     [ObservableProperty]
@@ -375,7 +376,12 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
                 _ = _ideContextService.PrepareContextAsync(
                     ideInfo.WorkspacePath,
                     integration.VariableRecognition,
-                    integration.FileTagging);
+                    integration.FileTagging)
+                    .ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                            _logger.LogWarning(t.Exception?.InnerException, "IDE context preparation failed");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
             }
             else
             {
@@ -415,6 +421,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private async Task StartAutoDismissTimerAsync()
     {
         _autoDismissCts?.Cancel();
+        _autoDismissCts?.Dispose();
         _autoDismissCts = new CancellationTokenSource();
         var token = _autoDismissCts.Token;
 
@@ -430,21 +437,34 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private void CancelAutoDismissTimer()
     {
         _autoDismissCts?.Cancel();
+        _autoDismissCts?.Dispose();
         _autoDismissCts = null;
     }
 
     partial void OnAudioLevelChanged(float value)
     {
-        Array.Copy(_waveformLevels, 1, _waveformLevels, 0, _waveformLevels.Length - 1);
-        _waveformLevels[^1] = value;
+        lock (_waveformLock)
+        {
+            Array.Copy(_waveformLevels, 1, _waveformLevels, 0, _waveformLevels.Length - 1);
+            _waveformLevels[^1] = value;
+        }
         WaveformUpdated?.Invoke(this, EventArgs.Empty);
     }
 
-    public float[] GetWaveformLevels() => _waveformLevels;
+    public float[] GetWaveformLevels()
+    {
+        lock (_waveformLock)
+        {
+            return (float[])_waveformLevels.Clone();
+        }
+    }
 
     public void ClearWaveform()
     {
-        Array.Clear(_waveformLevels);
+        lock (_waveformLock)
+        {
+            Array.Clear(_waveformLevels);
+        }
     }
 
     public void UpdatePosition(double x, double y)

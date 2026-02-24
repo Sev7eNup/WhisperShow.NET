@@ -28,6 +28,7 @@ public partial class OverlayWindow : Window
     private const int WaveformBarCount = 16;
     private const int ViewModelWaveformCount = 20;
     private readonly Rectangle[] _waveformBars = new Rectangle[WaveformBarCount];
+    private readonly double[] _interpolatedHeights = new double[WaveformBarCount];
 
     // Cached brushes for state changes
     private Brush? _idleGradient;
@@ -180,18 +181,25 @@ public partial class OverlayWindow : Window
     private void UpdateWaveformBars()
     {
         var levels = _viewModel.GetWaveformLevels();
-        var heights = InterpolateWaveformLevels(levels, WaveformBarCount);
+        InterpolateWaveformLevels(levels, _interpolatedHeights);
         for (int i = 0; i < WaveformBarCount; i++)
         {
-            _waveformBars[i].Height = heights[i];
-            Canvas.SetTop(_waveformBars[i], (30 - heights[i]) / 2); // center vertically
+            _waveformBars[i].Height = _interpolatedHeights[i];
+            Canvas.SetTop(_waveformBars[i], (30 - _interpolatedHeights[i]) / 2); // center vertically
         }
     }
 
     internal static double[] InterpolateWaveformLevels(float[] levels, int barCount)
     {
         var heights = new double[barCount];
+        InterpolateWaveformLevels(levels, heights);
+        return heights;
+    }
+
+    internal static void InterpolateWaveformLevels(float[] levels, double[] heights)
+    {
         int srcCount = levels.Length;
+        int barCount = heights.Length;
         for (int i = 0; i < barCount; i++)
         {
             // Map barCount bars to srcCount levels via linear interpolation
@@ -205,7 +213,6 @@ public partial class OverlayWindow : Window
             float level = MathF.Min(MathF.Sqrt(interpolated * 5.0f), 1.0f);
             heights[i] = Math.Max(2, level * 28);
         }
-        return heights;
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

@@ -1,0 +1,55 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{cs,csx}]
+# File-scoped namespaces
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# var preferences
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+
+# Expression-level preferences
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+
+# Naming: public members PascalCase
+dotnet_naming_rule.public_members_must_be_pascal_case.severity = suggestion
+dotnet_naming_rule.public_members_must_be_pascal_case.symbols = public_symbols
+dotnet_naming_rule.public_members_must_be_pascal_case.style = pascal_case_style
+dotnet_naming_symbols.public_symbols.applicable_kinds = property,method,event
+dotnet_naming_symbols.public_symbols.applicable_accessibilities = public
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# Naming: private fields _camelCase
+dotnet_naming_rule.private_fields_must_be_underscore_camel.severity = suggestion
+dotnet_naming_rule.private_fields_must_be_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_must_be_underscore_camel.style = underscore_camel_style
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_style.capitalization = camel_case
+dotnet_naming_style.underscore_camel_style.required_prefix = _
+
+# Nullable
+dotnet_diagnostic.CS8600.severity = warning
+dotnet_diagnostic.CS8601.severity = warning
+dotnet_diagnostic.CS8602.severity = warning
+dotnet_diagnostic.CS8603.severity = warning
+dotnet_diagnostic.CS8604.severity = warning
+
+[*.{xml,xaml,csproj,props,targets}]
+indent_size = 2
+
+[*.json]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

@@ -11,7 +11,8 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 {
     private readonly ILogger<SettingsPersistenceService> _logger;
     private readonly string _filePath;
-    private readonly Lock _lock = new();
+    private readonly Lock _mutatorLock = new();
+    private readonly SemaphoreSlim _flushSemaphore = new(1, 1);
     private Action<JsonNode>? _pendingMutator;
     private readonly DebouncedSaveHelper _saveHelper;
 
@@ -29,7 +30,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 
     public void ScheduleUpdate(Action<JsonNode> mutator)
     {
-        lock (_lock)
+        lock (_mutatorLock)
         {
             var previous = _pendingMutator;
             _pendingMutator = previous is null
@@ -41,27 +42,39 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 
     private async Task FlushAsync()
     {
-        Action<JsonNode> mutator;
-        lock (_lock)
+        await _flushSemaphore.WaitAsync();
+        try
         {
-            if (_pendingMutator is null) return;
-            mutator = _pendingMutator;
-            _pendingMutator = null;
+            Action<JsonNode> mutator;
+            lock (_mutatorLock)
+            {
+                if (_pendingMutator is null) return;
+                mutator = _pendingMutator;
+                _pendingMutator = null;
+            }
+
+            var json = await File.ReadAllTextAsync(_filePath);
+            var doc = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip
+            })!;
+
+            var section = doc["WriteSpeech"]!;
+            mutator(section);
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            await File.WriteAllTextAsync(_filePath, doc.ToJsonString(options));
+            _logger.LogInformation("Settings saved to appsettings.json");
         }
-
-        var json = await File.ReadAllTextAsync(_filePath);
-        var doc = JsonNode.Parse(json, documentOptions: new JsonDocumentOptions
+        finally
         {
-            CommentHandling = JsonCommentHandling.Skip
-        })!;
-
-        var section = doc["WriteSpeech"]!;
-        mutator(section);
-
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        await File.WriteAllTextAsync(_filePath, doc.ToJsonString(options));
-        _logger.LogInformation("Settings saved to appsettings.json");
+            _flushSemaphore.Release();
+        }
     }
 
-    public void Dispose() => _saveHelper.Dispose();
+    public void Dispose()
+    {
+        _saveHelper.Dispose();
+        _flushSemaphore.Dispose();
+    }
 }

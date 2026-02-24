@@ -121,7 +121,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     {
         OpenAiApiKeyDisplay = string.IsNullOrEmpty(OpenAiApiKey)
             ? "Not configured"
-            : $"sk-...{OpenAiApiKey[^4..]}";
+            : OpenAiApiKey.Length >= 4 ? $"sk-...{OpenAiApiKey[^4..]}" : "sk-...****";
     }
 
     // --- Transcription ---

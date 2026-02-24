@@ -111,6 +111,32 @@ public class OverlayWindowTests
         heights[15].Should().BeGreaterThan(heights[0]);
     }
 
+    // --- Void Overload (pre-allocated array) ---
+
+    [Fact]
+    public void InterpolateWaveformLevels_VoidOverload_WritesToExistingArray()
+    {
+        var levels = Enumerable.Repeat(0.1f, 20).ToArray();
+        var heights = new double[16];
+
+        OverlayWindow.InterpolateWaveformLevels(levels, heights);
+
+        heights.Should().AllSatisfy(h => h.Should().BeGreaterThan(2.0));
+    }
+
+    [Fact]
+    public void InterpolateWaveformLevels_VoidOverload_MatchesReturningVersion()
+    {
+        var levels = new float[20];
+        for (int i = 0; i < 20; i++) levels[i] = i / 19.0f;
+
+        var fromReturning = OverlayWindow.InterpolateWaveformLevels(levels, 16);
+        var fromVoid = new double[16];
+        OverlayWindow.InterpolateWaveformLevels(levels, fromVoid);
+
+        fromVoid.Should().BeEquivalentTo(fromReturning);
+    }
+
     // --- Scale Clamping (Theory-based) ---
 
     [Theory]

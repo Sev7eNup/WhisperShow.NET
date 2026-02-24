@@ -69,6 +69,37 @@ public class TranscriptionSettingsViewModelTests
         vm.OpenAiApiKeyDisplay.Should().Be("Not configured");
     }
 
+    [Fact]
+    public void Constructor_ShortApiKey_DoesNotThrow()
+    {
+        var vm = CreateViewModel(o => o.OpenAI.ApiKey = "ab");
+
+        vm.OpenAiApiKeyDisplay.Should().Be("sk-...****");
+    }
+
+    [Theory]
+    [InlineData("a", "sk-...****")]
+    [InlineData("ab", "sk-...****")]
+    [InlineData("abc", "sk-...****")]
+    [InlineData("abcd", "sk-...abcd")]
+    [InlineData("abcde", "sk-...bcde")]
+    public void Constructor_ApiKeyDisplay_HandlesVariousLengths(string key, string expected)
+    {
+        var vm = CreateViewModel(o => o.OpenAI.ApiKey = key);
+
+        vm.OpenAiApiKeyDisplay.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ApplyApiKey_ShortKey_DoesNotThrow()
+    {
+        var vm = CreateViewModel();
+
+        vm.ApplyApiKey("xy");
+
+        vm.OpenAiApiKeyDisplay.Should().Be("sk-...****");
+    }
+
     // --- ShowCloudUsageHint ---
 
     [Fact]
