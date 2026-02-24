@@ -99,7 +99,7 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     internal static partial int GetWindowText(IntPtr hWnd, [Out] char[] lpString, int nMaxCount);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
     internal static partial int GetWindowTextLength(IntPtr hWnd);
 
     [LibraryImport("user32.dll")]

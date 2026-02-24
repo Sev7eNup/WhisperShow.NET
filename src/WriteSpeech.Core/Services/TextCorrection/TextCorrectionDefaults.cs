@@ -30,15 +30,9 @@ public static class TextCorrectionDefaults
     public const string VocabExtractionInstruction =
         """
 
-        FORMAT: Output the corrected text first (once only, never repeat it).
-        If you detected proper nouns (e.g. "Dr. Müller"), brand names (e.g. "Microsoft"), or technical terms (e.g. "Kubernetes"), add "---VOCAB---" on a new line, followed by each term on its own line.
-        ONLY include: names of people, companies, products, places, or technical terms that start with a capital letter.
-        NEVER include: common words, verbs, adjectives, pronouns, or full sentences.
-        If unsure or no special terms exist, do NOT add the ---VOCAB--- section.
-        Example:
-        Die Besprechung mit Dr. Müller bei der Finanz Informatik war produktiv.
-        ---VOCAB---
-        Dr. Müller
-        Finanz Informatik
+        After the corrected text, if you detected any proper nouns, brand names, or technical terms, add a line containing only "---VOCAB---" followed by one term per line.
+        ONLY include: names of people, companies, products, places, or technical terms with a capital letter.
+        NEVER include: common words, verbs, adjectives, or full sentences.
+        If no special terms were detected, do NOT add the ---VOCAB--- delimiter.
         """;
 }
