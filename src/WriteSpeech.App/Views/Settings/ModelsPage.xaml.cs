@@ -49,18 +49,10 @@ public partial class ModelsPage : UserControl
         }
     }
 
-    private void ModelTextBox_KeyDown(object sender, KeyEventArgs e)
+    private void CloudModelCard_Click(object sender, MouseButtonEventArgs e)
     {
-        if (e.Key == Key.Enter && sender is TextBox tb)
-        {
-            ViewModel.ApplyModel(tb.Text);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Escape)
-        {
-            ViewModel.IsEditingModel = false;
-            e.Handled = true;
-        }
+        if (sender is System.Windows.Controls.Border border && border.Tag is string modelId)
+            ViewModel.SelectCloudModelCommand.Execute(modelId);
     }
 
     private void CombinedAudioModelTextBox_KeyDown(object sender, KeyEventArgs e)

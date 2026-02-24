@@ -407,5 +407,6 @@
     <converters:ModelDeleteVisibilityConverter x:Key="ModelDeleteVisibility"/>
     <converters:StringEqualsToVisibilityConverter x:Key="StringToVisibility"/>
     <converters:CapturingHotkeyTextConverter x:Key="StringToCapturingText"/>
+    <converters:EqualityConverter x:Key="EqualityConverter"/>
 
 </ResourceDictionary>

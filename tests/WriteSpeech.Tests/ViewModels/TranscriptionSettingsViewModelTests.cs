@@ -177,6 +177,25 @@ public class TranscriptionSettingsViewModelTests
     }
 
     [Fact]
+    public void SelectCloudModelCommand_UpdatesModelAndSaves()
+    {
+        var vm = CreateViewModel();
+
+        vm.SelectCloudModelCommand.Execute("gpt-4o-transcribe");
+
+        vm.TranscriptionModel.Should().Be("gpt-4o-transcribe");
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CloudTranscriptionModels_ContainsExpectedModels()
+    {
+        TranscriptionSettingsViewModel.CloudTranscriptionModels.Should().HaveCount(3);
+        TranscriptionSettingsViewModel.CloudTranscriptionModels.Select(m => m.Id)
+            .Should().Contain(["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper-1"]);
+    }
+
+    [Fact]
     public void ApplyCorrectionModel_SetsValueAndTriggersSave()
     {
         var vm = CreateViewModel();
