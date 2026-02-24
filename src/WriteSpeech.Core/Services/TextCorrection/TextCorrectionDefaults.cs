@@ -32,5 +32,6 @@ public static class TextCorrectionDefaults
         Die Besprechung mit Dr. Müller war produktiv.
         ---VOCAB---
         Dr. Müller
+        CRITICAL: NEVER change the language. Output MUST match the input language exactly.
         """;
 }
