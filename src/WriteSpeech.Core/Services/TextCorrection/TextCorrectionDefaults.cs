@@ -28,6 +28,9 @@ public static class TextCorrectionDefaults
     public const string VocabExtractionInstruction =
         """
 
-        ADDITIONAL TASK: After the corrected text, add a line containing ONLY "---VOCAB---" (no spaces), then list any proper nouns, brand names, technical terms, or uncommon words you detected (one per line). Only include words that are specific names or terminology — not common everyday words. If no special vocabulary was detected, omit the ---VOCAB--- section entirely.
+        FORMAT: Output the corrected text first (once only, never repeat it). If you detected proper nouns, brand names, or technical terms, add "---VOCAB---" on a new line, followed by each term on its own line. Example:
+        Die Besprechung mit Dr. Müller war produktiv.
+        ---VOCAB---
+        Dr. Müller
         """;
 }

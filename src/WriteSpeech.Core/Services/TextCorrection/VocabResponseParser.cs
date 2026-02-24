@@ -21,9 +21,9 @@ public static class VocabResponseParser
             TextCorrectionDefaults.VocabDelimiter, StringComparison.Ordinal);
 
         if (delimiterIndex < 0)
-            return (response.Trim(), []);
+            return (DeduplicateText(response.Trim()), []);
 
-        var text = response[..delimiterIndex].Trim();
+        var text = DeduplicateText(response[..delimiterIndex].Trim());
         var vocabSection = response[(delimiterIndex + TextCorrectionDefaults.VocabDelimiter.Length)..];
 
         var words = vocabSection
@@ -34,6 +34,30 @@ public static class VocabResponseParser
             .ToList();
 
         return (text, words);
+    }
+
+    /// <summary>
+    /// Removes duplicate lines/paragraphs that the model may produce.
+    /// If the text contains the same sentence repeated multiple times, keeps only one copy.
+    /// </summary>
+    internal static string DeduplicateText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (lines.Length <= 1)
+            return text;
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var unique = new List<string>();
+        foreach (var line in lines)
+        {
+            if (seen.Add(line))
+                unique.Add(line);
+        }
+
+        return string.Join("\n", unique);
     }
 
     /// <summary>
