@@ -84,10 +84,12 @@ public partial class App : Application
                 services.AddSingleton<IAudioRecordingService, AudioRecordingService>();
                 services.AddSingleton<IAudioMutingService, AudioMutingService>();
                 services.AddSingleton<IAudioCompressor, AudioCompressor>();
+                services.AddSingleton<IAudioFileReader, AudioFileReader>();
                 services.AddSingleton<ITranscriptionService, OpenAiTranscriptionService>();
                 services.AddSingleton<ITranscriptionService, LocalTranscriptionService>();
                 services.AddSingleton<TranscriptionProviderFactory>();
                 services.AddSingleton<ITextInsertionService, TextInsertionService>();
+                services.AddSingleton<ISelectedTextService, SelectedTextService>();
                 services.AddSingleton<ITextCorrectionService, OpenAiTextCorrectionService>();
                 services.AddSingleton<ITextCorrectionService, LocalTextCorrectionService>();
                 services.AddSingleton<TextCorrectionProviderFactory>();
@@ -118,11 +120,13 @@ public partial class App : Application
                 services.AddSingleton<OverlayViewModel>();
                 services.AddSingleton<SettingsViewModel>();
                 services.AddSingleton<HistoryViewModel>();
+                services.AddSingleton<FileTranscriptionViewModel>();
 
                 // Windows
                 services.AddSingleton<OverlayWindow>();
                 services.AddSingleton<SettingsWindow>();
                 services.AddSingleton<HistoryWindow>();
+                services.AddSingleton<FileTranscriptionWindow>();
             })
             .Build();
 
@@ -152,6 +156,7 @@ public partial class App : Application
                 overlayWindow,
                 () => _host!.Services.GetRequiredService<SettingsWindow>(),
                 () => _host!.Services.GetRequiredService<HistoryWindow>(),
+                () => _host!.Services.GetRequiredService<FileTranscriptionWindow>(),
                 Shutdown);
 
             // Preload local models in background (non-blocking)
@@ -269,6 +274,7 @@ public partial class App : Application
             _host.Services.GetService<OverlayWindow>()?.Cleanup();
             _host.Services.GetService<SettingsWindow>()?.Cleanup();
             _host.Services.GetService<HistoryWindow>()?.Cleanup();
+            _host.Services.GetService<FileTranscriptionWindow>()?.Cleanup();
 
             var hotkeyService = _host.Services.GetService<IGlobalHotkeyService>();
             hotkeyService?.Dispose();

@@ -36,12 +36,15 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private readonly IIDEContextService _ideContextService;
     private readonly IDispatcherService _dispatcher;
     private readonly IModeService _modeService;
+    private readonly ISelectedTextService _selectedTextService;
     private readonly ISettingsPersistenceService _persistenceService;
     private readonly ILogger<OverlayViewModel> _logger;
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly IDisposable? _optionsChangeRegistration;
     private IntPtr _previousForegroundWindow;
     private string? _activeProcessName;
+    private string? _selectedText;
+    private bool _isCommandMode;
     private CancellationTokenSource? _autoDismissCts;
     private CancellationTokenSource? _transcriptionCts;
     private DateTime _recordingStartTime;
@@ -79,6 +82,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = string.Empty;
 
+    [ObservableProperty]
+    private bool _isCommandModeActive;
+
     // --- Overlay position ---
     public double PositionX { get; private set; }
     public double PositionY { get; private set; }
@@ -98,6 +104,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         IIDEDetectionService ideDetectionService,
         IIDEContextService ideContextService,
         IModeService modeService,
+        ISelectedTextService selectedTextService,
         IDispatcherService dispatcher,
         ISettingsPersistenceService persistenceService,
         ILogger<OverlayViewModel> logger,
@@ -117,6 +124,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _ideDetectionService = ideDetectionService;
         _ideContextService = ideContextService;
         _modeService = modeService;
+        _selectedTextService = selectedTextService;
         _dispatcher = dispatcher;
         _persistenceService = persistenceService;
         _logger = logger;
@@ -225,8 +233,15 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         {
             _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
             _activeProcessName = _windowFocusService.GetProcessName(_previousForegroundWindow);
-            _logger.LogInformation("Starting recording (ForegroundWindow: 0x{Handle:X}, Process: {Process})",
-                _previousForegroundWindow.ToInt64(), _activeProcessName ?? "unknown");
+
+            // Capture selected text BEFORE recording starts (focus is still on the previous window)
+            _selectedText = await _selectedTextService.ReadSelectedTextAsync();
+            _isCommandMode = !string.IsNullOrWhiteSpace(_selectedText);
+            IsCommandModeActive = _isCommandMode;
+
+            _logger.LogInformation(
+                "Starting recording (ForegroundWindow: 0x{Handle:X}, Process: {Process}, CommandMode: {CommandMode})",
+                _previousForegroundWindow.ToInt64(), _activeProcessName ?? "unknown", _isCommandMode);
 
             // Prepare IDE context while user records (non-blocking)
             PrepareIDEContext();
@@ -284,10 +299,20 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             if (Options.TextCorrection.UseCombinedAudioModel && _combinedService.IsAvailable)
             {
                 _logger.LogInformation("Using combined transcription+correction pipeline");
-                StatusText = "Transcribing & correcting...";
+                StatusText = _isCommandMode ? "Processing command..." : "Transcribing & correcting...";
                 try
                 {
-                    var combinedPrompt = _modeService.ResolveCombinedSystemPrompt(_activeProcessName);
+                    string? combinedPrompt;
+                    if (_isCommandMode && !string.IsNullOrWhiteSpace(_selectedText))
+                    {
+                        combinedPrompt = TextCorrectionDefaults.VoiceCommandCombinedSystemPrompt
+                            + $"\n\nSelected text:\n{_selectedText}";
+                    }
+                    else
+                    {
+                        combinedPrompt = _modeService.ResolveCombinedSystemPrompt(_activeProcessName);
+                    }
+
                     text = await _combinedService.TranscribeAndCorrectAsync(audioData, Options.Language, combinedPrompt, ct);
                     correctionProvider = "Combined";
                 }
@@ -299,6 +324,17 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
                     correctionProvider = Options.TextCorrection.Provider.ToString();
                 }
             }
+            else if (_isCommandMode && !string.IsNullOrWhiteSpace(_selectedText))
+            {
+                // Command mode via standard pipeline: transcribe only (skip correction),
+                // then transform the selected text using the voice command
+                _logger.LogInformation("Using standard transcription pipeline in command mode");
+                var provider = _providerFactory.GetProvider(Options.Provider);
+                StatusText = provider.IsModelLoaded ? "Transcribing..." : "Loading transcription model...";
+                var result = await provider.TranscribeAsync(audioData, Options.Language, ct);
+                text = await TransformTextAsync(result.Text, _selectedText, ct);
+                correctionProvider = "VoiceCommand";
+            }
             else
             {
                 _logger.LogInformation("Using standard transcription pipeline (Provider: {Provider})", Options.Provider);
@@ -306,8 +342,11 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
                 correctionProvider = Options.TextCorrection.Provider.ToString();
             }
 
-            // Apply snippet expansions after transcription + correction
-            text = _snippetService.ApplySnippets(text);
+            // Apply snippet expansions only in normal dictation mode
+            if (!_isCommandMode)
+            {
+                text = _snippetService.ApplySnippets(text);
+            }
 
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -379,6 +418,23 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         return text;
     }
 
+    private async Task<string> TransformTextAsync(string voiceCommand, string selectedText, CancellationToken ct)
+    {
+        _logger.LogInformation("Command mode: transforming text ({SelectedLength} chars) with command: {Command}",
+            selectedText.Length, voiceCommand);
+        StatusText = "Transforming text...";
+
+        var corrector = _correctionFactory.GetProvider(Options.TextCorrection.Provider);
+        if (corrector is null)
+        {
+            _logger.LogWarning("Voice command mode requires text correction to be enabled — returning raw transcription");
+            return voiceCommand;
+        }
+
+        var userMessage = $"Selected text:\n{selectedText}\n\nVoice command: {voiceCommand}";
+        return await corrector.CorrectAsync(userMessage, Options.Language, TextCorrectionDefaults.VoiceCommandSystemPrompt, ct);
+    }
+
     [RelayCommand]
     private async Task InsertTextAsync()
     {
@@ -407,6 +463,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         var previousState = State;
         TranscribedText = null;
         ErrorMessage = null;
+        _selectedText = null;
+        _isCommandMode = false;
+        IsCommandModeActive = false;
         State = RecordingState.Idle;
         _logger.LogDebug("Result dismissed (was {PreviousState})", previousState);
     }

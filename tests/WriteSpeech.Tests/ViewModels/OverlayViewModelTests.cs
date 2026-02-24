@@ -84,6 +84,7 @@ public class OverlayViewModelTests : IDisposable
             Substitute.For<IIDEDetectionService>(),
             Substitute.For<IIDEContextService>(),
             Substitute.For<IModeService>(),
+            Substitute.For<ISelectedTextService>(),
             new SynchronousDispatcherService(),
             Substitute.For<ISettingsPersistenceService>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<OverlayViewModel>.Instance,

@@ -1,0 +1,163 @@
+<Window x:Class="WriteSpeech.App.Views.FileTranscriptionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        Icon="/Resources/Icons/app.ico"
+        Width="480" Height="420"
+        Title="Transcribe File">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/SettingsDarkTheme.xaml"/>
+                <ResourceDictionary Source="/Themes/SettingsStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="2" Opacity="0.12" Color="#000000"/>
+        </Border.Effect>
+        <Border x:Name="ClipBorder" CornerRadius="12" Background="{DynamicResource BgBrush}" ClipToBounds="True">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title bar -->
+                <Grid Grid.Row="0" Height="40" Background="{DynamicResource SidebarBgBrush}"
+                      MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <TextBlock Text="Transcribe File" FontSize="13" FontWeight="SemiBold"
+                               FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                               HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                            Cursor="Hand" Click="CloseButton_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Width="28" Height="28">
+                                    <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBgBrush}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+
+                <!-- File info card -->
+                <Border Grid.Row="1" Background="{DynamicResource CardBgBrush}" CornerRadius="10"
+                        Padding="14,10" Margin="12,10,12,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding FileInfo}" FontSize="11"
+                                       FontFamily="Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Progress / Status -->
+                <StackPanel Grid.Row="2" Margin="12,10,12,0">
+                    <ProgressBar IsIndeterminate="{Binding IsTranscribing}" Height="3"
+                                 Visibility="{Binding IsTranscribing, Converter={StaticResource BoolToVisibility}}"
+                                 Foreground="#FF5C6BC0" Background="{DynamicResource CardBgBrush}" BorderThickness="0"/>
+                    <TextBlock Text="{Binding StatusText}" FontSize="11" FontFamily="Segoe UI"
+                               Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0"/>
+                </StackPanel>
+
+                <!-- Result text -->
+                <TextBox Grid.Row="3" Text="{Binding ResultText, Mode=OneWay}"
+                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         FontSize="13" FontFamily="Segoe UI"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         CaretBrush="{DynamicResource TextPrimaryBrush}"
+                         Background="{DynamicResource CardBgBrush}"
+                         BorderThickness="0" Padding="14,10"
+                         Margin="12,8,12,0"/>
+
+                <!-- Error message -->
+                <TextBlock Grid.Row="4" Text="{Binding ErrorMessage}" FontSize="12" FontFamily="Segoe UI"
+                           Foreground="#FFE53935" TextWrapping="Wrap" Margin="12,6,12,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource BoolToVisibility}}"/>
+
+                <!-- Bottom bar -->
+                <Border Grid.Row="5" Background="{DynamicResource SidebarBgBrush}" Padding="12,8"
+                        CornerRadius="0,0,12,12">
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button Content="Copy" Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
+                                    Foreground="{DynamicResource TextPrimaryBrush}"
+                                    Command="{Binding CopyResultCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
+                                                CornerRadius="8" Padding="12,5"
+                                                BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <TextBlock Text="Copied!" FontSize="11" FontFamily="Segoe UI"
+                                       Foreground="#FF66BB6A" VerticalAlignment="Center" Margin="8,0,0,0"
+                                       Visibility="{Binding IsCopied, Converter={StaticResource BoolToVisibility}}"/>
+                        </StackPanel>
+                        <Button Content="Cancel" HorizontalAlignment="Right" Cursor="Hand"
+                                FontSize="11" FontFamily="Segoe UI"
+                                Foreground="{DynamicResource TextPrimaryBrush}"
+                                Command="{Binding CancelCommand}"
+                                Visibility="{Binding IsTranscribing, Converter={StaticResource BoolToVisibility}}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
+                                            CornerRadius="8" Padding="12,5"
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

@@ -66,7 +66,8 @@ public class TrayIconManager : IDisposable
     }
 
     public void Initialize(OverlayWindow overlayWindow, Func<SettingsWindow> settingsFactory,
-        Func<HistoryWindow> historyFactory, Action shutdown)
+        Func<HistoryWindow> historyFactory, Func<FileTranscriptionWindow> fileTranscriptionFactory,
+        Action shutdown)
     {
         _trayIcon = new TaskbarIcon
         {
@@ -75,7 +76,8 @@ public class TrayIconManager : IDisposable
                 Application.GetResourceStream(new Uri("/Resources/Icons/app.ico", UriKind.Relative))!.Stream)
         };
 
-        _contextMenu = BuildContextMenu(overlayWindow, settingsFactory, historyFactory, shutdown);
+        _contextMenu = BuildContextMenu(overlayWindow, settingsFactory, historyFactory,
+            fileTranscriptionFactory, shutdown);
         SetupRightClickBehavior(overlayWindow, _contextMenu);
         SetupLeftClickBehavior(overlayWindow);
 
@@ -86,6 +88,7 @@ public class TrayIconManager : IDisposable
         OverlayWindow overlayWindow,
         Func<SettingsWindow> settingsFactory,
         Func<HistoryWindow> historyFactory,
+        Func<FileTranscriptionWindow> fileTranscriptionFactory,
         Action shutdown)
     {
         var styles = new ResourceDictionary
@@ -154,6 +157,21 @@ public class TrayIconManager : IDisposable
             await _textInsertionService.InsertTextAsync(text);
         };
         contextMenu.Items.Add(pasteItem);
+
+        // Transcribe File
+        var transcribeFileItem = CreateMenuItem("Transcribe File", "\uE8E5", menuItemStyle);
+        transcribeFileItem.Click += (_, _) =>
+        {
+            contextMenu.IsOpen = false;
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select audio file to transcribe",
+                Filter = "Audio files (*.mp3;*.wav;*.m4a;*.flac;*.ogg;*.webm;*.mp4)|*.mp3;*.wav;*.m4a;*.flac;*.ogg;*.webm;*.mp4|All files (*.*)|*.*"
+            };
+            if (dialog.ShowDialog() == true)
+                fileTranscriptionFactory().ShowWithFile(dialog.FileName);
+        };
+        contextMenu.Items.Add(transcribeFileItem);
         contextMenu.Items.Add(CreateSeparator(separatorStyle));
 
         // Settings / History
