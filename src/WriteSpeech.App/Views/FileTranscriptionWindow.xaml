@@ -28,6 +28,7 @@
         <Border x:Name="ClipBorder" CornerRadius="12" Background="{DynamicResource BgBrush}" ClipToBounds="True">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="3"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -36,12 +37,27 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
+                <!-- Accent stripe -->
+                <Border Grid.Row="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#9B7DFF" Offset="0"/>
+                            <GradientStop Color="#7C5CFC" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+
                 <!-- Title bar -->
-                <Grid Grid.Row="0" Height="40" Background="{DynamicResource SidebarBgBrush}"
+                <Grid Grid.Row="1" Height="40" Background="{DynamicResource SidebarBgBrush}"
                       MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                    <TextBlock Text="Transcribe File" FontSize="13" FontWeight="SemiBold"
-                               FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
-                               HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                        <TextBlock Text="&#xEC4F;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   Foreground="{DynamicResource SelectedBorderBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Text="Transcribe File" FontSize="13" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
                             Cursor="Hand" Click="CloseButton_Click">
                         <Button.Template>
@@ -62,90 +78,144 @@
                 </Grid>
 
                 <!-- File info card -->
-                <Border Grid.Row="1" Background="{DynamicResource CardBgBrush}" CornerRadius="10"
-                        Padding="14,10" Margin="12,10,12,0">
+                <Border Grid.Row="2" Background="{DynamicResource CardBgBrush}" CornerRadius="10"
+                        Margin="12,10,12,0" ClipToBounds="True">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="3"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold"
-                                       FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding FileInfo}" FontSize="11"
-                                       FontFamily="Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Margin="0,2,0,0"/>
-                        </StackPanel>
+                        <!-- Left accent stripe -->
+                        <Border Grid.Column="0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#9B7DFF" Offset="0"/>
+                                    <GradientStop Color="#7C5CFC" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <!-- File info content -->
+                        <Grid Grid.Column="1" Margin="12,10,14,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Background="{DynamicResource ButtonBgBrush}" CornerRadius="8"
+                                    Width="36" Height="36" Margin="0,0,12,0">
+                                <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                           Foreground="{DynamicResource SelectedBorderBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FileInfo}" FontSize="11"
+                                           FontFamily="Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Border>
 
                 <!-- Progress / Status -->
-                <StackPanel Grid.Row="2" Margin="12,10,12,0">
-                    <ProgressBar IsIndeterminate="{Binding IsTranscribing}" Height="3"
-                                 Visibility="{Binding IsTranscribing, Converter={StaticResource BoolToVisibility}}"
-                                 Foreground="#FF5C6BC0" Background="{DynamicResource CardBgBrush}" BorderThickness="0"/>
+                <StackPanel Grid.Row="3" Margin="12,10,12,0">
+                    <Border CornerRadius="2" ClipToBounds="True"
+                            Visibility="{Binding IsTranscribing, Converter={StaticResource BoolToVisibility}}">
+                        <ProgressBar IsIndeterminate="{Binding IsTranscribing}" Height="4"
+                                     Background="{DynamicResource CardBgBrush}" BorderThickness="0">
+                            <ProgressBar.Foreground>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#9B7DFF" Offset="0"/>
+                                    <GradientStop Color="#7C5CFC" Offset="1"/>
+                                </LinearGradientBrush>
+                            </ProgressBar.Foreground>
+                        </ProgressBar>
+                    </Border>
                     <TextBlock Text="{Binding StatusText}" FontSize="11" FontFamily="Segoe UI"
                                Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0"/>
                 </StackPanel>
 
                 <!-- Result text -->
-                <TextBox Grid.Row="3" Text="{Binding ResultText, Mode=OneWay}"
-                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto"
-                         FontSize="13" FontFamily="Segoe UI"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
-                         CaretBrush="{DynamicResource TextPrimaryBrush}"
-                         Background="{DynamicResource CardBgBrush}"
-                         BorderThickness="0" Padding="14,10"
-                         Margin="12,8,12,0"/>
+                <Border Grid.Row="4" CornerRadius="10" Margin="12,8,12,0"
+                        Background="{DynamicResource CardBgBrush}" ClipToBounds="True">
+                    <TextBox Text="{Binding ResultText, Mode=OneWay}"
+                             IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             FontSize="13" FontFamily="Segoe UI"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             CaretBrush="{DynamicResource TextPrimaryBrush}"
+                             Background="Transparent"
+                             BorderThickness="0" Padding="14,10"/>
+                </Border>
 
                 <!-- Error message -->
-                <TextBlock Grid.Row="4" Text="{Binding ErrorMessage}" FontSize="12" FontFamily="Segoe UI"
-                           Foreground="#FFE53935" TextWrapping="Wrap" Margin="12,6,12,0"
-                           Visibility="{Binding ErrorMessage, Converter={StaticResource BoolToVisibility}}"/>
+                <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="14,6,12,0"
+                            Visibility="{Binding ErrorMessage, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                               Foreground="#FFE53935" VerticalAlignment="Top" Margin="0,1,6,0"/>
+                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" FontFamily="Segoe UI"
+                               Foreground="#FFE53935" TextWrapping="Wrap"/>
+                </StackPanel>
 
                 <!-- Bottom bar -->
-                <Border Grid.Row="5" Background="{DynamicResource SidebarBgBrush}" Padding="12,8"
+                <Border Grid.Row="6" Background="{DynamicResource SidebarBgBrush}" Padding="12,8"
                         CornerRadius="0,0,12,12">
                     <Grid>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                            <Button Content="Copy" Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
-                                    Foreground="{DynamicResource TextPrimaryBrush}"
+                            <!-- Accent Copy button -->
+                            <Button Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
                                     Command="{Binding CopyResultCommand}">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
-                                        <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
-                                                CornerRadius="8" Padding="12,5"
-                                                BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Border x:Name="Bd" CornerRadius="14" Padding="14,6">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#9B7DFF" Offset="0"/>
+                                                    <GradientStop Color="#7C5CFC" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                                           Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock Text="Copy" Foreground="White" VerticalAlignment="Center"
+                                                           FontFamily="Segoe UI" FontSize="11" FontWeight="SemiBold"/>
+                                            </StackPanel>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Button.Template>
                             </Button>
-                            <TextBlock Text="Copied!" FontSize="11" FontFamily="Segoe UI"
-                                       Foreground="#FF66BB6A" VerticalAlignment="Center" Margin="8,0,0,0"
-                                       Visibility="{Binding IsCopied, Converter={StaticResource BoolToVisibility}}"/>
+                            <!-- Copied feedback -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0"
+                                        Visibility="{Binding IsCopied, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                           Foreground="#FF66BB6A" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="Copied!" FontSize="11" FontFamily="Segoe UI"
+                                           Foreground="#FF66BB6A" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
-                        <Button Content="Cancel" HorizontalAlignment="Right" Cursor="Hand"
+                        <!-- Cancel button -->
+                        <Button HorizontalAlignment="Right" Cursor="Hand"
                                 FontSize="11" FontFamily="Segoe UI"
-                                Foreground="{DynamicResource TextPrimaryBrush}"
                                 Command="{Binding CancelCommand}"
                                 Visibility="{Binding IsTranscribing, Converter={StaticResource BoolToVisibility}}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
-                                            CornerRadius="8" Padding="12,5"
+                                            CornerRadius="14" Padding="14,6"
                                             BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Cancel" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center" FontFamily="Segoe UI" FontSize="11"/>
+                                        </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
