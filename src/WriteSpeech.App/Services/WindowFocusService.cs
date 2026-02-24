@@ -1,9 +1,17 @@
+using Microsoft.Extensions.Logging;
 using WriteSpeech.Core.Services.TextInsertion;
 
 namespace WriteSpeech.App.Services;
 
 public class WindowFocusService : IWindowFocusService
 {
+    private readonly ILogger<WindowFocusService> _logger;
+
+    public WindowFocusService(ILogger<WindowFocusService> logger)
+    {
+        _logger = logger;
+    }
+
     public IntPtr GetForegroundWindow() => NativeMethods.GetForegroundWindow();
 
     public async Task RestoreFocusAsync(IntPtr windowHandle)
@@ -14,12 +22,19 @@ public class WindowFocusService : IWindowFocusService
             NativeMethods.GetForegroundWindow(), out _);
         var currentThread = NativeMethods.GetCurrentThreadId();
 
+        bool attached = false;
         if (foregroundThread != currentThread)
-            NativeMethods.AttachThreadInput(currentThread, foregroundThread, true);
+        {
+            attached = NativeMethods.AttachThreadInput(currentThread, foregroundThread, true);
+            if (!attached)
+                _logger.LogDebug("AttachThreadInput failed for threads {Current} -> {Foreground}",
+                    currentThread, foregroundThread);
+        }
 
-        NativeMethods.SetForegroundWindow(windowHandle);
+        if (!NativeMethods.SetForegroundWindow(windowHandle))
+            _logger.LogDebug("SetForegroundWindow failed for handle 0x{Handle:X}", windowHandle.ToInt64());
 
-        if (foregroundThread != currentThread)
+        if (attached)
             NativeMethods.AttachThreadInput(currentThread, foregroundThread, false);
 
         await Task.Delay(150);

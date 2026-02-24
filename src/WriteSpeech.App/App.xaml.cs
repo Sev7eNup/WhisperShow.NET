@@ -234,9 +234,9 @@ public partial class App : Application
             {
                 Directory.Move(oldDir, newDir);
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort migration — old data stays in place
+                Log.Warning(ex, "Failed to migrate AppData folder from {OldDir} to {NewDir}", oldDir, newDir);
             }
         }
     }

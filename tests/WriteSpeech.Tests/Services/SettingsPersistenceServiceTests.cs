@@ -126,6 +126,25 @@ public class SettingsPersistenceServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ScheduleUpdate_RapidUpdates_LastValueWins()
+    {
+        WriteInitialSettings("""{ "WriteSpeech": { "Counter": 0 } }""");
+        using var service = CreateService();
+
+        // Schedule many rapid updates — all should compose correctly
+        for (int i = 1; i <= 10; i++)
+        {
+            var value = i;
+            service.ScheduleUpdate(section => section["Counter"] = value);
+        }
+        await Task.Delay(500);
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        var doc = JsonNode.Parse(json)!;
+        doc["WriteSpeech"]!["Counter"]!.GetValue<int>().Should().Be(10);
+    }
+
+    [Fact]
     public async Task ScheduleUpdate_OverwritesSameKey()
     {
         WriteInitialSettings("""{ "WriteSpeech": { "Language": "de" } }""");

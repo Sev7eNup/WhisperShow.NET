@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using NAudio.Wave;
 using WriteSpeech.App.Views;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services.Configuration;
 using WriteSpeech.Core.Services.History;
 using WriteSpeech.Core.Services.TextInsertion;
@@ -21,33 +22,21 @@ public class TrayIconManager : IDisposable
     private readonly ITranscriptionHistoryService _historyService;
     private readonly ITextInsertionService _textInsertionService;
     private readonly IWindowFocusService _windowFocusService;
+    private readonly IDisposable? _optionsChangeRegistration;
 
     private TaskbarIcon? _trayIcon;
     private IntPtr _previousForegroundWindow;
 
-    private static readonly (string Code, string Name, string Flag)[] Languages =
-    [
-        ("de", "German", "/Resources/Flags/de.png"),
-        ("en", "English", "/Resources/Flags/en.png"),
-        ("fr", "French", "/Resources/Flags/fr.png"),
-        ("es", "Spanish", "/Resources/Flags/es.png"),
-        ("it", "Italian", "/Resources/Flags/it.png"),
-        ("pt", "Portuguese", "/Resources/Flags/pt.png"),
-        ("nl", "Dutch", "/Resources/Flags/nl.png"),
-        ("pl", "Polish", "/Resources/Flags/pl.png"),
-        ("ru", "Russian", "/Resources/Flags/ru.png"),
-        ("uk", "Ukrainian", "/Resources/Flags/uk.png"),
-        ("zh", "Chinese", "/Resources/Flags/zh.png"),
-        ("ja", "Japanese", "/Resources/Flags/ja.png"),
-        ("ko", "Korean", "/Resources/Flags/ko.png"),
-        ("ar", "Arabic", "/Resources/Flags/ar.png"),
-        ("tr", "Turkish", "/Resources/Flags/tr.png"),
-        ("sv", "Swedish", "/Resources/Flags/sv.png"),
-        ("da", "Danish", "/Resources/Flags/da.png"),
-        ("no", "Norwegian", "/Resources/Flags/no.png"),
-        ("fi", "Finnish", "/Resources/Flags/fi.png"),
-        ("cs", "Czech", "/Resources/Flags/cs.png"),
-    ];
+    // Named event handlers for cleanup
+    private RoutedEventHandler? _contextMenuOpenedHandler;
+    private RoutedEventHandler? _trayMouseMoveHandler;
+    private RoutedEventHandler? _trayRightMouseDownHandler;
+    private RoutedEventHandler? _trayLeftMouseDownHandler;
+    private ContextMenu? _contextMenu;
+
+    // Submenu caching — only rebuild when settings change
+    private bool _languageDirty = true;
+    private bool _microphoneDirty = true;
 
     public TrayIconManager(
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
@@ -61,6 +50,12 @@ public class TrayIconManager : IDisposable
         _historyService = historyService;
         _textInsertionService = textInsertionService;
         _windowFocusService = windowFocusService;
+
+        _optionsChangeRegistration = _optionsMonitor.OnChange((_, _) =>
+        {
+            _languageDirty = true;
+            _microphoneDirty = true;
+        });
     }
 
     public void Initialize(OverlayWindow overlayWindow, Func<SettingsWindow> settingsFactory,
@@ -73,8 +68,8 @@ public class TrayIconManager : IDisposable
                 Application.GetResourceStream(new Uri("/Resources/Icons/app.ico", UriKind.Relative))!.Stream)
         };
 
-        var contextMenu = BuildContextMenu(overlayWindow, settingsFactory, historyFactory, shutdown);
-        SetupRightClickBehavior(overlayWindow, contextMenu);
+        _contextMenu = BuildContextMenu(overlayWindow, settingsFactory, historyFactory, shutdown);
+        SetupRightClickBehavior(overlayWindow, _contextMenu);
         SetupLeftClickBehavior(overlayWindow);
 
         _trayIcon.ForceCreate();
@@ -171,13 +166,22 @@ public class TrayIconManager : IDisposable
         exitItem.Click += (_, _) => shutdown();
         contextMenu.Items.Add(exitItem);
 
-        // Rebuild dynamic submenus each time the context menu opens
-        contextMenu.Opened += (_, _) =>
+        // Rebuild dynamic submenus when context menu opens (only if dirty)
+        _contextMenuOpenedHandler = (_, _) =>
         {
-            RebuildLanguageSubmenu(languageItem, checkMenuStyle);
-            RebuildMicrophoneSubmenu(microphoneItem, checkMenuStyle);
+            if (_languageDirty)
+            {
+                RebuildLanguageSubmenu(languageItem, checkMenuStyle);
+                _languageDirty = false;
+            }
+            if (_microphoneDirty)
+            {
+                RebuildMicrophoneSubmenu(microphoneItem, checkMenuStyle);
+                _microphoneDirty = false;
+            }
             pasteItem.IsEnabled = _historyService.GetEntries().Count > 0;
         };
+        contextMenu.Opened += _contextMenuOpenedHandler;
 
         return contextMenu;
     }
@@ -203,7 +207,7 @@ public class TrayIconManager : IDisposable
             Style = (Style)parent.FindResource("TraySeparatorStyle")
         });
 
-        foreach (var (code, name, flag) in Languages)
+        foreach (var (code, name, flag) in SupportedLanguages.All)
         {
             var item = new MenuItem
             {
@@ -227,25 +231,32 @@ public class TrayIconManager : IDisposable
 
         for (int i = 0; i < deviceCount; i++)
         {
-            var caps = WaveInEvent.GetCapabilities(i);
-            var item = new MenuItem
+            try
             {
-                Header = caps.ProductName,
-                IsCheckable = true,
-                IsChecked = i == currentIndex,
-                Style = checkMenuStyle
-            };
-            var deviceIndex = i;
-            item.Click += (_, _) =>
-                _settingsPersistence.ScheduleUpdate(node =>
+                var caps = WaveInEvent.GetCapabilities(i);
+                var item = new MenuItem
                 {
-                    node["Audio"] ??= new JsonObject();
-                    node["Audio"]!["DeviceIndex"] = deviceIndex;
-                });
-            parent.Items.Add(item);
+                    Header = caps.ProductName,
+                    IsCheckable = true,
+                    IsChecked = i == currentIndex,
+                    Style = checkMenuStyle
+                };
+                var deviceIndex = i;
+                item.Click += (_, _) =>
+                    _settingsPersistence.ScheduleUpdate(node =>
+                    {
+                        node["Audio"] ??= new JsonObject();
+                        node["Audio"]!["DeviceIndex"] = deviceIndex;
+                    });
+                parent.Items.Add(item);
+            }
+            catch
+            {
+                // Device may have been disconnected mid-enumeration — skip it
+            }
         }
 
-        if (deviceCount == 0)
+        if (parent.Items.Count == 0)
         {
             var emptyItem = new MenuItem
             {
@@ -295,7 +306,7 @@ public class TrayIconManager : IDisposable
     {
         // Capture the foreground window on hover — by the time TrayRightMouseDown fires,
         // Windows may have already moved focus to the taskbar/shell.
-        _trayIcon!.TrayMouseMove += (_, _) =>
+        _trayMouseMoveHandler = (_, _) =>
         {
             var hwnd = _windowFocusService.GetForegroundWindow();
             var overlayHwnd = new WindowInteropHelper(overlayWindow).Handle;
@@ -303,8 +314,9 @@ public class TrayIconManager : IDisposable
             if (hwnd != IntPtr.Zero && hwnd != overlayHwnd)
                 _previousForegroundWindow = hwnd;
         };
+        _trayIcon!.TrayMouseMove += _trayMouseMoveHandler;
 
-        _trayIcon.TrayRightMouseDown += (_, _) =>
+        _trayRightMouseDownHandler = (_, _) =>
         {
             // Win32 KB135788 workaround: the process must own a foreground window
             // before showing a tray context menu, otherwise it closes immediately.
@@ -327,11 +339,12 @@ public class TrayIconManager : IDisposable
             }
             contextMenu.Closed += OnClosed;
         };
+        _trayIcon.TrayRightMouseDown += _trayRightMouseDownHandler;
     }
 
     private void SetupLeftClickBehavior(OverlayWindow overlayWindow)
     {
-        _trayIcon!.TrayLeftMouseDown += (_, _) =>
+        _trayLeftMouseDownHandler = (_, _) =>
         {
             if (overlayWindow.IsVisible)
                 overlayWindow.Hide();
@@ -341,10 +354,26 @@ public class TrayIconManager : IDisposable
                 overlayWindow.Activate();
             }
         };
+        _trayIcon!.TrayLeftMouseDown += _trayLeftMouseDownHandler;
     }
 
     public void Dispose()
     {
+        _optionsChangeRegistration?.Dispose();
+
+        if (_trayIcon is not null)
+        {
+            if (_trayMouseMoveHandler is not null)
+                _trayIcon.TrayMouseMove -= _trayMouseMoveHandler;
+            if (_trayRightMouseDownHandler is not null)
+                _trayIcon.TrayRightMouseDown -= _trayRightMouseDownHandler;
+            if (_trayLeftMouseDownHandler is not null)
+                _trayIcon.TrayLeftMouseDown -= _trayLeftMouseDownHandler;
+        }
+
+        if (_contextMenu is not null && _contextMenuOpenedHandler is not null)
+            _contextMenu.Opened -= _contextMenuOpenedHandler;
+
         _trayIcon?.Dispose();
         _trayIcon = null;
     }

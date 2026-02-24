@@ -39,6 +39,7 @@ public class UsageStats
         }
     }
 
-    // Rough cost estimate: Whisper API = $0.006/min
-    public double EstimatedApiCost => (TotalRecordingSeconds / 60.0) * 0.006;
+    // Rough cost estimate: Whisper API pricing
+    public const double CostPerMinuteUsd = 0.006;
+    public double EstimatedApiCost => (TotalRecordingSeconds / 60.0) * CostPerMinuteUsd;
 }

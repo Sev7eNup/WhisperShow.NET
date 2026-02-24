@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using NAudio.Wave;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Hotkey;
 
@@ -60,28 +61,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty] private string? _pendingLanguageCode;
 
     public ObservableCollection<LanguageInfo> AvailableLanguages { get; } =
-    [
-        new("de", "German", "/Resources/Flags/de.png"),
-        new("en", "English", "/Resources/Flags/en.png"),
-        new("fr", "French", "/Resources/Flags/fr.png"),
-        new("es", "Spanish", "/Resources/Flags/es.png"),
-        new("it", "Italian", "/Resources/Flags/it.png"),
-        new("pt", "Portuguese", "/Resources/Flags/pt.png"),
-        new("nl", "Dutch", "/Resources/Flags/nl.png"),
-        new("pl", "Polish", "/Resources/Flags/pl.png"),
-        new("ru", "Russian", "/Resources/Flags/ru.png"),
-        new("uk", "Ukrainian", "/Resources/Flags/uk.png"),
-        new("zh", "Chinese", "/Resources/Flags/zh.png"),
-        new("ja", "Japanese", "/Resources/Flags/ja.png"),
-        new("ko", "Korean", "/Resources/Flags/ko.png"),
-        new("ar", "Arabic", "/Resources/Flags/ar.png"),
-        new("tr", "Turkish", "/Resources/Flags/tr.png"),
-        new("sv", "Swedish", "/Resources/Flags/sv.png"),
-        new("da", "Danish", "/Resources/Flags/da.png"),
-        new("no", "Norwegian", "/Resources/Flags/no.png"),
-        new("fi", "Finnish", "/Resources/Flags/fi.png"),
-        new("cs", "Czech", "/Resources/Flags/cs.png"),
-    ];
+        new(SupportedLanguages.All.Select(l => new LanguageInfo(l.Code, l.Name, l.Flag)));
 
     public GeneralSettingsViewModel(
         IGlobalHotkeyService hotkeyService,
@@ -116,8 +96,15 @@ public partial class GeneralSettingsViewModel : ObservableObject
         var deviceCount = WaveInEvent.DeviceCount;
         for (int i = 0; i < deviceCount; i++)
         {
-            var caps = WaveInEvent.GetCapabilities(i);
-            AvailableMicrophones.Add(new MicrophoneInfo(i, caps.ProductName));
+            try
+            {
+                var caps = WaveInEvent.GetCapabilities(i);
+                AvailableMicrophones.Add(new MicrophoneInfo(i, caps.ProductName));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get capabilities for audio device {Index}", i);
+            }
         }
 
         if (AvailableMicrophones.Count == 0)
