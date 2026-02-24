@@ -9,8 +9,17 @@ using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+public record CloudTranscriptionModel(string Id, string DisplayName, string Description);
+
 public partial class TranscriptionSettingsViewModel : ObservableObject
 {
+    public static IReadOnlyList<CloudTranscriptionModel> CloudTranscriptionModels { get; } =
+    [
+        new("gpt-4o-mini-transcribe", "GPT-4o Mini Transcribe", "Fast and accurate transcription"),
+        new("gpt-4o-transcribe", "GPT-4o Transcribe", "Most accurate transcription"),
+        new("whisper-1", "Whisper", "Original Whisper model"),
+    ];
+
     private readonly IModelPreloadService _preloadService;
     private readonly ILogger _logger;
     private readonly Action _scheduleSave;
@@ -155,6 +164,9 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     [RelayCommand]
     private void StartEditingModel() => IsEditingModel = true;
+
+    [RelayCommand]
+    private void SelectCloudModel(string modelId) => ApplyModel(modelId);
 
     public void ApplyModel(string model)
     {
