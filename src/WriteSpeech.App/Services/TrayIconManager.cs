@@ -140,10 +140,12 @@ public class TrayIconManager : IDisposable
             var entries = _historyService.GetEntries();
             if (entries.Count == 0) return;
 
+            var text = entries[0].Text;
+            var targetWindow = _previousForegroundWindow;
             contextMenu.IsOpen = false;
-            await Task.Delay(100);
-            await _windowFocusService.RestoreFocusAsync(_previousForegroundWindow);
-            await _textInsertionService.InsertTextAsync(entries[0].Text);
+            await Task.Delay(200);
+            await _windowFocusService.RestoreFocusAsync(targetWindow);
+            await _textInsertionService.InsertTextAsync(text);
         };
         contextMenu.Items.Add(pasteItem);
         contextMenu.Items.Add(CreateSeparator(separatorStyle));
@@ -291,11 +293,19 @@ public class TrayIconManager : IDisposable
 
     private void SetupRightClickBehavior(OverlayWindow overlayWindow, ContextMenu contextMenu)
     {
-        _trayIcon!.TrayRightMouseDown += (_, _) =>
+        // Capture the foreground window on hover — by the time TrayRightMouseDown fires,
+        // Windows may have already moved focus to the taskbar/shell.
+        _trayIcon!.TrayMouseMove += (_, _) =>
         {
-            // Capture the foreground window before we manipulate focus (for Paste Last Transcript)
-            _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
+            var hwnd = _windowFocusService.GetForegroundWindow();
+            var overlayHwnd = new WindowInteropHelper(overlayWindow).Handle;
+            // Only update if the foreground is not our own overlay
+            if (hwnd != IntPtr.Zero && hwnd != overlayHwnd)
+                _previousForegroundWindow = hwnd;
+        };
 
+        _trayIcon.TrayRightMouseDown += (_, _) =>
+        {
             // Win32 KB135788 workaround: the process must own a foreground window
             // before showing a tray context menu, otherwise it closes immediately.
             // The overlay has WS_EX_NOACTIVATE, so temporarily remove it.
