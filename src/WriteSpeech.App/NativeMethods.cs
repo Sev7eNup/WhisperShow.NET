@@ -111,4 +111,5 @@ internal static partial class NativeMethods
     internal const uint KEYEVENTF_KEYUP = 0x0002;
     internal const ushort VK_CONTROL = 0x11;
     internal const ushort VK_V = 0x56;
+    internal const ushort VK_C = 0x43;
 }

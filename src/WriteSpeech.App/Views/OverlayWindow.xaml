@@ -23,9 +23,14 @@
             <GradientStop Color="#FFEF5350" Offset="0"/>
             <GradientStop Color="#FFD32F2F" Offset="1"/>
         </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CommandModeGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF5C6BC0" Offset="0"/>
+            <GradientStop Color="#FF3949AB" Offset="1"/>
+        </LinearGradientBrush>
         <!-- Tail colors (match bottom gradient stop) -->
         <SolidColorBrush x:Key="IdleTailBrush" Color="#FF2D2D2D"/>
         <SolidColorBrush x:Key="RecordingTailBrush" Color="#FFD32F2F"/>
+        <SolidColorBrush x:Key="CommandModeTailBrush" Color="#FF3949AB"/>
 
         <!-- Text colors -->
         <SolidColorBrush x:Key="TextBrush" Color="#FFFFFFFF"/>

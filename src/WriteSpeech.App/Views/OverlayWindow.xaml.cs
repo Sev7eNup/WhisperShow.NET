@@ -33,8 +33,10 @@ public partial class OverlayWindow : Window
     // Cached brushes for state changes
     private Brush? _idleGradient;
     private Brush? _recordingGradient;
+    private Brush? _commandModeGradient;
     private Brush? _idleTailBrush;
     private Brush? _recordingTailBrush;
+    private Brush? _commandModeTailBrush;
 
     public OverlayWindow(OverlayViewModel viewModel,
         IGlobalHotkeyService hotkeyService,
@@ -104,8 +106,10 @@ public partial class OverlayWindow : Window
         // Cache brushes
         _idleGradient = (Brush)FindResource("IdleGradient");
         _recordingGradient = (Brush)FindResource("RecordingGradient");
+        _commandModeGradient = (Brush)FindResource("CommandModeGradient");
         _idleTailBrush = (Brush)FindResource("IdleTailBrush");
         _recordingTailBrush = (Brush)FindResource("RecordingTailBrush");
+        _commandModeTailBrush = (Brush)FindResource("CommandModeTailBrush");
 
         // Create waveform bars
         CreateWaveformBars();
@@ -301,6 +305,10 @@ public partial class OverlayWindow : Window
     {
         switch (state)
         {
+            case RecordingState.Recording when _viewModel.IsCommandModeActive:
+                BubbleBody.Background = _commandModeGradient;
+                BubbleTail.Fill = _commandModeTailBrush;
+                break;
             case RecordingState.Recording:
                 BubbleBody.Background = _recordingGradient;
                 BubbleTail.Fill = _recordingTailBrush;

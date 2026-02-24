@@ -25,6 +25,22 @@ public static class TextCorrectionDefaults
         Return ONLY the transcription, nothing else.
         """;
 
+    public const string VoiceCommandSystemPrompt =
+        """
+        You are a text transformation assistant. The user has selected text in their application and spoken a voice command describing how to change it.
+        Apply the voice command to the selected text and return ONLY the transformed result.
+        Preserve the language of the selected text unless the command explicitly asks for translation.
+        Do not add explanations, headers, or any extra text — return ONLY the transformed text.
+        """;
+
+    public const string VoiceCommandCombinedSystemPrompt =
+        """
+        You are a text transformation assistant. The user has selected text (provided below) and will speak a voice command describing how to change it.
+        Listen to the audio command, then apply it to the selected text.
+        Return ONLY the transformed result. Preserve the language of the selected text unless translation is requested.
+        Do not add explanations, headers, or any extra text — return ONLY the transformed text.
+        """;
+
     public const string VocabDelimiter = "---VOCAB---";
 
     public const string VocabExtractionInstruction =
