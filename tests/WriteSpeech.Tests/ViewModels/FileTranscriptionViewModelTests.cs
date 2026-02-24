@@ -106,9 +106,9 @@ public class FileTranscriptionViewModelTests
     // --- TranscribeAsync ---
 
     [Fact]
-    public async Task TranscribeAsync_CloudProvider_ReadsRawFile()
+    public async Task TranscribeAsync_AlwaysConvertsToWav()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new byte[1000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "Hello world" });
@@ -118,32 +118,14 @@ public class FileTranscriptionViewModelTests
 
         await vm.TranscribeCommand.ExecuteAsync(null);
 
-        await _audioFileReader.Received().ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await _audioFileReader.DidNotReceive().ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        vm.ResultText.Should().Be("Hello world");
-    }
-
-    [Fact]
-    public async Task TranscribeAsync_LocalProvider_ReadsAsWav()
-    {
-        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new byte[1000]);
-        _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns(new TranscriptionResult { Text = "Hello world" });
-
-        var vm = CreateViewModel(o => o.Provider = TranscriptionProvider.Local);
-        vm.SetFile(@"C:\audio\test.mp3");
-
-        await vm.TranscribeCommand.ExecuteAsync(null);
-
         await _audioFileReader.Received().ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await _audioFileReader.DidNotReceive().ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        vm.ResultText.Should().Be("Hello world");
     }
 
     [Fact]
     public async Task TranscribeAsync_WithCorrection_AppliesCorrection()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new byte[1000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "raw text" });
@@ -161,7 +143,7 @@ public class FileTranscriptionViewModelTests
     [Fact]
     public async Task TranscribeAsync_WithoutCorrection_ReturnsRawText()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new byte[1000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "raw text" });
@@ -177,7 +159,7 @@ public class FileTranscriptionViewModelTests
     [Fact]
     public async Task TranscribeAsync_SavesHistory()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new byte[1000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "transcribed", Duration = TimeSpan.FromSeconds(42) });
@@ -193,7 +175,7 @@ public class FileTranscriptionViewModelTests
     [Fact]
     public async Task TranscribeAsync_NoSpeech_SetsError()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new byte[1000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "" });
@@ -210,7 +192,7 @@ public class FileTranscriptionViewModelTests
     [Fact]
     public async Task TranscribeAsync_Exception_SetsError()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns<byte[]>(_ => throw new InvalidOperationException("test error"));
 
         var vm = CreateViewModel();
@@ -226,7 +208,7 @@ public class FileTranscriptionViewModelTests
     public async Task TranscribeAsync_SetsIsTranscribingDuringExecution()
     {
         var tcs = new TaskCompletionSource<byte[]>();
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(tcs.Task);
 
         var vm = CreateViewModel();
@@ -258,7 +240,7 @@ public class FileTranscriptionViewModelTests
     [Fact]
     public async Task CopyResult_SetsCopiedFlag()
     {
-        _audioFileReader.ReadRawAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _audioFileReader.ReadAsWavAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new byte[1000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "Some result" });

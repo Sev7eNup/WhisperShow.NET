@@ -108,12 +108,9 @@ public partial class FileTranscriptionViewModel : ObservableObject
             var provider = _providerFactory.GetProvider(Options.Provider);
             StatusText = "Reading file...";
 
-            // Read file: WAV for local, raw for cloud (cloud handles decoding)
-            byte[] audioData;
-            if (Options.Provider == TranscriptionProvider.Local)
-                audioData = await _audioFileReader.ReadAsWavAsync(FilePath, ct);
-            else
-                audioData = await _audioFileReader.ReadRawAsync(FilePath, ct);
+            // Always convert to WAV (16kHz/16bit/Mono) — ensures correct format for both
+            // local Whisper (requires WAV) and cloud OpenAI (filename = "recording.wav")
+            var audioData = await _audioFileReader.ReadAsWavAsync(FilePath, ct);
 
             ct.ThrowIfCancellationRequested();
 
