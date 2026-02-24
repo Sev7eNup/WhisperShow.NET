@@ -297,6 +297,18 @@ public class IDEDetectionServiceTests
         IDEDetectionService.MatchFolderUri(uri, "nonexistent_folder_xyz").Should().BeNull();
     }
 
+    [Fact]
+    public void MatchFolderUri_PercentEncodedColon_DecodesCorrectly()
+    {
+        // VS Code encodes the drive letter colon as %3A: file:///e%3A/path
+        using var env = new TempStorageEnv("Code");
+        var uri = "file:///" + env.WorkspacePath.Replace("\\", "/")
+            .Replace(":", "%3A")
+            .Replace(" ", "%20");
+
+        IDEDetectionService.MatchFolderUri(uri, "myproject").Should().NotBeNull();
+    }
+
     /// <summary>
     /// Helper that creates a temp directory with fake AppData structure for testing.
     /// </summary>

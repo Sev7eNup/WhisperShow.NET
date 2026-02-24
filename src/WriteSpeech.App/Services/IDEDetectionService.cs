@@ -128,37 +128,33 @@ public class IDEDetectionService : IIDEDetectionService
     {
         if (string.IsNullOrEmpty(folderName)) return null;
 
-        try
+        var storagePaths = new[]
         {
-            var storagePaths = new[]
-            {
-                Path.Combine(appDataPath, processName, "User", "globalStorage", "storage.json"),
-                Path.Combine(appDataPath, processName, "storage.json"),
-            };
+            Path.Combine(appDataPath, processName, "User", "globalStorage", "storage.json"),
+            Path.Combine(appDataPath, processName, "storage.json"),
+        };
 
-            foreach (var storagePath in storagePaths)
-            {
-                if (!File.Exists(storagePath)) continue;
-
-                var json = File.ReadAllText(storagePath);
-                using var doc = JsonDocument.Parse(json);
-
-                // Try legacy format: openedPathsList.entries[].folderUri
-                var result = FindInOpenedPathsList(doc, folderName);
-                if (result is not null) return result;
-
-                // Try new format: backupWorkspaces.folders[].folderUri
-                result = FindInBackupWorkspaces(doc, folderName);
-                if (result is not null) return result;
-
-                // Try windowsState.lastActiveWindow.folder + openedWindows[].folder
-                result = FindInWindowsState(doc, folderName);
-                if (result is not null) return result;
-            }
-        }
-        catch
+        foreach (var storagePath in storagePaths)
         {
-            // storage.json might be malformed or inaccessible
+            if (!File.Exists(storagePath)) continue;
+
+            // Use FileShare.ReadWrite — VS Code keeps this file open for writing
+            using var stream = new FileStream(storagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            var json = reader.ReadToEnd();
+            using var doc = JsonDocument.Parse(json);
+
+            // Try legacy format: openedPathsList.entries[].folderUri
+            var result = FindInOpenedPathsList(doc, folderName);
+            if (result is not null) return result;
+
+            // Try new format: backupWorkspaces.folders[].folderUri
+            result = FindInBackupWorkspaces(doc, folderName);
+            if (result is not null) return result;
+
+            // Try windowsState.lastActiveWindow.folder + openedWindows[].folder
+            result = FindInWindowsState(doc, folderName);
+            if (result is not null) return result;
         }
 
         return null;
@@ -232,6 +228,12 @@ public class IDEDetectionService : IIDEDetectionService
         if (!uri.IsFile) return null;
 
         var localPath = uri.LocalPath;
+
+        // Uri.LocalPath returns "/C:/..." when the drive letter colon is percent-encoded (%3A).
+        // The leading slash breaks Directory.Exists on Windows, so strip it.
+        if (localPath.Length >= 3 && localPath[0] == '/' && char.IsLetter(localPath[1]) && localPath[2] == ':')
+            localPath = localPath[1..];
+
         var dirName = Path.GetFileName(localPath.TrimEnd('/', '\\'));
 
         if (string.Equals(dirName, folderName, StringComparison.OrdinalIgnoreCase)
