@@ -20,12 +20,23 @@ public class SelectedTextService : ISelectedTextService
 
         try
         {
-            // Save current clipboard, clear it, simulate Ctrl+C, read result
+            // Clear clipboard first — if it fails or stale content remains, abort
+            bool clipboardCleared = false;
             Application.Current.Dispatcher.Invoke(() =>
             {
-                try { Clipboard.Clear(); }
+                try
+                {
+                    Clipboard.Clear();
+                    clipboardCleared = !Clipboard.ContainsText();
+                }
                 catch { /* clipboard may be locked */ }
             });
+
+            if (!clipboardCleared)
+            {
+                _logger.LogWarning("Clipboard could not be cleared, skipping selected text detection");
+                return null;
+            }
 
             await Task.Delay(30);
 
