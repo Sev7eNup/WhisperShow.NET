@@ -25,6 +25,9 @@ public partial class SystemSettingsViewModel : ObservableObject
     // --- Audio Compression ---
     [ObservableProperty] private bool _audioCompressionEnabled = true;
 
+    // --- Dictionary ---
+    [ObservableProperty] private bool _autoAddToDictionary = true;
+
     // --- Overlay scale ---
     [ObservableProperty] private double _overlayScale = 1.0;
 
@@ -52,6 +55,7 @@ public partial class SystemSettingsViewModel : ObservableObject
         _soundEffectsEnabled = options.App.SoundEffects;
         _muteWhileDictating = options.Audio.MuteWhileDictating;
         _audioCompressionEnabled = options.Audio.CompressBeforeUpload;
+        _autoAddToDictionary = options.TextCorrection.AutoAddToDictionary;
         _overlayScale = options.Overlay.Scale;
         _autoDismissSeconds = options.Overlay.AutoDismissSeconds;
         _maxRecordingSeconds = options.Audio.MaxRecordingSeconds;
@@ -93,6 +97,11 @@ public partial class SystemSettingsViewModel : ObservableObject
     [RelayCommand]
     private void ToggleAudioCompression() => _scheduleSave();
 
+    // --- Dictionary ---
+
+    [RelayCommand]
+    private void ToggleAutoAddToDictionary() => _scheduleSave();
+
     [RelayCommand]
     private void StartEditingAutoDismiss() => IsEditingAutoDismiss = true;
 
@@ -133,5 +142,8 @@ public partial class SystemSettingsViewModel : ObservableObject
         overlay["ShowResultOverlay"] = ShowResultOverlay;
         overlay["ShowInTaskbar"] = ShowInTaskbar;
         overlay["Scale"] = OverlayScale;
+
+        var correction = SettingsViewModel.EnsureObject(section, "TextCorrection");
+        correction["AutoAddToDictionary"] = AutoAddToDictionary;
     }
 }

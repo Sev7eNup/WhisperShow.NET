@@ -62,6 +62,7 @@ public class WriteSpeechOptionsTests
         options.Provider.Should().Be(TextCorrectionProvider.Off);
         options.Model.Should().Be("gpt-4o-mini");
         options.SystemPrompt.Should().BeNull();
+        options.AutoAddToDictionary.Should().BeTrue();
     }
 
     [Fact]

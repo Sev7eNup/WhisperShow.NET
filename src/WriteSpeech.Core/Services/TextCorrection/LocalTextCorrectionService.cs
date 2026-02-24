@@ -56,6 +56,9 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
             systemPrompt += _dictionaryService.BuildPromptFragment();
             systemPrompt += _ideContextService.BuildPromptFragment();
 
+            if (correctionOpts.AutoAddToDictionary)
+                systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
+
             var languageHint = string.IsNullOrEmpty(language)
                 ? "Keep the SAME language as the input — do NOT translate"
                 : $"Output language MUST be: {language}";
@@ -95,7 +98,17 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
             _logger.LogInformation("Local text correction completed: {OrigLength} → {CorrLength} chars",
                 rawText.Length, corrected.Length);
 
-            return string.IsNullOrWhiteSpace(corrected) ? rawText : corrected;
+            if (string.IsNullOrWhiteSpace(corrected))
+                return rawText;
+
+            if (correctionOpts.AutoAddToDictionary)
+            {
+                var (cleanText, vocab) = VocabResponseParser.Parse(corrected);
+                VocabResponseParser.AddExtractedVocabulary(vocab, _dictionaryService, _logger);
+                return string.IsNullOrWhiteSpace(cleanText) ? rawText : cleanText;
+            }
+
+            return corrected;
         }
         catch (Exception ex)
         {

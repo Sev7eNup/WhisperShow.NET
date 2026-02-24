@@ -41,6 +41,7 @@ public class SystemSettingsViewModelTests
             o.Overlay.Scale = 1.5;
             o.Overlay.AutoDismissSeconds = 20;
             o.Audio.MaxRecordingSeconds = 600;
+            o.TextCorrection.AutoAddToDictionary = false;
         });
 
         vm.LaunchAtLogin.Should().BeTrue();
@@ -51,6 +52,7 @@ public class SystemSettingsViewModelTests
         vm.SoundEffectsEnabled.Should().BeFalse();
         vm.MuteWhileDictating.Should().BeFalse();
         vm.AudioCompressionEnabled.Should().BeFalse();
+        vm.AutoAddToDictionary.Should().BeFalse();
         vm.OverlayScale.Should().Be(1.5);
         vm.AutoDismissSeconds.Should().Be(20);
         vm.MaxRecordingSeconds.Should().Be(600);
@@ -82,6 +84,14 @@ public class SystemSettingsViewModelTests
     {
         var vm = CreateViewModel();
         vm.ToggleShowResultOverlayCommand.Execute(null);
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ToggleAutoAddToDictionary_TriggersSave()
+    {
+        var vm = CreateViewModel();
+        vm.ToggleAutoAddToDictionaryCommand.Execute(null);
         _saveCalled.Should().BeTrue();
     }
 
@@ -149,6 +159,7 @@ public class SystemSettingsViewModelTests
             o.Overlay.Scale = 1.5;
             o.Overlay.AutoDismissSeconds = 15;
             o.Audio.MaxRecordingSeconds = 600;
+            o.TextCorrection.AutoAddToDictionary = false;
         });
 
         var json = JsonNode.Parse("""
@@ -172,6 +183,7 @@ public class SystemSettingsViewModelTests
         json["Overlay"]!["ShowResultOverlay"]!.GetValue<bool>().Should().BeFalse();
         json["Overlay"]!["ShowInTaskbar"]!.GetValue<bool>().Should().BeTrue();
         json["Overlay"]!["Scale"]!.GetValue<double>().Should().Be(1.5);
+        json["TextCorrection"]!["AutoAddToDictionary"]!.GetValue<bool>().Should().BeFalse();
     }
 
     [Fact]

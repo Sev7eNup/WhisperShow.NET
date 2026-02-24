@@ -68,6 +68,9 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
             var systemPrompt = options.TextCorrection.CombinedSystemPrompt ?? TextCorrectionDefaults.CombinedAudioSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
             systemPrompt += _ideContextService.BuildPromptFragment();
+
+            if (options.TextCorrection.AutoAddToDictionary)
+                systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
             var langSuffix = string.IsNullOrEmpty(language)
                 ? ""
                 : $"\n[Output language MUST be: {language}]";
@@ -91,6 +94,13 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
                 ct);
 
             var text = result.Value.Content.FirstOrDefault()?.Text ?? string.Empty;
+
+            if (options.TextCorrection.AutoAddToDictionary)
+            {
+                var (cleanText, vocab) = VocabResponseParser.Parse(text);
+                VocabResponseParser.AddExtractedVocabulary(vocab, _dictionaryService, _logger);
+                text = cleanText;
+            }
 
             _logger.LogInformation(
                 "Combined transcription+correction completed: {Length} chars", text.Length);
