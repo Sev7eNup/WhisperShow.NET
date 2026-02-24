@@ -50,6 +50,9 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
             systemPrompt += _dictionaryService.BuildPromptFragment();
             systemPrompt += _ideContextService.BuildPromptFragment();
 
+            if (options.TextCorrection.AutoAddToDictionary)
+                systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
+
             var languageHint = string.IsNullOrEmpty(language)
                 ? "Keep the SAME language as the input — do NOT translate"
                 : $"Output language MUST be: {language}";
@@ -71,7 +74,17 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
             _logger.LogInformation("Text correction completed: {OrigLength} → {CorrLength} chars",
                 rawText.Length, correctedText?.Length ?? 0);
 
-            return string.IsNullOrWhiteSpace(correctedText) ? rawText : correctedText;
+            if (string.IsNullOrWhiteSpace(correctedText))
+                return rawText;
+
+            if (options.TextCorrection.AutoAddToDictionary)
+            {
+                var (cleanText, vocab) = VocabResponseParser.Parse(correctedText);
+                VocabResponseParser.AddExtractedVocabulary(vocab, _dictionaryService, _logger);
+                return string.IsNullOrWhiteSpace(cleanText) ? rawText : cleanText;
+            }
+
+            return correctedText;
         }
         catch (Exception ex)
         {

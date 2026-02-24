@@ -95,6 +95,9 @@ public class TextCorrectionOptions
     public bool UseCombinedAudioModel { get; set; }
     public string CombinedAudioModel { get; set; } = "gpt-4o-mini-audio-preview";
     public string? CombinedSystemPrompt { get; set; }
+
+    // Auto-add detected vocabulary to dictionary
+    public bool AutoAddToDictionary { get; set; } = true;
 }
 
 public class AppOptions

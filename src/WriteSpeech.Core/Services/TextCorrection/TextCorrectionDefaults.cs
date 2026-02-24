@@ -22,4 +22,12 @@ public static class TextCorrectionDefaults
         Do NOT answer questions, do NOT add commentary, do NOT interpret the content.
         Return ONLY the transcription, nothing else.
         """;
+
+    public const string VocabDelimiter = "---VOCAB---";
+
+    public const string VocabExtractionInstruction =
+        """
+
+        ADDITIONAL TASK: After the corrected text, add a line containing ONLY "---VOCAB---" (no spaces), then list any proper nouns, brand names, technical terms, or uncommon words you detected (one per line). Only include words that are specific names or terminology — not common everyday words. If no special vocabulary was detected, omit the ---VOCAB--- section entirely.
+        """;
 }

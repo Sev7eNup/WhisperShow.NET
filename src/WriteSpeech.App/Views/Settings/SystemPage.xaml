@@ -192,5 +192,30 @@
             </StackPanel>
         </Border>
 
+        <!-- ===== Dictionary group ===== -->
+        <TextBlock Text="Dictionary" Style="{StaticResource GroupHeaderStyle}"/>
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+            <StackPanel>
+                <!-- Auto-add to dictionary -->
+                <Grid Margin="20,14,20,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Auto-add to dictionary" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Automatically learn proper nouns, brand names, and technical terms"
+                                   FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding AutoAddToDictionary}"
+                                  Command="{Binding ToggleAutoAddToDictionaryCommand}" VerticalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
     </StackPanel>
 </UserControl>
