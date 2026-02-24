@@ -166,7 +166,7 @@ public class TrayIconManager : IDisposable
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Title = "Select audio file to transcribe",
-                Filter = "Audio files (*.mp3;*.wav;*.m4a;*.flac;*.ogg;*.webm;*.mp4)|*.mp3;*.wav;*.m4a;*.flac;*.ogg;*.webm;*.mp4|All files (*.*)|*.*"
+                Filter = "Audio files (*.mp3;*.wav;*.m4a;*.flac;*.ogg;*.mp4)|*.mp3;*.wav;*.m4a;*.flac;*.ogg;*.mp4|All files (*.*)|*.*"
             };
             if (dialog.ShowDialog() == true)
                 fileTranscriptionFactory().ShowWithFile(dialog.FileName);

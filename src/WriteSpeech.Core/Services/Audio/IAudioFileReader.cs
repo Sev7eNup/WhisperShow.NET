@@ -8,7 +8,7 @@ public interface IAudioFileReader
     /// <summary>
     /// Supported file extensions for audio transcription.
     /// </summary>
-    static readonly string[] SupportedExtensions = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm", ".mp4"];
+    static readonly string[] SupportedExtensions = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".mp4"];
 
     /// <summary>
     /// Reads an audio file and converts it to WAV (16kHz, 16-bit, mono) for local transcription.
