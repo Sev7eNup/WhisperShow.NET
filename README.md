@@ -31,6 +31,9 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 - **Live Settings** — All changes take effect immediately without restart
 - **Single Instance** — Enforced via named Mutex
 
+  <img width="244" height="181" alt="image" src="https://github.com/user-attachments/assets/4c57cbdd-25ea-45df-9650-a632f6cfe01e" />
+
+
 ## Prerequisites
 
 | Requirement | Notes |
