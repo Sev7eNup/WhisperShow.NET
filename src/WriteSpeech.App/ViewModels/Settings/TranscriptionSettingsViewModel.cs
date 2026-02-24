@@ -30,6 +30,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     // --- Transcription: Provider ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowCloudUsageHint))]
+    [NotifyPropertyChangedFor(nameof(IsCustomCloudModel))]
     private TranscriptionProvider _provider = TranscriptionProvider.OpenAI;
     [ObservableProperty] private bool _isEditingProvider;
 
@@ -43,8 +44,11 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [ObservableProperty] private string _openAiApiKeyDisplay = "";
 
     // --- Transcription: Model ---
-    [ObservableProperty] private string _transcriptionModel = "whisper-1";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomCloudModel))]
+    private string _transcriptionModel = "whisper-1";
     [ObservableProperty] private bool _isEditingModel;
+    [ObservableProperty] private bool _isEditingCustomCloudModel;
     private string _openAiModelName = "whisper-1";
     private string _localModelName = "ggml-small.bin";
 
@@ -66,6 +70,11 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [ObservableProperty] private bool _useCombinedAudioModel;
     [ObservableProperty] private string _combinedAudioModel = "gpt-4o-mini-audio-preview";
     [ObservableProperty] private bool _isEditingCombinedAudioModel;
+
+    // --- Custom cloud model ---
+    public bool IsCustomCloudModel =>
+        Provider == TranscriptionProvider.OpenAI &&
+        CloudTranscriptionModels.All(m => m.Id != TranscriptionModel);
 
     // --- Cloud usage hint ---
     public bool ShowCloudUsageHint =>

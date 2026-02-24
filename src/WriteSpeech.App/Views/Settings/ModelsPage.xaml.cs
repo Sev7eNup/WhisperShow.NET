@@ -52,7 +52,31 @@ public partial class ModelsPage : UserControl
     private void CloudModelCard_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is System.Windows.Controls.Border border && border.Tag is string modelId)
+        {
             ViewModel.SelectCloudModelCommand.Execute(modelId);
+            ViewModel.IsEditingCustomCloudModel = false;
+        }
+    }
+
+    private void CustomCloudModelCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        ViewModel.IsEditingCustomCloudModel = true;
+    }
+
+    private void CustomCloudModelTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            if (!string.IsNullOrWhiteSpace(tb.Text))
+                ViewModel.ApplyModel(tb.Text);
+            ViewModel.IsEditingCustomCloudModel = false;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            ViewModel.IsEditingCustomCloudModel = false;
+            e.Handled = true;
+        }
     }
 
     private void CombinedAudioModelTextBox_KeyDown(object sender, KeyEventArgs e)

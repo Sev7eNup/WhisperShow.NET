@@ -183,6 +183,43 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <!-- Custom model option -->
+                        <Border Margin="0,0,0,0" Padding="12,8" Cursor="Hand"
+                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                BorderThickness="2"
+                                MouseLeftButtonDown="CustomCloudModelCard_Click">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCustomCloudModel}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal"
+                                            Visibility="{Binding IsEditingCustomCloudModel, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold"
+                                               FontFamily="Segoe UI Variable, Segoe UI"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"
+                                               Text="{Binding TranscriptionModel}"
+                                               Visibility="{Binding IsCustomCloudModel, Converter={StaticResource BoolToVisibility}}"/>
+                                    <TextBlock Text="Use a custom model name" FontSize="11"
+                                               FontFamily="Segoe UI Variable, Segoe UI"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"
+                                               Visibility="{Binding IsCustomCloudModel, Converter={StaticResource InverseBoolToVisibility}}"/>
+                                </StackPanel>
+                                <TextBox Visibility="{Binding IsEditingCustomCloudModel, Converter={StaticResource BoolToVisibility}}"
+                                         Text="{Binding TranscriptionModel}" Style="{StaticResource SettingsTextBoxStyle}"
+                                         KeyDown="CustomCloudModelTextBox_KeyDown"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </StackPanel>
             </Border>

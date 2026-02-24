@@ -195,6 +195,58 @@ public class TranscriptionSettingsViewModelTests
             .Should().Contain(["gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper-1"]);
     }
 
+    // --- IsCustomCloudModel ---
+
+    [Fact]
+    public void IsCustomCloudModel_PredefinedModel_ReturnsFalse()
+    {
+        var vm = CreateViewModel();
+
+        vm.IsCustomCloudModel.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsCustomCloudModel_CustomModel_ReturnsTrue()
+    {
+        var vm = CreateViewModel(o => o.OpenAI.Model = "my-custom-whisper");
+
+        vm.IsCustomCloudModel.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsCustomCloudModel_LocalProvider_ReturnsFalse()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Provider = TranscriptionProvider.Local;
+            o.Local.ModelName = "ggml-large.bin";
+        });
+
+        vm.IsCustomCloudModel.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyModel_CustomModel_SetsIsCustomCloudModel()
+    {
+        var vm = CreateViewModel();
+
+        vm.ApplyModel("my-custom-endpoint-model");
+
+        vm.IsCustomCloudModel.Should().BeTrue();
+        vm.TranscriptionModel.Should().Be("my-custom-endpoint-model");
+    }
+
+    [Fact]
+    public void ApplyModel_PredefinedModel_ClearsIsCustomCloudModel()
+    {
+        var vm = CreateViewModel(o => o.OpenAI.Model = "my-custom-model");
+        vm.IsCustomCloudModel.Should().BeTrue();
+
+        vm.ApplyModel("whisper-1");
+
+        vm.IsCustomCloudModel.Should().BeFalse();
+    }
+
     [Fact]
     public void ApplyCorrectionModel_SetsValueAndTriggersSave()
     {
