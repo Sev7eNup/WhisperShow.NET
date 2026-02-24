@@ -10,7 +10,7 @@
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         Icon="/Resources/Icons/app.ico"
-        Width="700" Height="500"
+        Width="875" Height="625"
         Title="WriteSpeech Settings"
         PreviewKeyDown="Window_PreviewKeyDown">
 
@@ -27,12 +27,17 @@
         <DataTemplate x:Key="DictionaryPageTemplate"><sp:DictionaryPage/></DataTemplate>
         <DataTemplate x:Key="SnippetsPageTemplate"><sp:SnippetsPage/></DataTemplate>
         <DataTemplate x:Key="ModelsPageTemplate"><sp:ModelsPage/></DataTemplate>
+        <DataTemplate x:Key="IntelligencePageTemplate"><sp:IntelligencePage/></DataTemplate>
+        <DataTemplate x:Key="IntegrationsPageTemplate"><sp:IntegrationsPage/></DataTemplate>
         <DataTemplate x:Key="StatisticsPageTemplate"><sp:StatisticsPage/></DataTemplate>
         </ResourceDictionary>
     </Window.Resources>
 
     <!-- Root: main content + dialog overlay -->
     <Border CornerRadius="12">
+        <Border.LayoutTransform>
+            <ScaleTransform ScaleX="1.25" ScaleY="1.25"/>
+        </Border.LayoutTransform>
         <Border.Effect>
             <DropShadowEffect BlurRadius="20" ShadowDepth="2" Opacity="0.12" Color="#000000"/>
         </Border.Effect>
@@ -83,11 +88,19 @@
                                          Tag="M4,6H20V16H4M20,18A2,2 0 0,0 22,16V6C22,4.89 21.1,4 20,4H4C2.89,4 2,4.89 2,6V16A2,2 0 0,0 4,18H0V20H24V18H20Z"
                                          Command="{Binding NavigateCommand}"
                                          CommandParameter="{x:Static vm:SettingsPage.System}"/>
+                            <RadioButton Style="{StaticResource NavItemStyle}" Content="Integrations" GroupName="Nav"
+                                         Tag="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,1 20,11H21V13H20A2,2 0 0,1 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,0 18,12A2,2 0 0,0 16,10V5H14V3"
+                                         Command="{Binding NavigateCommand}"
+                                         CommandParameter="{x:Static vm:SettingsPage.Integrations}"/>
                             <TextBlock Text="PROVIDER" Style="{StaticResource SectionHeaderStyle}"/>
                             <RadioButton Style="{StaticResource NavItemStyle}" Content="Models" GroupName="Nav"
                                          Tag="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L5,8.09V15.91L12,19.85L19,15.91V8.09L12,4.15Z"
                                          Command="{Binding NavigateCommand}"
                                          CommandParameter="{x:Static vm:SettingsPage.Models}"/>
+                            <RadioButton Style="{StaticResource NavItemStyle}" Content="Intelligence" GroupName="Nav"
+                                         Tag="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"
+                                         Command="{Binding NavigateCommand}"
+                                         CommandParameter="{x:Static vm:SettingsPage.Intelligence}"/>
                             <TextBlock Text="AI" Style="{StaticResource SectionHeaderStyle}"/>
                             <RadioButton Style="{StaticResource NavItemStyle}" Content="Dictionary" GroupName="Nav"
                                          Tag="M5,4V7H10.5V19H13.5V7H19V4H5Z"
@@ -116,8 +129,14 @@
                                         <DataTrigger Binding="{Binding SelectedPage}" Value="System">
                                             <Setter Property="ContentTemplate" Value="{StaticResource SystemPageTemplate}"/>
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding SelectedPage}" Value="Integrations">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource IntegrationsPageTemplate}"/>
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding SelectedPage}" Value="Models">
                                             <Setter Property="ContentTemplate" Value="{StaticResource ModelsPageTemplate}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SelectedPage}" Value="Intelligence">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource IntelligencePageTemplate}"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding SelectedPage}" Value="Dictionary">
                                             <Setter Property="ContentTemplate" Value="{StaticResource DictionaryPageTemplate}"/>

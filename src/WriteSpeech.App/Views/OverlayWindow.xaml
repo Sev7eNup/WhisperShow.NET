@@ -120,7 +120,10 @@
         </Grid.LayoutTransform>
 
         <!-- Speech bubble: body + tail -->
-        <Grid>
+        <Grid RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
+                <ScaleTransform x:Name="BubbleScale" ScaleX="0.85" ScaleY="0.85"/>
+            </Grid.RenderTransform>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -128,14 +131,10 @@
 
             <!-- Bubble body -->
             <Border x:Name="BubbleBody" Grid.Row="0" CornerRadius="12"
-                    Background="{StaticResource IdleGradient}"
-                    RenderTransformOrigin="0.5,0.5">
+                    Background="{StaticResource IdleGradient}">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.3" Direction="270"/>
                 </Border.Effect>
-                <Border.RenderTransform>
-                    <ScaleTransform x:Name="BubbleScale" ScaleX="0.85" ScaleY="0.85"/>
-                </Border.RenderTransform>
 
                 <Grid>
                     <!-- Idle State -->

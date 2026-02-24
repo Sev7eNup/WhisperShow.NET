@@ -20,6 +20,7 @@ using WriteSpeech.Core.Services.History;
 using WriteSpeech.Core.Services.Statistics;
 using WriteSpeech.Core.Services.Snippets;
 using WriteSpeech.Core.Services;
+using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Core.Services.TextInsertion;
 using WriteSpeech.Core.Services.Transcription;
@@ -97,6 +98,7 @@ public partial class App : Application
                 services.AddSingleton<ICorrectionModelManager, CorrectionModelManager>();
                 services.AddSingleton<IModelPreloadService, ModelPreloadService>();
                 services.AddSingleton<IDictionaryService, DictionaryService>();
+                services.AddSingleton<IIDEContextService, IDEContextService>();
                 services.AddSingleton<ISnippetService, SnippetService>();
                 services.AddSingleton<IUsageStatsService, UsageStatsService>();
                 services.AddSingleton<ITranscriptionHistoryService, TranscriptionHistoryService>();
@@ -106,6 +108,7 @@ public partial class App : Application
                 services.AddSingleton<IDispatcherService, WpfDispatcherService>();
                 services.AddSingleton<ISettingsPersistenceService, SettingsPersistenceService>();
                 services.AddSingleton<IWindowFocusService, WindowFocusService>();
+                services.AddSingleton<IIDEDetectionService, IDEDetectionService>();
                 services.AddSingleton<IAutoStartService, AutoStartService>();
                 services.AddSingleton<TrayIconManager>();
 

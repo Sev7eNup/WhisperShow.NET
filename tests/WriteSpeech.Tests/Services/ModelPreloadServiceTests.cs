@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.ModelManagement;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Core.Services.Transcription;
@@ -60,7 +61,8 @@ public class ModelPreloadServiceTests
         var localService = new LocalTextCorrectionService(
             NullLogger<LocalTextCorrectionService>.Instance,
             OptionsHelper.CreateMonitor(o => o.TextCorrection.LocalModelDirectory = @"C:\nonexistent-dir-xyz"),
-            Substitute.For<IDictionaryService>());
+            Substitute.For<IDictionaryService>(),
+            Substitute.For<IIDEContextService>());
 
         var service = new ModelPreloadService(
             Enumerable.Empty<ITranscriptionService>(),

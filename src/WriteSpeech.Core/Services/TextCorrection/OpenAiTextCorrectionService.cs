@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
+using WriteSpeech.Core.Services.IDE;
 
 namespace WriteSpeech.Core.Services.TextCorrection;
 
@@ -11,6 +12,7 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
     private readonly ILogger<OpenAiTextCorrectionService> _logger;
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly IDictionaryService _dictionaryService;
+    private readonly IIDEContextService _ideContextService;
     private readonly OpenAiClientFactory _clientFactory;
 
     public TextCorrectionProvider ProviderType => TextCorrectionProvider.Cloud;
@@ -20,11 +22,13 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
         ILogger<OpenAiTextCorrectionService> logger,
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
         IDictionaryService dictionaryService,
+        IIDEContextService ideContextService,
         OpenAiClientFactory clientFactory)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _dictionaryService = dictionaryService;
+        _ideContextService = ideContextService;
         _clientFactory = clientFactory;
     }
 
@@ -44,6 +48,7 @@ public class OpenAiTextCorrectionService : ITextCorrectionService
 
             var systemPrompt = options.TextCorrection.SystemPrompt ?? TextCorrectionDefaults.CorrectionSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
+            systemPrompt += _ideContextService.BuildPromptFragment();
 
             var languageHint = string.IsNullOrEmpty(language)
                 ? "Keep the SAME language as the input — do NOT translate"

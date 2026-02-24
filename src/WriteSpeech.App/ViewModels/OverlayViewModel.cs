@@ -8,6 +8,7 @@ using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Audio;
 using WriteSpeech.Core.Services.Snippets;
 using WriteSpeech.Core.Services.Configuration;
+using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Core.Services.TextInsertion;
 using WriteSpeech.Core.Services.History;
@@ -30,6 +31,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private readonly IUsageStatsService _statsService;
     private readonly ITranscriptionHistoryService _historyService;
     private readonly IWindowFocusService _windowFocusService;
+    private readonly IIDEDetectionService _ideDetectionService;
+    private readonly IIDEContextService _ideContextService;
     private readonly IDispatcherService _dispatcher;
     private readonly ISettingsPersistenceService _persistenceService;
     private readonly ILogger<OverlayViewModel> _logger;
@@ -87,6 +90,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         IUsageStatsService statsService,
         ITranscriptionHistoryService historyService,
         IWindowFocusService windowFocusService,
+        IIDEDetectionService ideDetectionService,
+        IIDEContextService ideContextService,
         IDispatcherService dispatcher,
         ISettingsPersistenceService persistenceService,
         ILogger<OverlayViewModel> logger,
@@ -103,6 +108,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _statsService = statsService;
         _historyService = historyService;
         _windowFocusService = windowFocusService;
+        _ideDetectionService = ideDetectionService;
+        _ideContextService = ideContextService;
         _dispatcher = dispatcher;
         _persistenceService = persistenceService;
         _logger = logger;
@@ -180,6 +187,10 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
             _logger.LogInformation("Starting recording (ForegroundWindow: 0x{Handle:X})",
                 _previousForegroundWindow.ToInt64());
+
+            // Prepare IDE context while user records (non-blocking)
+            PrepareIDEContext();
+
             if (MuteWhileDictating)
                 _mutingService.MuteOtherApplications();
             _soundEffects.PlayStartRecording();
@@ -325,6 +336,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         await _windowFocusService.RestoreFocusAsync(_previousForegroundWindow);
 
         await _textInsertionService.InsertTextAsync(TranscribedText);
+        _ideContextService.Clear();
     }
 
     [RelayCommand]
@@ -343,6 +355,38 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         ErrorMessage = null;
         State = RecordingState.Idle;
         _logger.LogDebug("Result dismissed (was {PreviousState})", previousState);
+    }
+
+    private void PrepareIDEContext()
+    {
+        var integration = Options.Integration;
+        if (!integration.VariableRecognition && !integration.FileTagging)
+        {
+            _ideContextService.Clear();
+            return;
+        }
+
+        try
+        {
+            var ideInfo = _ideDetectionService.DetectIDE(_previousForegroundWindow);
+            if (ideInfo?.WorkspacePath is not null)
+            {
+                // Fire-and-forget — context will be ready by the time correction runs
+                _ = _ideContextService.PrepareContextAsync(
+                    ideInfo.WorkspacePath,
+                    integration.VariableRecognition,
+                    integration.FileTagging);
+            }
+            else
+            {
+                _ideContextService.Clear();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "IDE context preparation skipped");
+            _ideContextService.Clear();
+        }
     }
 
     private void StartRecordingTimer()

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Audio;
+using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Tests.TestHelpers;
 
@@ -28,6 +29,7 @@ public class CombinedAudioTranscriptionServiceTests
             options,
             _audioCompressor,
             Substitute.For<IDictionaryService>(),
+            Substitute.For<IIDEContextService>(),
             new OpenAiClientFactory(options));
     }
 

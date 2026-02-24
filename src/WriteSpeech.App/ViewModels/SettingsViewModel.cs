@@ -19,7 +19,9 @@ public enum SettingsPage
 {
     General,
     System,
+    Integrations,
     Models,
+    Intelligence,
     Dictionary,
     Snippets,
     Statistics
@@ -33,6 +35,7 @@ public partial class SettingsViewModel : ObservableObject
     public GeneralSettingsViewModel General { get; }
     public SystemSettingsViewModel System { get; }
     public TranscriptionSettingsViewModel Transcription { get; }
+    public IntegrationsSettingsViewModel Integrations { get; }
     public StatisticsViewModel Statistics { get; }
     public DictionarySnippetsViewModel DictionarySnippets { get; }
 
@@ -70,6 +73,8 @@ public partial class SettingsViewModel : ObservableObject
         Transcription = new TranscriptionSettingsViewModel(
             modelManager, correctionModelManager, preloadService, logger, dispatcher, ScheduleSave, opts);
 
+        Integrations = new IntegrationsSettingsViewModel(ScheduleSave, opts);
+
         Statistics = new StatisticsViewModel(statsService);
         DictionarySnippets = new DictionarySnippetsViewModel(dictionaryService, snippetService);
     }
@@ -82,7 +87,7 @@ public partial class SettingsViewModel : ObservableObject
         SelectedPage = page;
         if (page == SettingsPage.Statistics)
             Statistics.Refresh();
-        else if (page == SettingsPage.Models)
+        else if (page is SettingsPage.Models or SettingsPage.Intelligence)
             Transcription.RefreshModels();
     }
 
@@ -95,6 +100,7 @@ public partial class SettingsViewModel : ObservableObject
             General.WriteSettings(section);
             System.WriteSettings(section);
             Transcription.WriteSettings(section);
+            Integrations.WriteSettings(section);
         });
     }
 

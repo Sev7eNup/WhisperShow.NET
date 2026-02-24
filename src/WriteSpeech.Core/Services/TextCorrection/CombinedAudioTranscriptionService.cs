@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Services.Audio;
+using WriteSpeech.Core.Services.IDE;
 
 namespace WriteSpeech.Core.Services.TextCorrection;
 
@@ -14,6 +15,7 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly IAudioCompressor _audioCompressor;
     private readonly IDictionaryService _dictionaryService;
+    private readonly IIDEContextService _ideContextService;
     private readonly OpenAiClientFactory _clientFactory;
 
     public bool IsAvailable
@@ -33,12 +35,14 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
         IAudioCompressor audioCompressor,
         IDictionaryService dictionaryService,
+        IIDEContextService ideContextService,
         OpenAiClientFactory clientFactory)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _audioCompressor = audioCompressor;
         _dictionaryService = dictionaryService;
+        _ideContextService = ideContextService;
         _clientFactory = clientFactory;
     }
 
@@ -63,6 +67,7 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
 
             var systemPrompt = options.TextCorrection.CombinedSystemPrompt ?? TextCorrectionDefaults.CombinedAudioSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
+            systemPrompt += _ideContextService.BuildPromptFragment();
             var langSuffix = string.IsNullOrEmpty(language)
                 ? ""
                 : $"\n[Output language MUST be: {language}]";

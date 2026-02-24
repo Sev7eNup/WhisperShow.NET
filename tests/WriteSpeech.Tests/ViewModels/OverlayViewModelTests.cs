@@ -9,6 +9,7 @@ using WriteSpeech.Core.Services.Configuration;
 using WriteSpeech.Core.Services.History;
 using WriteSpeech.Core.Services.Snippets;
 using WriteSpeech.Core.Services.Statistics;
+using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Core.Services.TextInsertion;
 using WriteSpeech.Core.Services.Transcription;
@@ -79,6 +80,8 @@ public class OverlayViewModelTests : IDisposable
             Substitute.For<IUsageStatsService>(),
             Substitute.For<ITranscriptionHistoryService>(),
             Substitute.For<IWindowFocusService>(),
+            Substitute.For<IIDEDetectionService>(),
+            Substitute.For<IIDEContextService>(),
             new SynchronousDispatcherService(),
             Substitute.For<ISettingsPersistenceService>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<OverlayViewModel>.Instance,

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
+using WriteSpeech.Core.Services.IDE;
 
 namespace WriteSpeech.Core.Services.TextCorrection;
 
@@ -14,6 +15,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private readonly ILogger<LocalTextCorrectionService> _logger;
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly IDictionaryService _dictionaryService;
+    private readonly IIDEContextService _ideContextService;
     private readonly Lock _loadLock = new();
     private LLamaWeights? _model;
     private string? _loadedModelPath;
@@ -25,11 +27,13 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     public LocalTextCorrectionService(
         ILogger<LocalTextCorrectionService> logger,
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
-        IDictionaryService dictionaryService)
+        IDictionaryService dictionaryService,
+        IIDEContextService ideContextService)
     {
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _dictionaryService = dictionaryService;
+        _ideContextService = ideContextService;
     }
 
     public async Task<string> CorrectAsync(string rawText, string? language, CancellationToken ct = default)
@@ -50,6 +54,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
 
             var systemPrompt = correctionOpts.SystemPrompt ?? TextCorrectionDefaults.CorrectionSystemPrompt;
             systemPrompt += _dictionaryService.BuildPromptFragment();
+            systemPrompt += _ideContextService.BuildPromptFragment();
 
             var languageHint = string.IsNullOrEmpty(language)
                 ? "Keep the SAME language as the input — do NOT translate"

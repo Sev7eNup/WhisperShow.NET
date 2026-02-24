@@ -16,6 +16,7 @@ public class WriteSpeechOptions
     public OverlayOptions Overlay { get; set; } = new();
     public TextCorrectionOptions TextCorrection { get; set; } = new();
     public AppOptions App { get; set; } = new();
+    public IntegrationOptions Integration { get; set; } = new();
 
     internal static string ResolveModelDirectory(string? customPath, string subfolder) =>
         string.IsNullOrEmpty(customPath)
@@ -102,6 +103,12 @@ public class AppOptions
     public bool SoundEffects { get; set; } = true;
     public int MaxHistoryEntries { get; set; } = 20;
     public string Theme { get; set; } = "Dark";
+}
+
+public class IntegrationOptions
+{
+    public bool VariableRecognition { get; set; } = true;
+    public bool FileTagging { get; set; } = true;
 }
 
 public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services;
+using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Tests.TestHelpers;
 
@@ -86,6 +87,7 @@ public class OpenAiTextCorrectionServiceTests
         return new OpenAiTextCorrectionService(
             NullLogger<OpenAiTextCorrectionService>.Instance, options,
             Substitute.For<IDictionaryService>(),
+            Substitute.For<IIDEContextService>(),
             new OpenAiClientFactory(options));
     }
 }
