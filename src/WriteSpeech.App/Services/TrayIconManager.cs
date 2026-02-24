@@ -103,7 +103,7 @@ public class TrayIconManager : IDisposable
         // Header label
         var header = new TextBlock
         {
-            Text = "WriteSpeech",
+            Text = "WriteSpeech.NET",
             FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
             FontSize = 11,
             FontWeight = FontWeights.SemiBold,
