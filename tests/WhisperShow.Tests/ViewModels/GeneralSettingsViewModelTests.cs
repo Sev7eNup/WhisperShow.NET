@@ -149,12 +149,12 @@ public class GeneralSettingsViewModelTests
         vm.OpenHotkeyDialogCommand.Execute(null);
         vm.StartCapturingToggleHotkeyCommand.Execute(null);
         vm.IsDialogOpen.Should().BeTrue();
-        vm.CapturingHotkey.Should().Be("Toggle");
+        vm.CapturingHotkey.Should().Be(HotkeyCaptureTarget.Toggle);
 
         vm.CloseDialogCommand.Execute(null);
         vm.IsDialogOpen.Should().BeFalse();
-        vm.ActiveDialog.Should().BeEmpty();
-        vm.CapturingHotkey.Should().BeEmpty();
+        vm.ActiveDialog.Should().Be(SettingsDialogType.None);
+        vm.CapturingHotkey.Should().Be(HotkeyCaptureTarget.None);
     }
 }
 

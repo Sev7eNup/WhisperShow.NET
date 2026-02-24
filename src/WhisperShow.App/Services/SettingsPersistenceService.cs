@@ -16,10 +16,15 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
     private readonly DebouncedSaveHelper _saveHelper;
 
     public SettingsPersistenceService(ILogger<SettingsPersistenceService> logger)
+        : this(logger, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"), 300)
+    {
+    }
+
+    internal SettingsPersistenceService(ILogger<SettingsPersistenceService> logger, string filePath, int debounceMs = 300)
     {
         _logger = logger;
-        _filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-        _saveHelper = new DebouncedSaveHelper(FlushAsync, logger, 300);
+        _filePath = filePath;
+        _saveHelper = new DebouncedSaveHelper(FlushAsync, logger, debounceMs);
     }
 
     public void ScheduleUpdate(Action<JsonNode> mutator)

@@ -81,6 +81,13 @@ public partial class HistoryWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (Application.Current?.ShutdownMode == ShutdownMode.OnExplicitShutdown
+            || Application.Current?.MainWindow == null)
+        {
+            Cleanup();
+            return;
+        }
+
         e.Cancel = true;
         Hide();
     }

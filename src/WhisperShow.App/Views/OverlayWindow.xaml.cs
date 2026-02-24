@@ -483,6 +483,14 @@ public partial class OverlayWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (Application.Current?.ShutdownMode == ShutdownMode.OnExplicitShutdown
+            || Application.Current?.MainWindow == null)
+        {
+            // App is shutting down — allow close and run cleanup
+            Cleanup();
+            return;
+        }
+
         // Minimize to tray instead of closing
         e.Cancel = true;
         Hide();

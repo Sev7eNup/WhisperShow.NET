@@ -89,4 +89,138 @@ public class WhisperShowOptionsTests
         var options = new LocalWhisperOptions { ModelDirectory = "" };
         options.GetModelDirectory().Should().Contain("WhisperShow");
     }
+
+    // --- WhisperShowOptionsValidator ---
+
+    [Fact]
+    public void Validator_DefaultOptions_Succeeds()
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var result = validator.Validate(null, new WhisperShowOptions());
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(7999)]
+    [InlineData(48001)]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Validator_InvalidSampleRate_Fails(int sampleRate)
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { Audio = new AudioOptions { SampleRate = sampleRate } };
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("SampleRate");
+    }
+
+    [Theory]
+    [InlineData(8000)]
+    [InlineData(16000)]
+    [InlineData(44100)]
+    [InlineData(48000)]
+    public void Validator_ValidSampleRate_Succeeds(int sampleRate)
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { Audio = new AudioOptions { SampleRate = sampleRate } };
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(5)]
+    [InlineData(-1)]
+    public void Validator_InvalidMaxRecordingSeconds_Fails(int seconds)
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { Audio = new AudioOptions { MaxRecordingSeconds = seconds } };
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("MaxRecordingSeconds");
+    }
+
+    [Fact]
+    public void Validator_InvalidAutoDismissSeconds_Fails()
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { Overlay = new OverlayOptions { AutoDismissSeconds = 0 } };
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("AutoDismissSeconds");
+    }
+
+    [Theory]
+    [InlineData(0.4)]
+    [InlineData(3.1)]
+    public void Validator_InvalidOverlayScale_Fails(double scale)
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { Overlay = new OverlayOptions { Scale = scale } };
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("Scale");
+    }
+
+    [Fact]
+    public void Validator_InvalidEndpointUrl_Fails()
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { OpenAI = new OpenAiOptions { Endpoint = "not-a-url" } };
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("Endpoint");
+    }
+
+    [Fact]
+    public void Validator_ValidEndpointUrl_Succeeds()
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { OpenAI = new OpenAiOptions { Endpoint = "https://api.openai.com/v1" } };
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validator_NullEndpoint_Succeeds()
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions { OpenAI = new OpenAiOptions { Endpoint = null } };
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validator_MultipleFailures_ReportsAll()
+    {
+        var validator = new WhisperShowOptionsValidator();
+        var options = new WhisperShowOptions
+        {
+            Audio = new AudioOptions { SampleRate = 0, MaxRecordingSeconds = 0 },
+            Overlay = new OverlayOptions { AutoDismissSeconds = 0 }
+        };
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("SampleRate");
+        result.FailureMessage.Should().Contain("MaxRecordingSeconds");
+        result.FailureMessage.Should().Contain("AutoDismissSeconds");
+    }
 }

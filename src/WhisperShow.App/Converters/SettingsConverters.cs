@@ -67,7 +67,8 @@ public class CapturingHotkeyTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is string capturing && parameter is string target)
+        var capturing = value?.ToString();
+        if (capturing is not null && parameter is string target)
             return capturing == target ? "Listening for keys..." : "Rebind";
         return "Rebind";
     }

@@ -98,7 +98,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     public void ApplyAutoDismiss(int seconds)
     {
-        AutoDismissSeconds = seconds;
+        AutoDismissSeconds = Math.Max(1, seconds);
         IsEditingAutoDismiss = false;
         _scheduleSave();
     }
@@ -108,7 +108,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     public void ApplyMaxRecording(int seconds)
     {
-        MaxRecordingSeconds = seconds;
+        MaxRecordingSeconds = Math.Max(10, seconds);
         IsEditingMaxRecording = false;
         _scheduleSave();
     }

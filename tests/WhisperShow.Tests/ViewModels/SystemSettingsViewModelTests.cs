@@ -207,4 +207,31 @@ public class SystemSettingsViewModelTests
         json["Overlay"]!["AutoDismissSeconds"]!.GetValue<int>().Should().Be(10);
         json["Overlay"]!["ShowResultOverlay"]!.GetValue<bool>().Should().BeTrue();
     }
+
+    // --- Clamping validation in ViewModel ---
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(-5, 1)]
+    [InlineData(1, 1)]
+    [InlineData(15, 15)]
+    public void ApplyAutoDismiss_ClampsToMinimum(int input, int expected)
+    {
+        var vm = CreateViewModel();
+        vm.ApplyAutoDismiss(input);
+        vm.AutoDismissSeconds.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(5, 10)]
+    [InlineData(-1, 10)]
+    [InlineData(10, 10)]
+    [InlineData(600, 600)]
+    public void ApplyMaxRecording_ClampsToMinimum(int input, int expected)
+    {
+        var vm = CreateViewModel();
+        vm.ApplyMaxRecording(input);
+        vm.MaxRecordingSeconds.Should().Be(expected);
+    }
 }

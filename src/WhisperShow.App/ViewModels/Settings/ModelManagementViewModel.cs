@@ -62,6 +62,7 @@ public partial class ModelManagementViewModel : ObservableObject
             var ggmlType = FileNameToGgmlType(model.FileName);
             var item = new ModelItemViewModel(model, ggmlType);
             item.IsActive = model.FileName == _getTranscriptionModel() && model.IsDownloaded;
+            if (item.IsActive) item.StatusText = "Active";
             ModelItems.Add(item);
         }
     }

@@ -197,8 +197,8 @@ public class SettingsViewModelTests
         vm.General.OpenHotkeyDialogCommand.Execute(null);
 
         vm.General.IsDialogOpen.Should().BeTrue();
-        vm.General.ActiveDialog.Should().Be("Hotkey");
-        vm.General.CapturingHotkey.Should().BeEmpty();
+        vm.General.ActiveDialog.Should().Be(SettingsDialogType.Hotkey);
+        vm.General.CapturingHotkey.Should().Be(HotkeyCaptureTarget.None);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class SettingsViewModelTests
         vm.General.OpenMicrophoneDialogCommand.Execute(null);
 
         vm.General.IsDialogOpen.Should().BeTrue();
-        vm.General.ActiveDialog.Should().Be("Microphone");
+        vm.General.ActiveDialog.Should().Be(SettingsDialogType.Microphone);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class SettingsViewModelTests
         vm.General.OpenLanguageDialogCommand.Execute(null);
 
         vm.General.IsDialogOpen.Should().BeTrue();
-        vm.General.ActiveDialog.Should().Be("Language");
+        vm.General.ActiveDialog.Should().Be(SettingsDialogType.Language);
     }
 
     [Fact]
@@ -243,8 +243,8 @@ public class SettingsViewModelTests
         vm.General.CloseDialogCommand.Execute(null);
 
         vm.General.IsDialogOpen.Should().BeFalse();
-        vm.General.ActiveDialog.Should().BeEmpty();
-        vm.General.CapturingHotkey.Should().BeEmpty();
+        vm.General.ActiveDialog.Should().Be(SettingsDialogType.None);
+        vm.General.CapturingHotkey.Should().Be(HotkeyCaptureTarget.None);
     }
 
     // --- Toggle Hotkey ---
@@ -257,7 +257,7 @@ public class SettingsViewModelTests
 
         vm.General.StartCapturingToggleHotkeyCommand.Execute(null);
 
-        vm.General.CapturingHotkey.Should().Be("Toggle");
+        vm.General.CapturingHotkey.Should().Be(HotkeyCaptureTarget.Toggle);
     }
 
     [Fact]
@@ -268,7 +268,7 @@ public class SettingsViewModelTests
 
         vm.General.StartCapturingPttHotkeyCommand.Execute(null);
 
-        vm.General.CapturingHotkey.Should().Be("PushToTalk");
+        vm.General.CapturingHotkey.Should().Be(HotkeyCaptureTarget.PushToTalk);
     }
 
     [Fact]
@@ -282,7 +282,7 @@ public class SettingsViewModelTests
 
         vm.General.ToggleModifiers.Should().Be("Alt");
         vm.General.ToggleKey.Should().Be("F1");
-        vm.General.CapturingHotkey.Should().BeEmpty();
+        vm.General.CapturingHotkey.Should().Be(HotkeyCaptureTarget.None);
         vm.General.ToggleBadges.Should().Equal("Alt", "F1");
         vm.General.HotkeyDisplayText.Should().Contain("Alt");
         vm.General.HotkeyDisplayText.Should().Contain("F1");
@@ -314,7 +314,7 @@ public class SettingsViewModelTests
 
         vm.General.PttModifiers.Should().Be("Shift");
         vm.General.PttKey.Should().Be("F2");
-        vm.General.CapturingHotkey.Should().BeEmpty();
+        vm.General.CapturingHotkey.Should().Be(HotkeyCaptureTarget.None);
         vm.General.PttBadges.Should().Equal("Shift", "F2");
         _hotkeyService.Received(1).UpdatePushToTalkHotkey("Shift", "F2");
     }

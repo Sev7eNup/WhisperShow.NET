@@ -59,6 +59,13 @@ public partial class SettingsWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (Application.Current?.ShutdownMode == ShutdownMode.OnExplicitShutdown
+            || Application.Current?.MainWindow == null)
+        {
+            Cleanup();
+            return;
+        }
+
         e.Cancel = true;
         Hide();
     }
@@ -97,16 +104,16 @@ public partial class SettingsWindow : Window
         {
             if (_viewModel.General.IsDialogOpen)
             {
-                if (_viewModel.General.ActiveDialog == "Microphone")
+                if (_viewModel.General.ActiveDialog == SettingsDialogType.Microphone)
                     Dispatcher.BeginInvoke(UpdateMicrophoneHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
-                else if (_viewModel.General.ActiveDialog == "Language")
+                else if (_viewModel.General.ActiveDialog == SettingsDialogType.Language)
                     Dispatcher.BeginInvoke(UpdateLanguageHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
             }
         }
 
         if (e.PropertyName is nameof(GeneralSettingsViewModel.PendingLanguageCode) or nameof(GeneralSettingsViewModel.IsAutoDetectLanguage))
         {
-            if (_viewModel.General.IsDialogOpen && _viewModel.General.ActiveDialog == "Language")
+            if (_viewModel.General.IsDialogOpen && _viewModel.General.ActiveDialog == SettingsDialogType.Language)
                 UpdateLanguageHighlight();
         }
     }
@@ -147,7 +154,7 @@ public partial class SettingsWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (string.IsNullOrEmpty(_viewModel.General.CapturingHotkey)) return;
+        if (_viewModel.General.CapturingHotkey == HotkeyCaptureTarget.None) return;
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
 
@@ -159,7 +166,7 @@ public partial class SettingsWindow : Window
         // Escape cancels
         if (key == Key.Escape)
         {
-            _viewModel.General.CapturingHotkey = "";
+            _viewModel.General.CapturingHotkey = HotkeyCaptureTarget.None;
             e.Handled = true;
             return;
         }

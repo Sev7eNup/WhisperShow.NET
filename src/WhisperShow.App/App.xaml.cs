@@ -70,6 +70,7 @@ public partial class App : Application
                 // Configuration
                 services.Configure<WhisperShowOptions>(
                     context.Configuration.GetSection(WhisperShowOptions.SectionName));
+                services.AddSingleton<IValidateOptions<WhisperShowOptions>, WhisperShowOptionsValidator>();
 
                 // Core services
                 services.AddSingleton<OpenAiClientFactory>();

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using FluentAssertions;
 using WhisperShow.App.Converters;
+using WhisperShow.App.ViewModels.Settings;
 using WhisperShow.Core.Models;
 using WhisperShow.Tests.TestHelpers;
 
@@ -125,19 +126,45 @@ public class SettingsConvertersTests
     // --- CapturingHotkeyTextConverter ---
 
     [Fact]
-    public void CapturingHotkey_Match_ReturnsListening()
+    public void CapturingHotkey_EnumMatch_ReturnsListening()
     {
         var converter = new CapturingHotkeyTextConverter();
-        var result = converter.Convert("Toggle", typeof(string), "Toggle", Culture);
+        var result = converter.Convert(HotkeyCaptureTarget.Toggle, typeof(string), "Toggle", Culture);
         result.Should().Be("Listening for keys...");
     }
 
     [Fact]
-    public void CapturingHotkey_NoMatch_ReturnsRebind()
+    public void CapturingHotkey_EnumNoMatch_ReturnsRebind()
     {
         var converter = new CapturingHotkeyTextConverter();
-        var result = converter.Convert("Toggle", typeof(string), "PushToTalk", Culture);
+        var result = converter.Convert(HotkeyCaptureTarget.Toggle, typeof(string), "PushToTalk", Culture);
         result.Should().Be("Rebind");
+    }
+
+    [Fact]
+    public void CapturingHotkey_None_ReturnsRebind()
+    {
+        var converter = new CapturingHotkeyTextConverter();
+        var result = converter.Convert(HotkeyCaptureTarget.None, typeof(string), "Toggle", Culture);
+        result.Should().Be("Rebind");
+    }
+
+    // --- StringEqualsToVisibilityConverter with enum ---
+
+    [Fact]
+    public void StringEquals_EnumMatch_ReturnsVisible()
+    {
+        var converter = new StringEqualsToVisibilityConverter();
+        var result = converter.Convert(SettingsDialogType.Hotkey, typeof(Visibility), "Hotkey", Culture);
+        result.Should().Be(Visibility.Visible);
+    }
+
+    [Fact]
+    public void StringEquals_EnumNoMatch_ReturnsCollapsed()
+    {
+        var converter = new StringEqualsToVisibilityConverter();
+        var result = converter.Convert(SettingsDialogType.Hotkey, typeof(Visibility), "Microphone", Culture);
+        result.Should().Be(Visibility.Collapsed);
     }
 
     // --- ModelActionVisibilityConverter ---

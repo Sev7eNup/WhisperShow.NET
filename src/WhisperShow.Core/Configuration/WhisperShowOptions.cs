@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using WhisperShow.Core.Models;
 
 namespace WhisperShow.Core.Configuration;
@@ -101,4 +102,34 @@ public class AppOptions
     public bool SoundEffects { get; set; } = true;
     public int MaxHistoryEntries { get; set; } = 20;
     public string Theme { get; set; } = "Dark";
+}
+
+public class WhisperShowOptionsValidator : IValidateOptions<WhisperShowOptions>
+{
+    public ValidateOptionsResult Validate(string? name, WhisperShowOptions options)
+    {
+        var failures = new List<string>();
+
+        if (options.Audio.SampleRate is < 8000 or > 48000)
+            failures.Add($"Audio.SampleRate must be between 8000 and 48000 (got {options.Audio.SampleRate}).");
+
+        if (options.Audio.MaxRecordingSeconds < 10)
+            failures.Add($"Audio.MaxRecordingSeconds must be at least 10 (got {options.Audio.MaxRecordingSeconds}).");
+
+        if (options.Overlay.AutoDismissSeconds < 1)
+            failures.Add($"Overlay.AutoDismissSeconds must be at least 1 (got {options.Overlay.AutoDismissSeconds}).");
+
+        if (options.Overlay.Scale is < 0.5 or > 3.0)
+            failures.Add($"Overlay.Scale must be between 0.5 and 3.0 (got {options.Overlay.Scale}).");
+
+        if (options.App.MaxHistoryEntries < 1)
+            failures.Add($"App.MaxHistoryEntries must be at least 1 (got {options.App.MaxHistoryEntries}).");
+
+        if (options.OpenAI.Endpoint is not null && !Uri.IsWellFormedUriString(options.OpenAI.Endpoint, UriKind.Absolute))
+            failures.Add($"OpenAI.Endpoint is not a valid URL: '{options.OpenAI.Endpoint}'.");
+
+        return failures.Count > 0
+            ? ValidateOptionsResult.Fail(failures)
+            : ValidateOptionsResult.Success;
+    }
 }

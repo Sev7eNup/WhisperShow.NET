@@ -13,6 +13,9 @@ namespace WhisperShow.App.ViewModels.Settings;
 public record MicrophoneInfo(int DeviceIndex, string Name);
 public record LanguageInfo(string Code, string DisplayName, string Flag);
 
+public enum SettingsDialogType { None, Hotkey, Microphone, Language }
+public enum HotkeyCaptureTarget { None, Toggle, PushToTalk }
+
 public partial class GeneralSettingsViewModel : ObservableObject
 {
     private readonly IGlobalHotkeyService _hotkeyService;
@@ -22,7 +25,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
 
     // --- Dialog system ---
     [ObservableProperty] private bool _isDialogOpen;
-    [ObservableProperty] private string _activeDialog = "";
+    [ObservableProperty] private SettingsDialogType _activeDialog;
 
     // --- Toggle hotkey ---
     [ObservableProperty] private string _toggleModifiers = "Control, Shift";
@@ -37,7 +40,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     public ObservableCollection<string> PttBadges { get; } = [];
 
     // --- Hotkey capture state ---
-    [ObservableProperty] private string _capturingHotkey = ""; // "", "Toggle", "PushToTalk"
+    [ObservableProperty] private HotkeyCaptureTarget _capturingHotkey;
     [ObservableProperty] private string _hotkeyDisplayText = "";
 
     // --- Microphone ---
@@ -166,15 +169,15 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [RelayCommand]
     private void OpenHotkeyDialog()
     {
-        ActiveDialog = "Hotkey";
+        ActiveDialog = SettingsDialogType.Hotkey;
         IsDialogOpen = true;
-        CapturingHotkey = "";
+        CapturingHotkey = HotkeyCaptureTarget.None;
     }
 
     [RelayCommand]
     private void OpenMicrophoneDialog()
     {
-        ActiveDialog = "Microphone";
+        ActiveDialog = SettingsDialogType.Microphone;
         IsDialogOpen = true;
     }
 
@@ -182,7 +185,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     private void OpenLanguageDialog()
     {
         PendingLanguageCode = IsAutoDetectLanguage ? null : SelectedLanguageCode;
-        ActiveDialog = "Language";
+        ActiveDialog = SettingsDialogType.Language;
         IsDialogOpen = true;
     }
 
@@ -190,28 +193,28 @@ public partial class GeneralSettingsViewModel : ObservableObject
     private void CloseDialog()
     {
         IsDialogOpen = false;
-        ActiveDialog = "";
-        CapturingHotkey = "";
+        ActiveDialog = SettingsDialogType.None;
+        CapturingHotkey = HotkeyCaptureTarget.None;
     }
 
     // --- Hotkey dialog ---
 
     [RelayCommand]
-    private void StartCapturingToggleHotkey() => CapturingHotkey = "Toggle";
+    private void StartCapturingToggleHotkey() => CapturingHotkey = HotkeyCaptureTarget.Toggle;
 
     [RelayCommand]
-    private void StartCapturingPttHotkey() => CapturingHotkey = "PushToTalk";
+    private void StartCapturingPttHotkey() => CapturingHotkey = HotkeyCaptureTarget.PushToTalk;
 
     public void ApplyNewHotkey(string modifiers, string key)
     {
-        if (CapturingHotkey == "Toggle")
+        if (CapturingHotkey == HotkeyCaptureTarget.Toggle)
         {
             ToggleModifiers = modifiers;
             ToggleKey = key;
             UpdateToggleBadges();
             _hotkeyService.UpdateToggleHotkey(modifiers, key);
         }
-        else if (CapturingHotkey == "PushToTalk")
+        else if (CapturingHotkey == HotkeyCaptureTarget.PushToTalk)
         {
             PttModifiers = modifiers;
             PttKey = key;
@@ -219,7 +222,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
             _hotkeyService.UpdatePushToTalkHotkey(modifiers, key);
         }
 
-        CapturingHotkey = "";
+        CapturingHotkey = HotkeyCaptureTarget.None;
         UpdateDisplayTexts();
         _scheduleSave();
     }
@@ -231,7 +234,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
         ToggleKey = "Space";
         PttModifiers = "Control";
         PttKey = "Space";
-        CapturingHotkey = "";
+        CapturingHotkey = HotkeyCaptureTarget.None;
         UpdateToggleBadges();
         UpdatePttBadges();
         UpdateDisplayTexts();

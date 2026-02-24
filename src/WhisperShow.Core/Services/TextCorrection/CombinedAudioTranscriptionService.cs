@@ -45,49 +45,61 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
     public async Task<string> TranscribeAndCorrectAsync(
         byte[] audioData, string? language, CancellationToken ct = default)
     {
-        var options = _optionsMonitor.CurrentValue;
-
-        var chatClient = _clientFactory.GetChatClient(options.TextCorrection.CombinedAudioModel);
-
-        // Compress WAV to MP3 to reduce upload size
-        var mp3Data = _audioCompressor.CompressToMp3(audioData);
-        _logger.LogInformation(
-            "Combined model: compressed audio {OrigSize} -> {CompSize} bytes",
-            audioData.Length, mp3Data.Length);
-
-        var audioPart = ChatMessageContentPart.CreateInputAudioPart(
-            BinaryData.FromBytes(mp3Data),
-            ChatInputAudioFormat.Mp3);
-
-        var systemPrompt = options.TextCorrection.CombinedSystemPrompt ?? TextCorrectionDefaults.CombinedAudioSystemPrompt;
-        systemPrompt += _dictionaryService.BuildPromptFragment();
-        var langSuffix = string.IsNullOrEmpty(language)
-            ? ""
-            : $"\n[Output language MUST be: {language}]";
-
-        var chatOptions = new ChatCompletionOptions
+        try
         {
-            ResponseModalities = ChatResponseModalities.Text,
-            Temperature = 0
-        };
+            var options = _optionsMonitor.CurrentValue;
 
-        _logger.LogInformation(
-            "Sending audio to combined model ({Model}) for transcription + correction",
-            options.TextCorrection.CombinedAudioModel);
+            var chatClient = _clientFactory.GetChatClient(options.TextCorrection.CombinedAudioModel);
 
-        var result = await chatClient.CompleteChatAsync(
-            [
-                new SystemChatMessage(systemPrompt + langSuffix),
-                new UserChatMessage(audioPart)
-            ],
-            chatOptions,
-            ct);
+            // Compress WAV to MP3 to reduce upload size
+            var mp3Data = _audioCompressor.CompressToMp3(audioData);
+            _logger.LogInformation(
+                "Combined model: compressed audio {OrigSize} -> {CompSize} bytes",
+                audioData.Length, mp3Data.Length);
 
-        var text = result.Value.Content.FirstOrDefault()?.Text ?? string.Empty;
+            var audioPart = ChatMessageContentPart.CreateInputAudioPart(
+                BinaryData.FromBytes(mp3Data),
+                ChatInputAudioFormat.Mp3);
 
-        _logger.LogInformation(
-            "Combined transcription+correction completed: {Length} chars", text.Length);
+            var systemPrompt = options.TextCorrection.CombinedSystemPrompt ?? TextCorrectionDefaults.CombinedAudioSystemPrompt;
+            systemPrompt += _dictionaryService.BuildPromptFragment();
+            var langSuffix = string.IsNullOrEmpty(language)
+                ? ""
+                : $"\n[Output language MUST be: {language}]";
 
-        return text;
+            var chatOptions = new ChatCompletionOptions
+            {
+                ResponseModalities = ChatResponseModalities.Text,
+                Temperature = 0
+            };
+
+            _logger.LogInformation(
+                "Sending audio to combined model ({Model}) for transcription + correction",
+                options.TextCorrection.CombinedAudioModel);
+
+            var result = await chatClient.CompleteChatAsync(
+                [
+                    new SystemChatMessage(systemPrompt + langSuffix),
+                    new UserChatMessage(audioPart)
+                ],
+                chatOptions,
+                ct);
+
+            var text = result.Value.Content.FirstOrDefault()?.Text ?? string.Empty;
+
+            _logger.LogInformation(
+                "Combined transcription+correction completed: {Length} chars", text.Length);
+
+            return text;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Combined transcription+correction failed");
+            throw;
+        }
     }
 }

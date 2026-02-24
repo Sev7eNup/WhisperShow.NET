@@ -18,10 +18,16 @@ public class TextInsertionService : ITextInsertionService
     {
         _logger.LogInformation("Inserting text via clipboard ({Length} chars)", text.Length);
 
+        IDataObject? previousClipboard = null;
+
         try
         {
-            // Set text to clipboard on the STA thread
-            Application.Current.Dispatcher.Invoke(() => Clipboard.SetText(text));
+            // Save and restore clipboard on the STA thread
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try { previousClipboard = Clipboard.GetDataObject(); } catch { /* clipboard may be locked */ }
+                Clipboard.SetText(text);
+            });
         }
         catch (COMException ex)
         {
@@ -59,6 +65,20 @@ public class TextInsertionService : ITextInsertionService
         {
             _logger.LogWarning("SendInput returned {Sent}/{Expected} — keystrokes may not have been delivered",
                 sent, inputs.Length);
+        }
+
+        // Restore previous clipboard content after a delay for the paste to complete
+        if (previousClipboard is not null)
+        {
+            await Task.Delay(200);
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject(previousClipboard));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not restore previous clipboard content");
+            }
         }
     }
 }

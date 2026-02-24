@@ -111,30 +111,20 @@ public class OverlayWindowTests
         heights[15].Should().BeGreaterThan(heights[0]);
     }
 
-    // --- Scale Clamping ---
+    // --- Scale Clamping (Theory-based) ---
 
-    [Fact]
-    public void ClampOverlayScale_BelowMinimum_ClampsTo075()
+    [Theory]
+    [InlineData(0.5, 0.75)]
+    [InlineData(0.0, 0.75)]
+    [InlineData(-1.0, 0.75)]
+    [InlineData(3.0, 2.0)]
+    [InlineData(10.0, 2.0)]
+    [InlineData(0.75, 0.75)]
+    [InlineData(2.0, 2.0)]
+    [InlineData(1.0, 1.0)]
+    [InlineData(1.5, 1.5)]
+    public void ClampOverlayScale_ReturnsExpected(double input, double expected)
     {
-        OverlayWindow.ClampOverlayScale(0.5).Should().Be(0.75);
-    }
-
-    [Fact]
-    public void ClampOverlayScale_AboveMaximum_ClampsTo2()
-    {
-        OverlayWindow.ClampOverlayScale(3.0).Should().Be(2.0);
-    }
-
-    [Fact]
-    public void ClampOverlayScale_InRange_ReturnsUnchanged()
-    {
-        OverlayWindow.ClampOverlayScale(1.5).Should().Be(1.5);
-    }
-
-    [Fact]
-    public void ClampOverlayScale_AtBoundaries_ReturnsExact()
-    {
-        OverlayWindow.ClampOverlayScale(0.75).Should().Be(0.75);
-        OverlayWindow.ClampOverlayScale(2.0).Should().Be(2.0);
+        OverlayWindow.ClampOverlayScale(input).Should().Be(expected);
     }
 }
