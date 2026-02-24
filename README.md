@@ -11,27 +11,27 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 
 ## ✨ Features
 
-- **Speech-to-Text Overlay** — Transparent, always-on-top speech bubble with real-time waveform visualization and recording timer
-- **Cloud Transcription** — OpenAI Whisper API with configurable model and custom endpoint support (Azure, LM Studio, etc.)
-- **Local Transcription** — Offline via Whisper.net (GGML models, 5 sizes from 75 MB to 3 GB) with optional CUDA GPU acceleration
-- **AI Text Correction** — Post-process transcriptions with GPT-4o-mini (cloud) or LLamaSharp (local GGUF models, 4 models available)
-- **Combined Audio Model** — Direct audio-to-text via GPT-4o audio input (single API call for transcription + correction)
-- **Auto-Insert** — Automatically pastes transcribed text at the cursor position in any app via clipboard + Win32 SendInput
-- **Global Hotkeys** — Toggle recording (Ctrl+Shift+Space), Push-to-Talk (Ctrl+Space), Escape to dismiss — all fully configurable
-- **Audio Muting** — Optionally mutes other applications while recording
-- **WAV-to-MP3 Compression** — Compresses audio before cloud upload (64 kbps) to reduce API costs
-- **Custom Dictionary** — Add domain-specific terms injected into correction prompts
-- **Snippet Expansion** — Define trigger-to-replacement text pairs with word-boundary matching
-- **Transcription History** — Browse, search, copy, and re-insert recent transcriptions
-- **Usage Statistics** — Track transcription counts, recording time, audio bytes, and per-provider breakdown
-- **Settings UI** — 6-page settings window: General, System, Models, Dictionary, Snippets, Statistics
-- **20 Languages** — German, English, French, Spanish, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Chinese, Japanese, Korean, Arabic, Turkish, Swedish, Danish, Norwegian, Finnish, Czech — plus auto-detect
-- **Dark & Light Themes** — Switchable via settings
-- **System Tray** — Left-click toggles overlay, right-click for context menu (Settings, History, Exit)
-- **Live Settings** — All changes take effect immediately without restart
-- **Single Instance** — Enforced via named Mutex
-  
-## Prerequisites
+- 🎙️ **Speech-to-Text Overlay** — Transparent, always-on-top speech bubble with real-time waveform visualization and recording timer
+- ☁️ **Cloud Transcription** — OpenAI Whisper API with configurable model and custom endpoint support (Azure, LM Studio, etc.)
+- 💻 **Local Transcription** — Offline via Whisper.net (GGML models, 5 sizes from 75 MB to 3 GB) with optional CUDA GPU acceleration
+- 🤖 **AI Text Correction** — Post-process transcriptions with GPT-4o-mini (cloud) or LLamaSharp (local GGUF models, 4 models available)
+- 🎧 **Combined Audio Model** — Direct audio-to-text via GPT-4o audio input (single API call for transcription + correction)
+- 📋 **Auto-Insert** — Automatically pastes transcribed text at the cursor position in any app via clipboard + Win32 SendInput
+- ⌨️ **Global Hotkeys** — Toggle recording (Ctrl+Shift+Space), Push-to-Talk (Ctrl+Space), Escape to dismiss — all fully configurable
+- 🔇 **Audio Muting** — Optionally mutes other applications while recording
+- 🗜️ **WAV-to-MP3 Compression** — Compresses audio before cloud upload (64 kbps) to reduce API costs
+- 📖 **Custom Dictionary** — Add domain-specific terms injected into correction prompts
+- 🔄 **Snippet Expansion** — Define trigger-to-replacement text pairs with word-boundary matching
+- 📜 **Transcription History** — Browse, search, copy, and re-insert recent transcriptions
+- 📊 **Usage Statistics** — Track transcription counts, recording time, audio bytes, and per-provider breakdown
+- ⚙️ **Settings UI** — 6-page settings window: General, System, Models, Dictionary, Snippets, Statistics
+- 🌍 **20 Languages** — German, English, French, Spanish, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Chinese, Japanese, Korean, Arabic, Turkish, Swedish, Danish, Norwegian, Finnish, Czech — plus auto-detect
+- 🎨 **Dark & Light Themes** — Switchable via settings
+- 🔔 **System Tray** — Left-click toggles overlay, right-click for context menu (Settings, History, Exit)
+- ⚡ **Live Settings** — All changes take effect immediately without restart
+- 🔒 **Single Instance** — Enforced via named Mutex
+
+## 📋 Prerequisites
 
 | Requirement | Notes |
 |---|---|
