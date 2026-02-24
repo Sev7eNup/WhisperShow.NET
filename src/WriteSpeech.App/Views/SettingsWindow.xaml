@@ -48,7 +48,7 @@
                 <!-- TITLE BAR -->
                 <Grid Grid.Row="0" Height="40" Background="{DynamicResource SidebarBgBrush}"
                       MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                    <TextBlock Text="WriteSpeech.net" FontSize="13" FontWeight="SemiBold"
+                    <TextBlock Text="WriteSpeech.NET" FontSize="13" FontWeight="SemiBold"
                                FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource SelectedBorderBrush}"
                                HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
