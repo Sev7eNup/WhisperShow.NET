@@ -179,6 +179,40 @@ public class VocabResponseParserTests
         vocab.Should().ContainSingle().Which.Should().Be(word);
     }
 
+    // --- Deduplication ---
+
+    [Fact]
+    public void Parse_RepeatedLines_DeduplicatesText()
+    {
+        var response = "Da bin ich mal gespannt.\nDa bin ich mal gespannt.\nDa bin ich mal gespannt.\n---VOCAB---\nSperenzkes";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        text.Should().Be("Da bin ich mal gespannt.");
+        vocab.Should().ContainSingle().Which.Should().Be("Sperenzkes");
+    }
+
+    [Fact]
+    public void Parse_RepeatedLinesWithoutDelimiter_DeduplicatesText()
+    {
+        var response = "Hello world.\nHello world.\nHello world.";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        text.Should().Be("Hello world.");
+        vocab.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Parse_DistinctLines_PreservesAll()
+    {
+        var response = "First sentence.\nSecond sentence.\n---VOCAB---\nWord";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        text.Should().Be("First sentence.\nSecond sentence.");
+    }
+
     // --- AddExtractedVocabulary ---
 
     [Fact]
