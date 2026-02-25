@@ -129,7 +129,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
         _ => mouseButton ?? ""
     };
 
-    private static string FormatKeys(string modifiers, string key, string? mouseButton = null)
+    internal static string FormatKeys(string modifiers, string key, string? mouseButton = null)
     {
         var trigger = !string.IsNullOrEmpty(mouseButton) ? FormatMouseButton(mouseButton) : key;
         var mods = modifiers.Replace(",", " +").Replace("Control", "Ctrl");

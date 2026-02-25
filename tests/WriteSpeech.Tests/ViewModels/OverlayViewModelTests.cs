@@ -589,6 +589,30 @@ public class OverlayViewModelTests : IDisposable
         vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Alt + F1 to start dictating");
     }
 
+    [Fact]
+    public void PushToTalkHotkeyText_MouseButton_FormatsCorrectly()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Hotkey.PushToTalk.Modifiers = "Control";
+            o.Hotkey.PushToTalk.Key = "";
+            o.Hotkey.PushToTalk.MouseButton = "XButton1";
+        });
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Mouse 4 to start dictating");
+    }
+
+    [Fact]
+    public void PushToTalkHotkeyText_MiddleClick_NoModifiers_FormatsCorrectly()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Hotkey.PushToTalk.Modifiers = "";
+            o.Hotkey.PushToTalk.Key = "";
+            o.Hotkey.PushToTalk.MouseButton = "Middle";
+        });
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold Middle Click to start dictating");
+    }
+
     // --- Provider Name ---
 
     [Fact]
