@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteSpeech.Core.Configuration;
@@ -20,6 +21,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
 
     private IntPtr _keyboardHookHandle;
     private IntPtr _mouseHookHandle;
+    private SynchronizationContext? _syncContext;
 
     // Must hold references to prevent GC collection of delegates passed to unmanaged code
     private readonly NativeMethods.LowLevelHookProc _keyboardHookDelegate;
@@ -46,6 +48,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
 
     public void Register(IntPtr windowHandle)
     {
+        _syncContext = SynchronizationContext.Current;
         var moduleHandle = NativeMethods.GetModuleHandle(null);
 
         _keyboardHookHandle = NativeMethods.SetWindowsHookExW(
@@ -82,6 +85,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
             _mouseHookHandle = IntPtr.Zero;
         }
 
+        _syncContext = null;
         _logger.LogInformation("Low-level hooks removed");
     }
 
@@ -115,7 +119,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
 
     // Hook callbacks must return as fast as possible (< 10ms) to avoid
     // Windows silently removing the hook via LowLevelHooksTimeout.
-    // All logging and event invocation is offloaded to ThreadPool.
+    // Event invocation is deferred via SynchronizationContext.Post (non-blocking).
 
     private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
@@ -132,14 +136,14 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
 
                 if (isDown && hookStruct.vkCode == (uint)NativeMethods.VK_ESCAPE && _escapeRegistered)
                 {
-                    ThreadPool.QueueUserWorkItem(_ => EscapePressed?.Invoke(this, EventArgs.Empty));
+                    _syncContext?.Post(_ => EscapePressed?.Invoke(this, EventArgs.Empty), null);
                 }
 
                 // Toggle hotkey (keyboard-based)
                 if (isDown && !_toggleBinding.IsMouseBinding
                     && HotkeyMatcher.MatchesKeyboardBinding(_toggleBinding, hookStruct.vkCode, NativeMethods.GetAsyncKeyState))
                 {
-                    ThreadPool.QueueUserWorkItem(_ => ToggleHotkeyPressed?.Invoke(this, EventArgs.Empty));
+                    _syncContext?.Post(_ => ToggleHotkeyPressed?.Invoke(this, EventArgs.Empty), null);
                 }
 
                 // PTT hotkey (keyboard-based)
@@ -149,12 +153,12 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                         && HotkeyMatcher.MatchesKeyboardBinding(_pttBinding, hookStruct.vkCode, NativeMethods.GetAsyncKeyState))
                     {
                         _isPttActive = true;
-                        ThreadPool.QueueUserWorkItem(_ => PushToTalkHotkeyPressed?.Invoke(this, EventArgs.Empty));
+                        _syncContext?.Post(_ => PushToTalkHotkeyPressed?.Invoke(this, EventArgs.Empty), null);
                     }
                     else if (isUp && _isPttActive && HotkeyMatcher.MatchesKeyRelease(_pttBinding, hookStruct.vkCode))
                     {
                         _isPttActive = false;
-                        ThreadPool.QueueUserWorkItem(_ => PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty));
+                        _syncContext?.Post(_ => PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty), null);
                     }
                 }
             }
@@ -177,7 +181,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                 if (SuppressActions)
                 {
                     if (isDown)
-                        ThreadPool.QueueUserWorkItem(_ => MouseButtonCaptured?.Invoke(this, new MouseButtonCapturedEventArgs(button)));
+                        _syncContext?.Post(_ => MouseButtonCaptured?.Invoke(this, new MouseButtonCapturedEventArgs(button)), null);
 
                     return NativeMethods.CallNextHookEx(_mouseHookHandle, nCode, wParam, lParam);
                 }
@@ -186,7 +190,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                 if (isDown && _toggleBinding.IsMouseBinding
                     && HotkeyMatcher.MatchesMouseBinding(_toggleBinding, button, NativeMethods.GetAsyncKeyState))
                 {
-                    ThreadPool.QueueUserWorkItem(_ => ToggleHotkeyPressed?.Invoke(this, EventArgs.Empty));
+                    _syncContext?.Post(_ => ToggleHotkeyPressed?.Invoke(this, EventArgs.Empty), null);
                 }
 
                 // PTT hotkey (mouse-based)
@@ -197,7 +201,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                     {
                         _isPttActive = true;
                         _pttPressTimestamp = Environment.TickCount64;
-                        ThreadPool.QueueUserWorkItem(_ => PushToTalkHotkeyPressed?.Invoke(this, EventArgs.Empty));
+                        _syncContext?.Post(_ => PushToTalkHotkeyPressed?.Invoke(this, EventArgs.Empty), null);
                     }
                     else if (!isDown && _isPttActive
                         && string.Equals(_pttBinding.MouseButton, button, StringComparison.OrdinalIgnoreCase))
@@ -208,15 +212,16 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                             // Delay release to ensure minimum recording duration
                             var delay = MinPttHoldMs - (int)elapsed;
                             Task.Delay(delay).ContinueWith(_ =>
-                            {
-                                _isPttActive = false;
-                                PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty);
-                            });
+                                _syncContext?.Post(_ =>
+                                {
+                                    _isPttActive = false;
+                                    PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty);
+                                }, null));
                         }
                         else
                         {
                             _isPttActive = false;
-                            ThreadPool.QueueUserWorkItem(_ => PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty));
+                            _syncContext?.Post(_ => PushToTalkHotkeyReleased?.Invoke(this, EventArgs.Empty), null);
                         }
                     }
                 }
