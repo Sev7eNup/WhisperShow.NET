@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.Options;
@@ -77,6 +78,16 @@ public partial class HistoryWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Hide();
+    }
+
+    private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        SearchBorder.BorderBrush = (Brush)FindResource("SelectedBorderBrush");
+    }
+
+    private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        SearchBorder.BorderBrush = Brushes.Transparent;
     }
 
     protected override void OnClosing(CancelEventArgs e)
