@@ -1,11 +1,139 @@
 using FluentAssertions;
 using WriteSpeech.App.Views;
+using WriteSpeech.Tests.TestHelpers;
 
 namespace WriteSpeech.Tests.Views;
 
 public class OverlayWindowTests
 {
-    // --- Waveform Interpolation ---
+    // --- Waveform Point Generation (Glassmorphism sine-wave) ---
+
+    [Fact]
+    public void ComputeWaveformPoints_AllZeros_AllAtCenterY()
+    {
+        var levels = new float[20];
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        points.Should().HaveCount(20);
+        points.Should().AllSatisfy(p => p.y.Should().Be(15.0));
+    }
+
+    [Fact]
+    public void ComputeWaveformPoints_PointCount_MatchesLevelsLength()
+    {
+        var levels = new float[20];
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        points.Should().HaveCount(20);
+    }
+
+    [Fact]
+    public void ComputeWaveformPoints_XValues_EvenlySpaced()
+    {
+        var levels = new float[20];
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        points[0].x.Should().Be(0);
+        points[19].x.Should().BeApproximately(80, 0.001);
+
+        double expectedSpacing = 80.0 / 19.0;
+        for (int i = 1; i < points.Length; i++)
+            (points[i].x - points[i - 1].x).Should().BeApproximately(expectedSpacing, 0.001);
+    }
+
+    [Fact]
+    public void ComputeWaveformPoints_AllMax_AlternateUpDown()
+    {
+        var levels = Enumerable.Repeat(1.0f, 20).ToArray();
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        double centerY = 15.0;
+        for (int i = 0; i < points.Length; i++)
+        {
+            if (i % 2 == 0)
+                points[i].y.Should().BeLessThan(centerY);
+            else
+                points[i].y.Should().BeGreaterThan(centerY);
+        }
+    }
+
+    [Fact]
+    public void ComputeWaveformPoints_YValues_WithinBounds()
+    {
+        var levels = Enumerable.Repeat(1.0f, 20).ToArray();
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        points.Should().AllSatisfy(p =>
+        {
+            p.y.Should().BeGreaterThanOrEqualTo(1.0);
+            p.y.Should().BeLessThanOrEqualTo(29.0);
+        });
+    }
+
+    [Fact]
+    public void ComputeWaveformPoints_SingleSpike_OnlyAffectsOnePoint()
+    {
+        var levels = new float[20];
+        levels[10] = 0.5f;
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        points[10].y.Should().NotBe(15.0);
+        points[0].y.Should().Be(15.0);
+        points[19].y.Should().Be(15.0);
+    }
+
+    [Fact]
+    public void ComputeWaveformPoints_AmplitudeScaling_SqrtCompression()
+    {
+        // sqrt(0.1 * 5) = sqrt(0.5) ~ 0.707, amplitude = 0.707 * 14 ~ 9.9
+        var levels = Enumerable.Repeat(0.1f, 20).ToArray();
+
+        var points = OverlayWindow.ComputeWaveformPoints(levels, 80, 30);
+
+        double centerY = 15.0;
+        double expectedAmplitude = MathF.Sqrt(0.1f * 5.0f) * 14.0;
+
+        // Even index: centerY - amplitude (above center)
+        points[0].y.Should().BeApproximately(centerY - expectedAmplitude, 0.1);
+        // Odd index: centerY + amplitude (below center)
+        points[1].y.Should().BeApproximately(centerY + expectedAmplitude, 0.1);
+    }
+
+    [Fact]
+    public void GenerateWaveformPaths_AllZeros_ReturnsNonNullFrozenGeometries()
+    {
+        WpfTestHelper.EnsureApplication();
+        var levels = new float[20];
+
+        var (line, fill) = OverlayWindow.GenerateWaveformPaths(levels, 80, 30);
+
+        line.Should().NotBeNull();
+        fill.Should().NotBeNull();
+        line.IsFrozen.Should().BeTrue();
+        fill.IsFrozen.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GenerateWaveformPaths_WithData_ReturnsNonEmptyGeometries()
+    {
+        WpfTestHelper.EnsureApplication();
+        var levels = Enumerable.Range(0, 20).Select(i => i / 19.0f).ToArray();
+
+        var (line, fill) = OverlayWindow.GenerateWaveformPaths(levels, 80, 30);
+
+        line.Should().NotBeNull();
+        fill.Should().NotBeNull();
+        fill.Bounds.Width.Should().BeGreaterThan(0);
+        fill.Bounds.Height.Should().BeGreaterThan(0);
+    }
+
+    // --- Waveform Interpolation (legacy, kept for backward compatibility) ---
 
     [Fact]
     public void InterpolateWaveformLevels_AllZeros_ReturnsMinimumHeights()
