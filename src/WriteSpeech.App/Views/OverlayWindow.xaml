@@ -153,14 +153,32 @@
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border Background="Transparent" Width="44" Height="44">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                    Height="18">
-                                            <Rectangle Width="3" Height="8" RadiusX="1.5" RadiusY="1.5"
-                                                       Fill="{StaticResource TextBrush}" VerticalAlignment="Bottom" Margin="0,0,2.5,0"/>
-                                            <Rectangle Width="3" Height="14" RadiusX="1.5" RadiusY="1.5"
-                                                       Fill="{StaticResource TextBrush}" VerticalAlignment="Bottom" Margin="0,0,2.5,0"/>
-                                            <Rectangle Width="3" Height="8" RadiusX="1.5" RadiusY="1.5"
-                                                       Fill="{StaticResource TextBrush}" VerticalAlignment="Bottom"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <!-- Left wave bars (outer to inner) -->
+                                            <Rectangle x:Name="WaveL3" Width="2" Height="4" RadiusX="1" RadiusY="1"
+                                                       Fill="{StaticResource TextBrush}" Opacity="0.5"
+                                                       VerticalAlignment="Center" Margin="0,0,1.5,0"/>
+                                            <Rectangle x:Name="WaveL2" Width="2" Height="7" RadiusX="1" RadiusY="1"
+                                                       Fill="{StaticResource TextBrush}" Opacity="0.65"
+                                                       VerticalAlignment="Center" Margin="0,0,1.5,0"/>
+                                            <Rectangle x:Name="WaveL1" Width="2" Height="10" RadiusX="1" RadiusY="1"
+                                                       Fill="{StaticResource TextBrush}" Opacity="0.8"
+                                                       VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                            <!-- Microphone center -->
+                                            <Path Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
+                                                  Fill="{StaticResource TextBrush}" Stretch="Uniform"
+                                                  Width="14" Height="14"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <!-- Right wave bars (inner to outer) -->
+                                            <Rectangle x:Name="WaveR1" Width="2" Height="10" RadiusX="1" RadiusY="1"
+                                                       Fill="{StaticResource TextBrush}" Opacity="0.8"
+                                                       VerticalAlignment="Center" Margin="2,0,1.5,0"/>
+                                            <Rectangle x:Name="WaveR2" Width="2" Height="7" RadiusX="1" RadiusY="1"
+                                                       Fill="{StaticResource TextBrush}" Opacity="0.65"
+                                                       VerticalAlignment="Center" Margin="0,0,1.5,0"/>
+                                            <Rectangle x:Name="WaveR3" Width="2" Height="4" RadiusX="1" RadiusY="1"
+                                                       Fill="{StaticResource TextBrush}" Opacity="0.5"
+                                                       VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </ControlTemplate>

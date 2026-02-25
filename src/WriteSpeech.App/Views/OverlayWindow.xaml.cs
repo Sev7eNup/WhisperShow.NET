@@ -131,6 +131,13 @@ public partial class OverlayWindow : Window
         }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
+    // Wave bar original heights for hover animation
+    private static readonly (string Name, double Height)[] WaveBarSpecs =
+    [
+        ("WaveL3", 4), ("WaveL2", 7), ("WaveL1", 10),
+        ("WaveR1", 10), ("WaveR2", 7), ("WaveR3", 4),
+    ];
+
     private void SetupIdleHoverEffect()
     {
         MouseEnter += (_, _) =>
@@ -143,6 +150,7 @@ public partial class OverlayWindow : Window
             };
             BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
             BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
+            AnimateWaveBars(pulse: true);
         };
 
         MouseLeave += (_, _) =>
@@ -159,7 +167,41 @@ public partial class OverlayWindow : Window
             };
             BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
             BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
+            AnimateWaveBars(pulse: false);
         };
+    }
+
+    private void AnimateWaveBars(bool pulse)
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        for (int i = 0; i < WaveBarSpecs.Length; i++)
+        {
+            var (name, baseHeight) = WaveBarSpecs[i];
+            if (FindName(name) is not Rectangle bar) continue;
+
+            if (pulse)
+            {
+                // Staggered pulse: grow then return
+                var grow = new DoubleAnimationUsingKeyFrames();
+                double peakHeight = baseHeight + 5;
+                grow.KeyFrames.Add(new EasingDoubleKeyFrame(peakHeight,
+                    KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(150 + i * 40)),
+                    ease));
+                grow.KeyFrames.Add(new EasingDoubleKeyFrame(baseHeight,
+                    KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(350 + i * 40)),
+                    ease));
+                bar.BeginAnimation(FrameworkElement.HeightProperty, grow);
+            }
+            else
+            {
+                // Snap back to base height
+                var reset = new DoubleAnimation(baseHeight, TimeSpan.FromMilliseconds(200))
+                {
+                    EasingFunction = ease
+                };
+                bar.BeginAnimation(FrameworkElement.HeightProperty, reset);
+            }
+        }
     }
 
     // --- Waveform Path Generation ---
