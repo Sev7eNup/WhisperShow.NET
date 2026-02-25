@@ -378,6 +378,14 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [RelayCommand]
     private void SetHotkeyMethod(string method)
     {
+        // When switching to RegisterHotKey, clear mouse button bindings
+        // because the validator rejects MouseButton + RegisterHotKey.
+        if (method == "RegisterHotKey"
+            && (ToggleMouseButton is not null || PttMouseButton is not null))
+        {
+            ResetHotkeyToDefault();
+        }
+
         HotkeyMethod = method;
         IsLowLevelHookMode = method == "LowLevelHook";
         _hotkeyService.SwitchMethod(method);

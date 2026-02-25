@@ -302,6 +302,48 @@ public class GeneralSettingsViewModelTests
     }
 
     [Fact]
+    public void SetHotkeyMethod_ToRegisterHotKey_ClearsMouseBindings()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Hotkey.Method = "LowLevelHook";
+            o.Hotkey.Toggle.MouseButton = "Middle";
+            o.Hotkey.PushToTalk.MouseButton = "XButton2";
+        });
+
+        vm.SetHotkeyMethodCommand.Execute("RegisterHotKey");
+
+        vm.ToggleMouseButton.Should().BeNull();
+        vm.PttMouseButton.Should().BeNull();
+        vm.ToggleKey.Should().Be("Space");
+        vm.ToggleModifiers.Should().Be("Control, Shift");
+        vm.PttKey.Should().Be("Space");
+        vm.PttModifiers.Should().Be("Control");
+        vm.HotkeyMethod.Should().Be("RegisterHotKey");
+        vm.IsLowLevelHookMode.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SetHotkeyMethod_ToRegisterHotKey_WithoutMouseBindings_KeepsCurrentKeys()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Hotkey.Method = "LowLevelHook";
+            o.Hotkey.Toggle.Modifiers = "Alt";
+            o.Hotkey.Toggle.Key = "F1";
+            o.Hotkey.PushToTalk.Modifiers = "Alt";
+            o.Hotkey.PushToTalk.Key = "F2";
+        });
+
+        vm.SetHotkeyMethodCommand.Execute("RegisterHotKey");
+
+        vm.ToggleKey.Should().Be("F1");
+        vm.ToggleModifiers.Should().Be("Alt");
+        vm.PttKey.Should().Be("F2");
+        vm.PttModifiers.Should().Be("Alt");
+    }
+
+    [Fact]
     public void ToggleBadges_WithMouseButton_ShowsMouseButtonName()
     {
         var vm = CreateViewModel(o =>
