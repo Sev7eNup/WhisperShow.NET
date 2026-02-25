@@ -144,7 +144,7 @@ public partial class OverlayWindow : Window
         {
             if (_viewModel.State != RecordingState.Idle) return;
             _breathingStoryboard?.Stop(this);
-            var scaleUp = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(200))
+            var scaleUp = new DoubleAnimation(1.06, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
@@ -156,7 +156,7 @@ public partial class OverlayWindow : Window
         MouseLeave += (_, _) =>
         {
             if (_viewModel.State != RecordingState.Idle) return;
-            var scaleDown = new DoubleAnimation(0.97, TimeSpan.FromMilliseconds(200))
+            var scaleDown = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
