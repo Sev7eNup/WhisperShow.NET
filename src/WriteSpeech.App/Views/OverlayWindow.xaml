@@ -14,8 +14,8 @@
         WindowStartupLocation="Manual">
 
     <Window.Resources>
-        <!-- Glass background -->
-        <SolidColorBrush x:Key="GlassBackground" Color="#C0181818"/>
+        <!-- Glass background (matches tray icon accent) -->
+        <SolidColorBrush x:Key="GlassBackground" Color="#C09B7DFF"/>
 
         <!-- Border brushes -->
         <SolidColorBrush x:Key="IdleBorderBrush" Color="#25FFFFFF"/>
