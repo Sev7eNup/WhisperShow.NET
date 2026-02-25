@@ -4,26 +4,29 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using WriteSpeech.App.Services;
 using WriteSpeech.App.ViewModels;
 using WriteSpeech.App.ViewModels.Settings;
+using WriteSpeech.Core.Services.Hotkey;
 
 namespace WriteSpeech.App.Views;
 
 public partial class SettingsWindow : Window
 {
     private readonly SettingsViewModel _viewModel;
+    private readonly IGlobalHotkeyService _hotkeyService;
     private HwndSource? _hwndSource;
 
-    public SettingsWindow(SettingsViewModel viewModel)
+    public SettingsWindow(SettingsViewModel viewModel, IGlobalHotkeyService hotkeyService)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _hotkeyService = hotkeyService;
         DataContext = viewModel;
 
         ClipBorder.SizeChanged += OnClipBorderSizeChanged;
         _viewModel.General.PropertyChanged += OnGeneralPropertyChanged;
         _viewModel.System.PropertyChanged += OnSystemPropertyChanged;
+        _hotkeyService.MouseButtonCaptured += OnMouseButtonCaptured;
         IsVisibleChanged += OnIsVisibleChanged;
 
         // Apply initial theme
@@ -34,7 +37,6 @@ public partial class SettingsWindow : Window
     {
         base.OnSourceInitialized(e);
         _hwndSource = (HwndSource)PresentationSource.FromVisual(this)!;
-        _hwndSource.AddHook(WndProc);
     }
 
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
@@ -50,10 +52,10 @@ public partial class SettingsWindow : Window
 
     public void Cleanup()
     {
-        _hwndSource?.RemoveHook(WndProc);
         ClipBorder.SizeChanged -= OnClipBorderSizeChanged;
         _viewModel.General.PropertyChanged -= OnGeneralPropertyChanged;
         _viewModel.System.PropertyChanged -= OnSystemPropertyChanged;
+        _hotkeyService.MouseButtonCaptured -= OnMouseButtonCaptured;
         IsVisibleChanged -= OnIsVisibleChanged;
     }
 
@@ -178,6 +180,7 @@ public partial class SettingsWindow : Window
         if (key == Key.Escape)
         {
             _viewModel.General.CapturingHotkey = HotkeyCaptureTarget.None;
+            _hotkeyService.SuppressActions = false;
             e.Handled = true;
             return;
         }
@@ -202,39 +205,27 @@ public partial class SettingsWindow : Window
         return modList;
     }
 
+    // --- Mouse button capture via low-level hook ---
+
+    private void OnMouseButtonCaptured(object? sender, MouseButtonCapturedEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (_viewModel.General.CapturingHotkey == HotkeyCaptureTarget.None) return;
+
+            var modList = ParseModifiers(Keyboard.Modifiers);
+            _viewModel.General.ApplyNewHotkey(
+                modList.Count > 0 ? string.Join(", ", modList) : "",
+                null,
+                e.Button);
+        });
+    }
+
     // --- Dialog overlay ---
 
     private void DialogOverlay_Click(object sender, MouseButtonEventArgs e)
     {
         _viewModel.General.CloseDialogCommand.Execute(null);
-    }
-
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (_viewModel.General.CapturingHotkey == HotkeyCaptureTarget.None) return IntPtr.Zero;
-        if (!_viewModel.General.IsLowLevelHookMode) return IntPtr.Zero;
-
-        string? mouseButton = null;
-        if (msg == NativeMethods.WM_XBUTTONDOWN)
-        {
-            var hiWord = (int)((wParam.ToInt64() >> 16) & 0xFFFF);
-            mouseButton = hiWord == NativeMethods.XBUTTON1 ? "XButton1"
-                : hiWord == NativeMethods.XBUTTON2 ? "XButton2" : null;
-        }
-        else if (msg == NativeMethods.WM_MBUTTONDOWN)
-        {
-            mouseButton = "Middle";
-        }
-
-        if (mouseButton == null) return IntPtr.Zero;
-
-        var modList = ParseModifiers(Keyboard.Modifiers);
-        _viewModel.General.ApplyNewHotkey(
-            modList.Count > 0 ? string.Join(", ", modList) : "",
-            null,
-            mouseButton);
-        handled = true;
-        return IntPtr.Zero;
     }
 
     private void RebindToggle_Click(object sender, MouseButtonEventArgs e)

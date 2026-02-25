@@ -379,6 +379,54 @@ public class GeneralSettingsViewModelTests
     {
         GeneralSettingsViewModel.FormatMouseButton(mouseButton).Should().Be(expected);
     }
+
+    // --- SuppressActions during capture ---
+
+    [Fact]
+    public void StartCapturingToggleHotkey_SetsSuppressActions()
+    {
+        var vm = CreateViewModel();
+        vm.OpenHotkeyDialogCommand.Execute(null);
+
+        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+
+        _hotkeyService.SuppressActions.Should().BeTrue();
+    }
+
+    [Fact]
+    public void StartCapturingPttHotkey_SetsSuppressActions()
+    {
+        var vm = CreateViewModel();
+        vm.OpenHotkeyDialogCommand.Execute(null);
+
+        vm.StartCapturingPttHotkeyCommand.Execute(null);
+
+        _hotkeyService.SuppressActions.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ApplyNewHotkey_ClearsSuppressActions()
+    {
+        var vm = CreateViewModel();
+        vm.OpenHotkeyDialogCommand.Execute(null);
+        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+
+        vm.ApplyNewHotkey("Alt", "F1");
+
+        _hotkeyService.SuppressActions.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CloseDialog_ClearsSuppressActions()
+    {
+        var vm = CreateViewModel();
+        vm.OpenHotkeyDialogCommand.Execute(null);
+        vm.StartCapturingToggleHotkeyCommand.Execute(null);
+
+        vm.CloseDialogCommand.Execute(null);
+
+        _hotkeyService.SuppressActions.Should().BeFalse();
+    }
 }
 
 // Test helper extension to avoid coupling to internal state

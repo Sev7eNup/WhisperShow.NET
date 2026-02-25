@@ -18,6 +18,13 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
     public event EventHandler? PushToTalkHotkeyPressed;
     public event EventHandler? PushToTalkHotkeyReleased;
     public event EventHandler? EscapePressed;
+    public event EventHandler<MouseButtonCapturedEventArgs>? MouseButtonCaptured;
+
+    public bool SuppressActions
+    {
+        get => _inner.SuppressActions;
+        set => _inner.SuppressActions = value;
+    }
 
     public HotkeyServiceProxy(
         ILoggerFactory loggerFactory,
@@ -46,6 +53,7 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
         _inner.PushToTalkHotkeyPressed += OnPushToTalkHotkeyPressed;
         _inner.PushToTalkHotkeyReleased += OnPushToTalkHotkeyReleased;
         _inner.EscapePressed += OnEscapePressed;
+        _inner.MouseButtonCaptured += OnMouseButtonCaptured;
     }
 
     private void UnwireEvents()
@@ -54,12 +62,14 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
         _inner.PushToTalkHotkeyPressed -= OnPushToTalkHotkeyPressed;
         _inner.PushToTalkHotkeyReleased -= OnPushToTalkHotkeyReleased;
         _inner.EscapePressed -= OnEscapePressed;
+        _inner.MouseButtonCaptured -= OnMouseButtonCaptured;
     }
 
     private void OnToggleHotkeyPressed(object? sender, EventArgs e) => ToggleHotkeyPressed?.Invoke(this, e);
     private void OnPushToTalkHotkeyPressed(object? sender, EventArgs e) => PushToTalkHotkeyPressed?.Invoke(this, e);
     private void OnPushToTalkHotkeyReleased(object? sender, EventArgs e) => PushToTalkHotkeyReleased?.Invoke(this, e);
     private void OnEscapePressed(object? sender, EventArgs e) => EscapePressed?.Invoke(this, e);
+    private void OnMouseButtonCaptured(object? sender, MouseButtonCapturedEventArgs e) => MouseButtonCaptured?.Invoke(this, e);
 
     public void Register(IntPtr windowHandle)
     {
@@ -97,10 +107,12 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
     {
         if (_disposed) return;
 
+        var wasSuppressed = _inner.SuppressActions;
         UnwireEvents();
         _inner.Dispose();
 
         _inner = CreateService(method);
+        _inner.SuppressActions = wasSuppressed;
         WireEvents();
 
         if (_windowHandle != IntPtr.Zero)

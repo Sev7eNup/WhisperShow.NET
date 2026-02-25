@@ -210,15 +210,24 @@ public partial class GeneralSettingsViewModel : ObservableObject
         IsDialogOpen = false;
         ActiveDialog = SettingsDialogType.None;
         CapturingHotkey = HotkeyCaptureTarget.None;
+        _hotkeyService.SuppressActions = false;
     }
 
     // --- Hotkey dialog ---
 
     [RelayCommand]
-    private void StartCapturingToggleHotkey() => CapturingHotkey = HotkeyCaptureTarget.Toggle;
+    private void StartCapturingToggleHotkey()
+    {
+        CapturingHotkey = HotkeyCaptureTarget.Toggle;
+        _hotkeyService.SuppressActions = true;
+    }
 
     [RelayCommand]
-    private void StartCapturingPttHotkey() => CapturingHotkey = HotkeyCaptureTarget.PushToTalk;
+    private void StartCapturingPttHotkey()
+    {
+        CapturingHotkey = HotkeyCaptureTarget.PushToTalk;
+        _hotkeyService.SuppressActions = true;
+    }
 
     public void ApplyNewHotkey(string modifiers, string key)
         => ApplyNewHotkey(modifiers, key, null);
@@ -243,6 +252,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
         }
 
         CapturingHotkey = HotkeyCaptureTarget.None;
+        _hotkeyService.SuppressActions = false;
         UpdateDisplayTexts();
         _scheduleSave();
     }

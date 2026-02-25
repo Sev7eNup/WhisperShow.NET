@@ -31,6 +31,10 @@ public class GlobalHotkeyService : IGlobalHotkeyService
     public event EventHandler? PushToTalkHotkeyPressed;
     public event EventHandler? PushToTalkHotkeyReleased;
     public event EventHandler? EscapePressed;
+#pragma warning disable CS0067 // Not used by RegisterHotKey mode (no mouse buttons)
+    public event EventHandler<MouseButtonCapturedEventArgs>? MouseButtonCaptured;
+#pragma warning restore CS0067
+    public bool SuppressActions { get; set; }
 
     public GlobalHotkeyService(
         ILogger<GlobalHotkeyService> logger,
