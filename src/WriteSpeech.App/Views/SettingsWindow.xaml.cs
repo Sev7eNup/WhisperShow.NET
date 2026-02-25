@@ -2,7 +2,9 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
+using WriteSpeech.App.Services;
 using WriteSpeech.App.ViewModels;
 using WriteSpeech.App.ViewModels.Settings;
 
@@ -11,6 +13,7 @@ namespace WriteSpeech.App.Views;
 public partial class SettingsWindow : Window
 {
     private readonly SettingsViewModel _viewModel;
+    private HwndSource? _hwndSource;
 
     public SettingsWindow(SettingsViewModel viewModel)
     {
@@ -27,6 +30,13 @@ public partial class SettingsWindow : Window
         ApplyTheme(_viewModel.System.IsDarkMode);
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        _hwndSource = (HwndSource)PresentationSource.FromVisual(this)!;
+        _hwndSource.AddHook(WndProc);
+    }
+
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
     {
         ClipBorder.Clip = new RectangleGeometry(
@@ -40,6 +50,7 @@ public partial class SettingsWindow : Window
 
     public void Cleanup()
     {
+        _hwndSource?.RemoveHook(WndProc);
         ClipBorder.SizeChanged -= OnClipBorderSizeChanged;
         _viewModel.General.PropertyChanged -= OnGeneralPropertyChanged;
         _viewModel.System.PropertyChanged -= OnSystemPropertyChanged;
@@ -198,29 +209,32 @@ public partial class SettingsWindow : Window
         _viewModel.General.CloseDialogCommand.Execute(null);
     }
 
-    private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (_viewModel.General.CapturingHotkey == HotkeyCaptureTarget.None) return;
-        if (!_viewModel.General.IsLowLevelHookMode) return;
+        if (_viewModel.General.CapturingHotkey == HotkeyCaptureTarget.None) return IntPtr.Zero;
+        if (!_viewModel.General.IsLowLevelHookMode) return IntPtr.Zero;
 
-        string? mouseButton = e.ChangedButton switch
+        string? mouseButton = null;
+        if (msg == NativeMethods.WM_XBUTTONDOWN)
         {
-            System.Windows.Input.MouseButton.XButton1 => "XButton1",
-            System.Windows.Input.MouseButton.XButton2 => "XButton2",
-            System.Windows.Input.MouseButton.Middle => "Middle",
-            _ => null
-        };
+            var hiWord = (int)((wParam.ToInt64() >> 16) & 0xFFFF);
+            mouseButton = hiWord == NativeMethods.XBUTTON1 ? "XButton1"
+                : hiWord == NativeMethods.XBUTTON2 ? "XButton2" : null;
+        }
+        else if (msg == NativeMethods.WM_MBUTTONDOWN)
+        {
+            mouseButton = "Middle";
+        }
 
-        if (mouseButton == null) return;
+        if (mouseButton == null) return IntPtr.Zero;
 
-        var modifiers = Keyboard.Modifiers;
-        var modList = ParseModifiers(modifiers);
-
+        var modList = ParseModifiers(Keyboard.Modifiers);
         _viewModel.General.ApplyNewHotkey(
             modList.Count > 0 ? string.Join(", ", modList) : "",
             null,
             mouseButton);
-        e.Handled = true;
+        handled = true;
+        return IntPtr.Zero;
     }
 
     private void RebindToggle_Click(object sender, MouseButtonEventArgs e)

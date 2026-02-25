@@ -292,6 +292,16 @@ public class GeneralSettingsViewModelTests
     }
 
     [Fact]
+    public void SetHotkeyMethod_CallsSwitchMethod()
+    {
+        var vm = CreateViewModel();
+
+        vm.SetHotkeyMethodCommand.Execute("LowLevelHook");
+
+        _hotkeyService.Received(1).SwitchMethod("LowLevelHook");
+    }
+
+    [Fact]
     public void ToggleBadges_WithMouseButton_ShowsMouseButtonName()
     {
         var vm = CreateViewModel(o =>

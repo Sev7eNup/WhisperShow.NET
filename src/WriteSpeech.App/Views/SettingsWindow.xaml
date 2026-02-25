@@ -13,7 +13,7 @@
         Width="875" Height="625"
         Title="WriteSpeech Settings"
         PreviewKeyDown="Window_PreviewKeyDown"
-        PreviewMouseDown="Window_PreviewMouseDown">
+>
 
     <Window.Resources>
         <ResourceDictionary>

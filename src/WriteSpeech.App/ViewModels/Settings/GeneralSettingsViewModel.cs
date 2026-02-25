@@ -380,6 +380,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     {
         HotkeyMethod = method;
         IsLowLevelHookMode = method == "LowLevelHook";
+        _hotkeyService.SwitchMethod(method);
         _scheduleSave();
     }
 

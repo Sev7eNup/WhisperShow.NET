@@ -16,4 +16,5 @@ public interface IGlobalHotkeyService : IDisposable
         => UpdatePushToTalkHotkey(modifiers, key ?? "");
     void RegisterEscapeHotkey();
     void UnregisterEscapeHotkey();
+    void SwitchMethod(string method) { }
 }
