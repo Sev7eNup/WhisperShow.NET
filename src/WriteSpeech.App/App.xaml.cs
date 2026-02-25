@@ -63,6 +63,12 @@ public partial class App : Application
             .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
             .CreateLogger();
 
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log.Fatal(args.Exception, "Unhandled exception");
+            Log.CloseAndFlush();
+        };
+
         // Build host
         _host = Host.CreateDefaultBuilder()
             .UseSerilog()

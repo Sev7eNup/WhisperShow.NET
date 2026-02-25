@@ -143,8 +143,8 @@ internal static partial class NativeMethods
 
     internal delegate IntPtr LowLevelHookProc(int nCode, IntPtr wParam, IntPtr lParam);
 
-    [LibraryImport("user32.dll", SetLastError = true)]
-    internal static partial IntPtr SetWindowsHookExW(
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern IntPtr SetWindowsHookExW(
         int idHook, LowLevelHookProc lpfn, IntPtr hMod, uint dwThreadId);
 
     [LibraryImport("user32.dll", SetLastError = true)]
