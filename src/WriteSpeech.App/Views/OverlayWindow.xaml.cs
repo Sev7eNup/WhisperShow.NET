@@ -367,6 +367,7 @@ public partial class OverlayWindow : Window
         switch (state)
         {
             case RecordingState.Recording when _viewModel.IsCommandModeActive:
+                GlassPill.Background = _glassBackground;
                 StartBorderGlow(
                     Color.FromArgb(0xCC, 0x5C, 0x6B, 0xC0),
                     Color.FromArgb(0x80, 0x5C, 0x6B, 0xC0),
@@ -375,6 +376,7 @@ public partial class OverlayWindow : Window
                 WaveFillTopStop.Color = Color.FromArgb(0x40, 0x5C, 0x6B, 0xC0);
                 break;
             case RecordingState.Recording:
+                GlassPill.Background = _glassBackground;
                 StartBorderGlow(
                     Color.FromArgb(0xCC, 0xEF, 0x53, 0x50),
                     Color.FromArgb(0x80, 0xEF, 0x53, 0x50),
