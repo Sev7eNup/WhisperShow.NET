@@ -4,11 +4,11 @@
     <StackPanel DataContext="{Binding DictionarySnippets}">
         <TextBlock Text="Snippets" Style="{StaticResource PageTitleStyle}"/>
         <TextBlock Text="Define keywords that automatically expand into text blocks during transcription."
-                   FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap" Margin="0,0,0,16"/>
 
         <!-- Add / Edit snippet input -->
-        <Border CornerRadius="12" Padding="20,14" Margin="0,0,0,12">
+        <Border CornerRadius="12" Padding="20,10" Margin="0,0,0,12">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Background" Value="{DynamicResource CardBgBrush}"/>
@@ -40,7 +40,7 @@
                             Command="{Binding CancelEditSnippetCommand}"
                             Margin="10,0,0,0" VerticalAlignment="Center"
                             Visibility="{Binding IsEditingSnippet, Converter={StaticResource BoolToVisibility}}"
-                            FontFamily="Segoe UI Variable, Segoe UI" FontSize="12"
+                            FontFamily="Segoe UI Variable, Segoe UI" FontSize="11.5"
                             Foreground="{DynamicResource TextSecondaryBrush}">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
@@ -102,10 +102,10 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Trigger}" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                                <TextBlock Text="{Binding Trigger}" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="{Binding Replacement}" FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                                <TextBlock Text="{Binding Replacement}" FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" MaxHeight="40"
                                            TextWrapping="Wrap" Margin="0,2,0,0"/>

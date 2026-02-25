@@ -9,12 +9,12 @@
         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
             <StackPanel>
                 <!-- Launch app at login -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Launch app at login" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Launch app at login" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding LaunchAtLogin}"
@@ -22,12 +22,12 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Show overlay at all times -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Show overlay at all times" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Show overlay at all times" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding OverlayAlwaysVisible}"
@@ -35,12 +35,12 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Show result after dictation -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Show result after dictation" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Show result after dictation" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding ShowResultOverlay}"
@@ -48,12 +48,12 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Show app in taskbar -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Show app in taskbar" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Show app in taskbar" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding ShowInTaskbar}"
@@ -61,12 +61,12 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Dark mode -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Dark mode" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Dark mode" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding IsDarkMode}"
@@ -80,12 +80,12 @@
         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
             <StackPanel>
                 <!-- Dictation sound effects -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Dictation sound effects" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Dictation sound effects" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding SoundEffectsEnabled}"
@@ -93,12 +93,12 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Mute music while dictating -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Mute music while dictating" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Mute music while dictating" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding MuteWhileDictating}"
@@ -112,12 +112,12 @@
         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
             <StackPanel>
                 <!-- Audio compression -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Audio compression" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Audio compression" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding AudioCompressionEnabled}"
@@ -125,15 +125,15 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Auto-dismiss -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Visibility="{Binding IsEditingAutoDismiss, Converter={StaticResource InverseBoolToVisibility}}">
-                        <TextBlock Text="Auto-dismiss overlay" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Auto-dismiss overlay" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
                             <Run Text="{Binding AutoDismissSeconds, Mode=OneWay}"/>
                             <Run Text="seconds"/>
@@ -148,15 +148,15 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Max recording duration -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Visibility="{Binding IsEditingMaxRecording, Converter={StaticResource InverseBoolToVisibility}}">
-                        <TextBlock Text="Max recording duration" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Max recording duration" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
                             <Run Text="{Binding MaxRecordingSeconds, Mode=OneWay, Converter={StaticResource SecondsToMinutes}}"/>
                             <Run Text="minutes"/>
@@ -171,20 +171,20 @@
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
                 <!-- Overlay size -->
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Overlay size" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Overlay size" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <Slider Value="{Binding OverlayScale}" Minimum="0.75" Maximum="2.0"
                                 SmallChange="0.25" LargeChange="0.25"
                                 IsSnapToTickEnabled="True" TickFrequency="0.25"
                                 Margin="0,6,0,0" Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
-                    <TextBlock Grid.Column="1" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Grid.Column="1" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center">
                         <Run Text="{Binding OverlayScale, StringFormat={}{0:0.00}x, Mode=OneWay}"/>
                     </TextBlock>

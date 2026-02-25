@@ -6,7 +6,7 @@
     <StackPanel DataContext="{Binding Transcription}">
         <TextBlock Text="Intelligence" Style="{StaticResource PageTitleStyle}"/>
         <TextBlock Text="Configure text correction to improve transcription quality."
-                   FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap" Margin="0,0,0,16"/>
 
         <!-- Correction provider picker: Off / Cloud / Local -->
@@ -34,9 +34,9 @@
                     </Style>
                 </Border.Style>
                 <Grid>
-                    <TextBlock Text="Off" FontSize="13" FontWeight="SemiBold"
+                    <TextBlock Text="Off" FontSize="12.5" FontWeight="SemiBold"
                                FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="11.5"
                                Foreground="{DynamicResource SelectedBorderBrush}"
                                HorizontalAlignment="Right" VerticalAlignment="Top"
                                Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Off}"/>
@@ -59,13 +59,13 @@
                 </Border.Style>
                 <Grid>
                     <StackPanel>
-                        <TextBlock Text="Cloud" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Cloud" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="OpenAI" FontSize="11"
+                        <TextBlock Text="OpenAI" FontSize="10.5"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
-                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="11.5"
                                Foreground="{DynamicResource SelectedBorderBrush}"
                                HorizontalAlignment="Right" VerticalAlignment="Top"
                                Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Cloud}"/>
@@ -88,13 +88,13 @@
                 </Border.Style>
                 <Grid>
                     <StackPanel>
-                        <TextBlock Text="Local" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Local" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="LLM" FontSize="11"
+                        <TextBlock Text="LLM" FontSize="10.5"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
-                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="11.5"
                                Foreground="{DynamicResource SelectedBorderBrush}"
                                HorizontalAlignment="Right" VerticalAlignment="Top"
                                Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Local}"/>
@@ -111,7 +111,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Top" Margin="0,0,10,0"/>
-                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                            Foreground="{DynamicResource TextSecondaryBrush}">
                     <Run FontWeight="SemiBold">When enabled, text correction:</Run><LineBreak/>
                     <Run Text="&#x2022; Fixes punctuation, capitalization, and grammar"/><LineBreak/>
@@ -127,7 +127,7 @@
                     Margin="0,8,0,0">
             <TextBlock Text="Cloud settings" Style="{StaticResource GroupHeaderStyle}"/>
             <StackPanel Margin="0,0,0,0">
-                <TextBlock Text="Model" FontSize="13" FontWeight="SemiBold"
+                <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
                            Margin="0,0,0,8"/>
                 <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.CloudCorrectionModels}">
@@ -155,10 +155,10 @@
                                     </Style>
                                 </Border.Style>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="SemiBold"
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
                                                FontFamily="Segoe UI Variable, Segoe UI"
                                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="11"
+                                    <TextBlock Text="{Binding Description}" FontSize="10.5"
                                                FontFamily="Segoe UI Variable, Segoe UI"
                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -185,15 +185,15 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal"
                                     Visibility="{Binding IsEditingCustomCorrectionModel, Converter={StaticResource InverseBoolToVisibility}}">
-                            <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold"
+                            <TextBlock Text="Custom" FontSize="11.5" FontWeight="SemiBold"
                                        FontFamily="Segoe UI Variable, Segoe UI"
                                        Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                            <TextBlock FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                            <TextBlock FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"
                                        Text="{Binding CorrectionCloudModel}"
                                        Visibility="{Binding IsCustomCorrectionModel, Converter={StaticResource BoolToVisibility}}"/>
-                            <TextBlock Text="Use a custom model name" FontSize="11"
+                            <TextBlock Text="Use a custom model name" FontSize="10.5"
                                        FontFamily="Segoe UI Variable, Segoe UI"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"
@@ -212,12 +212,12 @@
                     Margin="0,8,0,0">
             <TextBlock Text="Local settings" Style="{StaticResource GroupHeaderStyle}"/>
             <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
-                <Grid Margin="20,14,20,14">
+                <Grid Margin="20,10,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="GPU acceleration" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
                                   IsChecked="{Binding CorrectionGpuAcceleration}"
@@ -255,13 +255,13 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold"
                                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{Binding SizeDisplay}" FontSize="12" Margin="8,0,0,0"
+                                        <TextBlock Text="{Binding SizeDisplay}" FontSize="11.5" Margin="8,0,0,0"
                                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding StatusText}" FontSize="11"
+                                    <TextBlock Text="{Binding StatusText}" FontSize="10.5"
                                                FontFamily="Segoe UI Variable, Segoe UI"
                                                Margin="0,2,0,0">
                                         <TextBlock.Style>
@@ -279,7 +279,7 @@
                                 </StackPanel>
                                 <!-- Download -->
                                 <Button Grid.Column="1" Content="Download" Cursor="Hand"
-                                        FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                                        FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                         VerticalAlignment="Center" Margin="10,0,0,0"
                                         Command="{Binding DataContext.Models.DownloadCorrectionModelCommand,
@@ -308,7 +308,7 @@
                                 </Button>
                                 <!-- Use -->
                                 <Button Grid.Column="1" Content="Use" Cursor="Hand"
-                                        FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" Margin="10,0,0,0"
+                                        FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" Margin="10,0,0,0"
                                         Command="{Binding DataContext.Models.ActivateCorrectionModelCommand,
                                             RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                         CommandParameter="{Binding}">
@@ -335,7 +335,7 @@
                                 </Button>
                                 <!-- Delete -->
                                 <Button Grid.Column="2" Content="Delete" Cursor="Hand"
-                                        FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                                        FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                         VerticalAlignment="Center" Margin="6,0,0,0"
                                         Command="{Binding DataContext.Models.DeleteCorrectionModelCommand,
@@ -385,7 +385,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Top" Margin="0,0,10,0"/>
-                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            Text="Cloud text correction requires an OpenAI API key. Configure it in Models → Cloud settings."/>
             </Grid>

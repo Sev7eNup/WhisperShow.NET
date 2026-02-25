@@ -4,23 +4,23 @@
     <StackPanel DataContext="{Binding Modes}">
         <TextBlock Text="Modes" Style="{StaticResource PageTitleStyle}"/>
         <TextBlock Text="Context-aware correction modes. Each mode has its own system prompt for different use cases."
-                   FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                    Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="4,-4,0,16"/>
 
         <!-- Auto-Switch Toggle -->
         <TextBlock Text="Auto-switch" Style="{StaticResource GroupHeaderStyle}" Margin="4,0,0,8"/>
         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,16">
-            <Grid Margin="20,14,20,14">
+            <Grid Margin="20,10,20,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Automatic mode switching" FontSize="13"
+                    <TextBlock Text="Automatic mode switching" FontSize="12.5"
                                FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}"/>
                     <TextBlock Text="Automatically select the mode based on the active application."
-                               FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                               FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0"/>
                 </StackPanel>
                 <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
@@ -31,7 +31,7 @@
 
         <!-- Add / Edit Mode -->
         <TextBlock Text="Add mode" Style="{StaticResource GroupHeaderStyle}" Margin="4,0,0,8"/>
-        <Border CornerRadius="12" Padding="20,14" Margin="0,0,0,16">
+        <Border CornerRadius="12" Padding="20,10" Margin="0,0,0,16">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Background" Value="{DynamicResource CardBgBrush}"/>
@@ -61,7 +61,7 @@
                             Command="{Binding CancelEditCommand}"
                             Margin="10,0,0,0" VerticalAlignment="Center"
                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"
-                            FontFamily="Segoe UI Variable, Segoe UI" FontSize="12"
+                            FontFamily="Segoe UI Variable, Segoe UI" FontSize="11.5"
                             Foreground="{DynamicResource TextSecondaryBrush}">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
@@ -128,7 +128,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Name}" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                                    <TextBlock Text="{Binding Name}" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <!-- Built-in badge -->
@@ -149,12 +149,12 @@
                                                    Foreground="White"/>
                                     </Border>
                                 </StackPanel>
-                                <TextBlock Text="{Binding AppPatterns}" FontSize="11"
+                                <TextBlock Text="{Binding AppPatterns}" FontSize="10.5"
                                            FontFamily="Segoe UI Variable, Segoe UI"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
                                            Visibility="{Binding AppPatterns, Converter={StaticResource StringNotEmptyToVisibility}}"/>
-                                <TextBlock Text="{Binding SystemPrompt}" FontSize="11"
+                                <TextBlock Text="{Binding SystemPrompt}" FontSize="10.5"
                                            FontFamily="Segoe UI Variable, Segoe UI"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" MaxHeight="36"

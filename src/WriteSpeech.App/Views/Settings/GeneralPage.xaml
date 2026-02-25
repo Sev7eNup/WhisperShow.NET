@@ -9,15 +9,15 @@
 
             <StackPanel>
                 <!-- Input method row -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Input method" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Input method" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock FontSize="12" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -73,15 +73,15 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Keybind shortcuts row -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Keybind shortcuts" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Keybind shortcuts" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="{Binding HotkeyDisplayText}" FontSize="12"
+                        <TextBlock Text="{Binding HotkeyDisplayText}" FontSize="11.5"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,3,0,0"/>
                     </StackPanel>
@@ -93,16 +93,16 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Microphone row -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Microphone" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Microphone" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="{Binding SelectedMicrophoneDisplay}" FontSize="12"
+                        <TextBlock Text="{Binding SelectedMicrophoneDisplay}" FontSize="11.5"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,3,0,0"/>
                     </StackPanel>
@@ -148,15 +148,15 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Language row -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Language" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="Language" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="{Binding SelectedLanguageDisplay}" FontSize="12"
+                        <TextBlock Text="{Binding SelectedLanguageDisplay}" FontSize="11.5"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,3,0,0"/>
                     </StackPanel>
