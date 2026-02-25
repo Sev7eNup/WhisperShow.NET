@@ -156,7 +156,7 @@ public partial class OverlayWindow : Window
         MouseLeave += (_, _) =>
         {
             if (_viewModel.State != RecordingState.Idle) return;
-            var scaleDown = new DoubleAnimation(0.92, TimeSpan.FromMilliseconds(200))
+            var scaleDown = new DoubleAnimation(0.97, TimeSpan.FromMilliseconds(200))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
