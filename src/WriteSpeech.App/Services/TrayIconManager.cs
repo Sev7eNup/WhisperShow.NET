@@ -56,6 +56,7 @@ public class TrayIconManager : IDisposable
         _textInsertionService = textInsertionService;
         _windowFocusService = windowFocusService;
         _modeService = modeService;
+        _modeService.ModesChanged += () => _modeDirty = true;
 
         _optionsChangeRegistration = _optionsMonitor.OnChange((_, _) =>
         {

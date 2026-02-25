@@ -321,4 +321,86 @@ public class ModeServiceTests : IDisposable
         service.AutoSwitchEnabled.Should().BeFalse();
         service.Dispose();
     }
+
+    // --- ModesChanged event ---
+
+    [Fact]
+    public void AddMode_FiresModesChanged()
+    {
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.AddMode("TestMode", "prompt", []);
+
+        fired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AddMode_DuplicateDoesNotFireModesChanged()
+    {
+        _service.AddMode("TestMode", "prompt", []);
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.AddMode("TestMode", "another prompt", []);
+
+        fired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void UpdateMode_FiresModesChanged()
+    {
+        _service.AddMode("TestMode", "prompt", []);
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.UpdateMode("TestMode", "TestMode", "updated prompt", []);
+
+        fired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void UpdateMode_NonExistentDoesNotFireModesChanged()
+    {
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.UpdateMode("NonExistent", "NewName", "prompt", []);
+
+        fired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RemoveMode_FiresModesChanged()
+    {
+        _service.AddMode("TestMode", "prompt", []);
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.RemoveMode("TestMode");
+
+        fired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RemoveMode_NonExistentDoesNotFireModesChanged()
+    {
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.RemoveMode("NonExistent");
+
+        fired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RemoveMode_BuiltInDoesNotFireModesChanged()
+    {
+        var fired = false;
+        _service.ModesChanged += () => fired = true;
+
+        _service.RemoveMode("Default");
+
+        fired.Should().BeFalse();
+    }
 }

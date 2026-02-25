@@ -4,6 +4,7 @@ namespace WriteSpeech.Core.Services.Modes;
 
 public interface IModeService : IDisposable
 {
+    event Action? ModesChanged;
     IReadOnlyList<CorrectionMode> GetModes();
     string? ActiveModeName { get; }
     bool AutoSwitchEnabled { get; set; }

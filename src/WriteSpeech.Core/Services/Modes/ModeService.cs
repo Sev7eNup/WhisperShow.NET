@@ -8,6 +8,8 @@ namespace WriteSpeech.Core.Services.Modes;
 
 public class ModeService : IModeService
 {
+    public event Action? ModesChanged;
+
     private readonly ILogger<ModeService> _logger;
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly string _filePath;
@@ -62,6 +64,7 @@ public class ModeService : IModeService
         }
 
         _saveHelper.Schedule();
+        ModesChanged?.Invoke();
     }
 
     public void UpdateMode(string oldName, string newName, string systemPrompt, IReadOnlyList<string> appPatterns)
@@ -96,6 +99,7 @@ public class ModeService : IModeService
         }
 
         _saveHelper.Schedule();
+        ModesChanged?.Invoke();
     }
 
     public void RemoveMode(string name)
@@ -115,6 +119,7 @@ public class ModeService : IModeService
         }
 
         _saveHelper.Schedule();
+        ModesChanged?.Invoke();
     }
 
     public void SetActiveMode(string? name)
