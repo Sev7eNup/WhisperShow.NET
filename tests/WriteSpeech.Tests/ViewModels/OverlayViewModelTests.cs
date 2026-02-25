@@ -575,7 +575,7 @@ public class OverlayViewModelTests : IDisposable
     public void PushToTalkHotkeyText_FormatsCorrectly()
     {
         var vm = CreateViewModel();
-        vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Space to start dictating");
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold \"Ctrl + Space\" to start dictating");
     }
 
     [Fact]
@@ -586,7 +586,7 @@ public class OverlayViewModelTests : IDisposable
             o.Hotkey.PushToTalk.Modifiers = "Control, Alt";
             o.Hotkey.PushToTalk.Key = "F1";
         });
-        vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Alt + F1 to start dictating");
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold \"Ctrl + Alt + F1\" to start dictating");
     }
 
     [Fact]
@@ -598,7 +598,7 @@ public class OverlayViewModelTests : IDisposable
             o.Hotkey.PushToTalk.Key = "";
             o.Hotkey.PushToTalk.MouseButton = "XButton1";
         });
-        vm.PushToTalkHotkeyText.Should().Be("Click or hold Ctrl + Mouse 4 to start dictating");
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold \"Ctrl + Mouse 4\" to start dictating");
     }
 
     [Fact]
@@ -610,7 +610,7 @@ public class OverlayViewModelTests : IDisposable
             o.Hotkey.PushToTalk.Key = "";
             o.Hotkey.PushToTalk.MouseButton = "Middle";
         });
-        vm.PushToTalkHotkeyText.Should().Be("Click or hold Middle Click to start dictating");
+        vm.PushToTalkHotkeyText.Should().Be("Click or hold \"Middle Click\" to start dictating");
     }
 
     // --- Provider Name ---
