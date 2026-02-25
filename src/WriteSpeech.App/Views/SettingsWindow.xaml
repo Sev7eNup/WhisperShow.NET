@@ -10,7 +10,7 @@
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         Icon="/Resources/Icons/app.ico"
-        Width="875" Height="625"
+        Width="1010" Height="720"
         Title="WriteSpeech Settings"
         PreviewKeyDown="Window_PreviewKeyDown"
 >
@@ -127,7 +127,7 @@
 
                     <!-- RIGHT CONTENT -->
                     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <ContentControl Content="{Binding}" Margin="28,8,28,20">
+                        <ContentControl Content="{Binding}" Margin="24,6,24,16">
                             <ContentControl.Style>
                                 <Style TargetType="ContentControl">
                                     <Setter Property="ContentTemplate" Value="{StaticResource GeneralPageTemplate}"/>

@@ -4,19 +4,19 @@
     <StackPanel DataContext="{Binding Statistics}">
         <TextBlock Text="Statistics" Style="{StaticResource PageTitleStyle}"/>
         <TextBlock Text="Usage statistics for your transcription sessions."
-                   FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap" Margin="0,0,0,16"/>
 
         <!-- Stats cards -->
         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
             <StackPanel>
                 <!-- Total transcriptions -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Total transcriptions" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Total transcriptions" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding TotalTranscriptions}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -25,12 +25,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Total recording time -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Total recording time" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Total recording time" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding TotalRecordingTimeDisplay}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -39,12 +39,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Average duration -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Average duration" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Average duration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding AverageDurationDisplay}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -53,12 +53,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Words transcribed -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Words transcribed" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Words transcribed" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding WordsTranscribedDisplay}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -67,15 +67,15 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Estimated time saved -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Estimated time saved" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock Text="Estimated time saved" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="Based on 40 WPM average typing speed" FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock Text="Based on 40 WPM average typing speed" FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="{Binding TimeSavedDisplay}" FontSize="18"
@@ -85,12 +85,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Success rate -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Success rate" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Success rate" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding SuccessRateDisplay}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -99,12 +99,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Longest recording -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Longest recording" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Longest recording" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding LongestRecordingDisplay}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -113,12 +113,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Shortest recording -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Shortest recording" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Shortest recording" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ShortestRecordingDisplay}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -127,15 +127,15 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Estimated API cost -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="Estimated API cost" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock Text="Estimated API cost" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="Based on $0.006/min (Whisper API)" FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                        <TextBlock Text="Based on $0.006/min (Whisper API)" FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="{Binding EstimatedCostDisplay}" FontSize="18"
@@ -145,12 +145,12 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Errors -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Errors" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="Errors" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ErrorCount}" FontSize="18"
                                FontWeight="Bold" FontFamily="Segoe UI Variable, Segoe UI"
@@ -159,28 +159,28 @@
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Provider breakdown -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="By provider" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="By provider" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding ProviderBreakdownDisplay}" FontSize="13"
+                    <TextBlock Grid.Column="1" Text="{Binding ProviderBreakdownDisplay}" FontSize="12.5"
                                FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center"/>
                 </Grid>
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
 
                 <!-- Correction provider breakdown -->
-                <Grid Margin="20,16,20,16">
+                <Grid Margin="20,12,20,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="By correction provider" FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock Text="By correction provider" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding CorrectionBreakdownDisplay}" FontSize="13"
+                    <TextBlock Grid.Column="1" Text="{Binding CorrectionBreakdownDisplay}" FontSize="12.5"
                                FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center"/>
                 </Grid>
