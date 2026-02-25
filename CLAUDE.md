@@ -1,6 +1,6 @@
 # WriteSpeech.NET
 
-Speech-to-Text desktop overlay app (inspired by Wispr Flow). Record speech via microphone, transcribe it, optionally correct it via AI, and auto-insert the text at the cursor position in the previously active window.
+Speech-to-Text desktop overlay app (inspired by Wispr Flow). Record speech via microphone, transcribe it, optionally correct it via AI, and auto-insert the text at the cursor position in the previously active window. Supports voice commands on selected text, file transcription, context-aware correction modes, and IDE integration.
 
 ## Build & Run
 
@@ -16,20 +16,29 @@ Requires **.NET 10 SDK** (`net10.0-windows` TFM). Windows-only (WPF + Win32 P/In
 taskkill //F //IM WriteSpeech.App.exe
 ```
 
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci.yml`): builds and tests on `windows-latest` with .NET 10, triggered on push/PR to `main`.
+
 ## Project Structure
 
 ```
 WriteSpeech.slnx
+.github/
+  workflows/ci.yml            # GitHub Actions: Build + Test on Windows
+
 src/
   WriteSpeech.Core/          # Platform-independent core logic (net10.0)
     Configuration/            # WriteSpeechOptions (strongly-typed config, IOptionsMonitor)
     Models/                   # RecordingState, TranscriptionResult, TranscriptionProvider,
                               # ModelInfoBase (abstract base), WhisperModel, CorrectionModelInfo,
-                              # TextCorrectionProvider, TranscriptionHistoryEntry, UsageStats
+                              # TextCorrectionProvider, TranscriptionHistoryEntry, UsageStats,
+                              # CorrectionMode, IDEInfo, SupportedLanguages
     Services/
       Audio/                  # IAudioRecordingService, AudioRecordingService (NAudio WaveInEvent)
                               # IAudioMutingService, AudioMutingService (NAudio CoreAudioApi)
                               # IAudioCompressor, AudioCompressor (NAudio.Lame WAV→MP3)
+                              # IAudioFileReader (interface for multi-format audio reading)
                               # ISoundEffectService (interface only, impl in App)
       Transcription/          # ITranscriptionService, OpenAiTranscriptionService, LocalTranscriptionService
                               # TranscriptionProviderFactory (provider pattern)
@@ -39,6 +48,12 @@ src/
                               # TextCorrectionProviderFactory (Off/Cloud/Local)
                               # TextCorrectionDefaults (shared system prompt constants)
                               # IDictionaryService, DictionaryService (custom word dictionary)
+                              # VocabResponseParser (extract vocabulary from correction responses)
+      Modes/                  # IModeService, ModeService (context-aware correction modes)
+                              # CorrectionModeDefaults (5 built-in modes: Default, Email, Message, Code, Note)
+      IDE/                    # IIDEDetectionService (detect active IDE from window handle)
+                              # IIDEContextService, IDEContextService (scan workspace for identifiers/files)
+                              # SourceFileParser (static: extract identifiers from source code)
       Snippets/               # ISnippetService, SnippetService (trigger→replacement with cached regex)
       ModelManagement/        # IModelManager, ModelManager (Whisper GGML model download)
                               # ICorrectionModelManager, CorrectionModelManager (GGUF model download)
@@ -46,18 +61,18 @@ src/
                               # ModelDownloadHelper (shared download logic, uses IHttpClientFactory)
       History/                # ITranscriptionHistoryService, TranscriptionHistoryService
       Statistics/             # IUsageStatsService, UsageStatsService
-      TextInsertion/          # ITextInsertionService, IWindowFocusService (interfaces only)
-      Hotkey/                 # IGlobalHotkeyService (interface only)
+      TextInsertion/          # ITextInsertionService, IWindowFocusService, ISelectedTextService (interfaces)
+      Hotkey/                 # IGlobalHotkeyService (interface: RegisterHotKey + LowLevelHook support)
       Configuration/          # IAutoStartService, ISettingsPersistenceService (interfaces)
       IDispatcherService.cs   # UI dispatcher abstraction (testable)
       OpenAiClientFactory.cs  # Centralized OpenAI client caching (thread-safe, Lock)
-      DebouncedSaveHelper.cs  # Reusable debounced async save utility (used by 6 services)
+      DebouncedSaveHelper.cs  # Reusable debounced async save utility (used by 7+ services)
 
   WriteSpeech.App/            # WPF application (net10.0-windows)
     App.xaml.cs               # Host builder, DI, Serilog, CUDA path discovery, single-instance (Mutex),
-                              # data preloading (history/stats/dictionary/snippets), model preloading
+                              # data preloading (history/stats/dictionary/snippets/modes), model preloading
     AssemblyInfo.cs           # InternalsVisibleTo("WriteSpeech.Tests")
-    NativeMethods.cs          # Win32 P/Invoke (SendInput, RegisterHotKey, etc.)
+    NativeMethods.cs          # Win32 P/Invoke (SendInput, RegisterHotKey, SetWindowsHookEx, etc.)
     Themes/                   # SettingsStyles.xaml (shared), SettingsDarkTheme.xaml, SettingsLightTheme.xaml,
                               # TrayMenuStyles.xaml
     Resources/
@@ -66,28 +81,37 @@ src/
     Converters/               # SettingsConverters.cs (Visibility, Boolean, etc.)
     ViewModels/
       OverlayViewModel.cs     # Main state machine: Idle -> Recording -> Transcribing -> auto-insert
+                              # Voice command mode, IDE context injection, mode-aware correction
       SettingsViewModel.cs    # Settings coordinator, page navigation, delegates to sub-VMs
       HistoryViewModel.cs     # Transcription history list
+      FileTranscriptionViewModel.cs # File-based audio transcription (tray menu → file dialog)
       ModelItemViewModelBase.cs # Abstract base for model download items
       ModelItemViewModel.cs   # Whisper model download item
       CorrectionModelItemViewModel.cs # Correction model download item
       Settings/               # Sub-ViewModels for settings pages
-        GeneralSettingsViewModel.cs   # Hotkey, microphone, language settings
+        GeneralSettingsViewModel.cs   # Hotkey, microphone, language, hotkey method settings
         SystemSettingsViewModel.cs    # Theme, sound, autostart settings
-        TranscriptionSettingsViewModel.cs # Provider, API key, model settings
+        TranscriptionSettingsViewModel.cs # Provider, API key, model picker settings
+        ModesSettingsViewModel.cs     # Correction mode CRUD, auto-switch toggle
+        IntegrationsSettingsViewModel.cs # IDE variable recognition, file tagging toggles
         ModelManagementViewModel.cs   # Model download management
         StatisticsViewModel.cs        # Statistics display
         DictionarySnippetsViewModel.cs # Dictionary and snippets management
     Views/
       OverlayWindow.xaml      # Transparent topmost overlay (WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW)
       OverlayWindow.xaml.cs   # Waveform bars, drag support, visual state management
-      SettingsWindow.xaml      # Settings window container (6 pages)
+      SettingsWindow.xaml      # Settings window container (8 pages)
       SettingsWindow.xaml.cs   # Code-behind: hotkey capture, inline editing, theme switching
-      HistoryWindow.xaml       # Transcription history window
+      HistoryWindow.xaml       # Transcription history window (accent-styled)
       HistoryWindow.xaml.cs
+      FileTranscriptionWindow.xaml    # File transcription window (accent-styled)
+      FileTranscriptionWindow.xaml.cs
       Settings/               # Per-page UserControls
-        GeneralPage.xaml       # General settings (language, mic, hotkey)
+        GeneralPage.xaml       # General settings (language, mic, hotkey, hotkey method)
         SystemPage.xaml        # System settings (launch at login, theme, sound)
+        IntelligencePage.xaml  # Text correction provider, model picker, combined audio model
+        ModesPage.xaml         # Correction modes (built-in + custom, auto-switch, app patterns)
+        IntegrationsPage.xaml  # IDE integration (variable recognition, file tagging)
         ModelsPage.xaml        # Model download management
         DictionaryPage.xaml    # Custom dictionary management
         SnippetsPage.xaml      # Snippet trigger→replacement management
@@ -95,21 +119,31 @@ src/
     Services/
       TextInsertionService.cs       # Clipboard + SendInput (Ctrl+V simulation)
       GlobalHotkeyService.cs        # Win32 RegisterHotKey, WndProc hook for WM_HOTKEY
+      LowLevelHookHotkeyService.cs  # WH_KEYBOARD_LL + WH_MOUSE_LL hooks (mouse button support)
+      HotkeyServiceProxy.cs         # Proxy: runtime hot-swap between hotkey methods
+      HotkeyMatcher.cs              # Static hotkey matching logic (keyboard + mouse)
+      SelectedTextService.cs        # Reads selected text via Ctrl+C simulation
+      AudioFileReader.cs            # Multi-format audio file reader (MP3, WAV, M4A, FLAC, OGG, MP4)
       SoundEffectService.cs         # Start/stop recording sound effects (IOptionsMonitor)
       AutoStartService.cs           # Windows auto-start registry management
-      WindowFocusService.cs         # SetForegroundWindow + AttachThreadInput
+      WindowFocusService.cs         # SetForegroundWindow + AttachThreadInput + IDE detection
+      IDEDetectionService.cs        # Win32 IDE detection (VS Code, Cursor, Windsurf)
       WpfDispatcherService.cs       # IDispatcherService impl (wraps WPF Dispatcher)
       SettingsPersistenceService.cs  # Centralized appsettings.json persistence
-      TrayIconManager.cs            # System tray icon setup and context menu
+      TrayIconManager.cs            # System tray icon, context menu (language/mic/mode submenus)
 
 tests/
   WriteSpeech.Tests/          # xUnit 2.9.3 + NSubstitute 5.3.0 + FluentAssertions 8.2.0
-    Configuration/            # WriteSpeechOptionsTests (validation, defaults)
+    Configuration/            # WriteSpeechOptionsTests (validation, defaults, hotkey method validation)
     Converters/               # SettingsConvertersTests
-    Models/                   # WhisperModelTests
+    Models/                   # WhisperModelTests, UsageStatsTests, SupportedLanguagesTests
     Services/                 # OpenAiClientFactory, DebouncedSaveHelper, transcription, correction,
-                              # history, stats, dictionary, snippets, settings persistence tests
-    ViewModels/               # Overlay, Settings, GeneralSettings, SystemSettings, TranscriptionSettings,
+                              # history, stats, dictionary, snippets, settings persistence,
+                              # ModeService, IDEContext, IDEDetection, SourceFileParser,
+                              # VocabResponseParser, StripMetaCommentary, HotkeyMatcher tests
+    ViewModels/               # Overlay, OverlayCommandMode, FileTranscription, Settings,
+                              # GeneralSettings, SystemSettings, TranscriptionSettings,
+                              # ModesSettings, IntegrationsSettings,
                               # History, Statistics, DictionarySnippets, ModelManagement, ModelItemBase tests
     Views/                    # OverlayWindow, SettingsWindow, Theme tests (require WpfTestHelper)
     TestHelpers/              # WpfTestHelper (thread-safe WPF app init), SynchronousDispatcherService,
@@ -122,12 +156,15 @@ tests/
 dotnet test tests/WriteSpeech.Tests
 ```
 
+44 test files, ~685 test methods across services, ViewModels, views, models, converters, and configuration.
+
 Key test patterns:
 - **Mocking**: NSubstitute for all service interfaces
 - **Dispatcher**: `SynchronousDispatcherService` replaces `WpfDispatcherService` (executes inline)
 - **WPF init**: `WpfTestHelper.EnsureApplication()` for tests needing XAML resources (thread-safe via `Lock`)
 - **Options**: `TestOptionsMonitor<T>` from `OptionsHelper` — note: `OnChange()` returns `null`, so `_optionsChangeRegistration` must be `IDisposable?`
 - **InternalsVisibleTo**: `AssemblyInfo.cs` exposes `internal static` helpers (e.g., `InterpolateWaveformLevels`, `ClampOverlayScale`, `ParseModifiers`)
+- **Factory overrides**: Tests use inner subclasses of `TranscriptionProviderFactory`/`TextCorrectionProviderFactory` to inject fakes
 
 ## Architecture & Key Patterns
 
@@ -143,30 +180,91 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 - Switched via `TranscriptionProviderFactory` based on `WriteSpeechOptions.Provider` enum
 
 ### Text Correction Providers
-- **Cloud (OpenAI)**: Uses `ChatClient` (GPT-4o-mini) for post-processing transcriptions
+- **Cloud (OpenAI)**: Uses `ChatClient` (GPT-4.1-mini default) for post-processing transcriptions
 - **Local**: Uses `LLamaSharp` with GGUF models for offline correction
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
 - **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/WriteSpeech/custom-dictionary.json`)
 - **Shared prompts**: Default system prompts live in `TextCorrectionDefaults` (not duplicated per service)
+- **Vocabulary extraction**: `VocabResponseParser` extracts proper nouns/brand names/technical terms from correction responses, auto-adds to dictionary
 - Switched via `TextCorrectionProviderFactory` (Off/Cloud/Local)
+
+### Correction Modes (IModeService)
+Context-aware text correction with different system prompts based on active application.
+- **5 built-in modes**: Default, Email, Message, Code, Note — each with tailored system prompts and app patterns
+- **Custom modes**: Users can create modes with custom prompts and app-matching patterns
+- **Auto-switch**: When enabled, automatically selects mode based on foreground process name matching against `AppPatterns`
+- **Manual pin**: Users can pin a specific mode that overrides auto-switch
+- **Resolution**: `ResolveSystemPrompt(processName)` returns mode-specific prompt (null for Default → services use their own default)
+- **Persistence**: `%APPDATA%/WriteSpeech/modes.json` via `DebouncedSaveHelper`
+- **Tray integration**: Mode submenu in system tray context menu for quick switching
+
+Built-in mode app patterns:
+- **Email**: Outlook, Thunderbird, olk
+- **Message**: Slack, Teams, Discord, Telegram, WhatsApp, Signal
+- **Code**: Code, Cursor, Windsurf, devenv, rider64, idea64
+- **Note**: Obsidian, Notion, WINWORD, EXCEL, notepad, OneNote
+
+### Voice Command Mode (OverlayViewModel)
+When text is selected in the active window before recording starts:
+1. `ISelectedTextService.ReadSelectedTextAsync()` detects selected text via Ctrl+C simulation
+2. If text found → enters command mode (`IsCommandModeActive = true`)
+3. User speaks a voice command describing how to transform the text
+4. Transcription + selected text sent to correction service with `VoiceCommandSystemPrompt`
+5. AI applies the spoken command to the selected text (e.g., "translate to English", "make formal", "fix grammar")
+6. Result auto-inserted, replacing the original selection
+
+### File Transcription
+Transcribe audio files directly from the tray menu "Transcribe File" option:
+- `FileTranscriptionWindow` with file picker dialog
+- `FileTranscriptionViewModel` orchestrates: read file → transcribe → optional correction → auto-copy to clipboard
+- `AudioFileReader` handles multi-format conversion (MP3, WAV, M4A, FLAC, OGG/Vorbis, OGG/Opus, MP4) → 16kHz/16-bit/mono WAV
+- OGG handling: tries NAudio.Vorbis first, falls back to Concentus (Opus)
+- Results saved to transcription history with "File (Provider)" source
+
+### IDE Integration
+Enhances transcription accuracy by injecting code context from the active IDE workspace:
+- **`IIDEDetectionService`**: Detects VS Code / Cursor / Windsurf from process name + window title parsing
+- **`IIDEContextService`**: Scans workspace for identifiers + file names (5-minute cache TTL)
+- **`SourceFileParser`**: Extracts identifiers via regex (`\b[A-Za-z_]\w{2,}\b`), filters 130+ language keywords, returns top 200 by frequency
+- **Prompt injection**: Identifiers + file names appended to correction system prompt as context
+- **Settings**: `Integration.VariableRecognition`, `Integration.FileTagging`, `Integration.IncludeForLocalModels`
+- Workspace resolution supports VS Code storage.json (legacy + modern formats, handles `%3A` URI encoding)
+
+### Hotkey System (Dual Method)
+Two hotkey implementations, switchable at runtime via `HotkeyServiceProxy`:
+- **RegisterHotKey** (default): Win32 API `RegisterHotKey` + `WM_HOTKEY` WndProc hook. Reliable, but no mouse button support.
+- **LowLevelHook**: `WH_KEYBOARD_LL` + `WH_MOUSE_LL` hooks. Supports mouse buttons (XButton1, XButton2, Middle) with modifier combinations.
+- **`HotkeyMatcher`**: Static matching logic for keyboard events (VK codes) and mouse events (button classification from `mouseData`)
+- **`HotkeyServiceProxy`**: Wraps both implementations, supports `SwitchMethod(string)` for hot-swap without restart. Re-wires events, re-registers if window handle is set.
+- Events: `ToggleHotkeyPressed`, `PushToTalkHotkeyPressed`, `PushToTalkHotkeyReleased`, `EscapePressed`
+- Injected input filtering (`LLKHF_INJECTED`) prevents `SendInput` feedback loops
+
+### Vocabulary Extraction (VocabResponseParser)
+Automatic vocabulary learning from correction responses:
+- AI correction responses can include a `---VOCAB---` delimiter followed by detected proper nouns/brand names/technical terms
+- `VocabResponseParser.Parse()` splits response into corrected text + vocabulary list
+- `IsValidVocabEntry()` filters: requires uppercase letter, max 4 words, no sentence punctuation
+- Extracted terms auto-added to dictionary via `IDictionaryService`
+- Controlled by `TextCorrection.AutoAddToDictionary` setting
+- `VocabExtractionInstruction` appended to correction prompts (disabled for local models to prevent meta-commentary)
 
 ### OpenAI Client Caching (OpenAiClientFactory)
 Centralized factory that caches `OpenAIClient` instances by ApiKey+Endpoint. Thread-safe via `Lock`. Used by `OpenAiTranscriptionService`, `OpenAiTextCorrectionService`, and `CombinedAudioTranscriptionService`. Provides typed accessors `GetAudioClient(model)` and `GetChatClient(model)`.
 
 ### Debounced Save (DebouncedSaveHelper)
-Reusable utility for debounced async persistence. Used by 6 services: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `SettingsPersistenceService`, `OverlayViewModel` (position saving). Manages `CancellationTokenSource` lifecycle internally, implements `IDisposable`.
+Reusable utility for debounced async persistence. Used by 7+ services: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `SettingsPersistenceService`, `ModeService`, `OverlayViewModel` (position saving). Manages `CancellationTokenSource` lifecycle internally, implements `IDisposable`.
 
 ### Centralized Settings Persistence (ISettingsPersistenceService)
 `SettingsPersistenceService` provides `ScheduleUpdate(Action<JsonNode> mutator)`. Multiple mutators are composed — if several `ScheduleUpdate()` calls arrive before the debounce flush, all mutations apply to the same JSON document. Thread-safe via `Lock` + `DebouncedSaveHelper`.
 
 ### Options Validation (WriteSpeechOptionsValidator)
-`IValidateOptions<WriteSpeechOptions>` validates at startup and on reload: SampleRate (8000-48000), MaxRecordingSeconds (>=10), AutoDismissSeconds (>=1), Scale (0.5-3.0), MaxHistoryEntries (>=1), Endpoint (valid URI if set).
+`IValidateOptions<WriteSpeechOptions>` validates at startup and on reload: SampleRate (8000-48000), MaxRecordingSeconds (>=10), AutoDismissSeconds (>=1), Scale (0.5-3.0), MaxHistoryEntries (>=1), Endpoint (valid URI if set), Hotkey.Method (`RegisterHotKey` or `LowLevelHook`), mouse bindings require LowLevelHook, provider-specific requirements (API key for OpenAI/Cloud, model name for Local).
 
 ### IDispatcherService
 Abstraction over WPF `Dispatcher.Invoke()`. `WpfDispatcherService` wraps `Application.Current.Dispatcher`; tests use `SynchronousDispatcherService` that executes actions inline. All ViewModels use this instead of direct `Dispatcher` access.
 
 ### Settings Sub-ViewModels
-`SettingsViewModel` delegates to `GeneralSettingsViewModel`, `SystemSettingsViewModel`, and `TranscriptionSettingsViewModel`. Each sub-VM receives `WriteSpeechOptions` in constructor (not individual primitives) and implements `WriteSettings(JsonNode)` for persistence.
+`SettingsViewModel` delegates to `GeneralSettingsViewModel`, `SystemSettingsViewModel`, `TranscriptionSettingsViewModel`, `ModesSettingsViewModel`, and `IntegrationsSettingsViewModel`. Each sub-VM receives `WriteSpeechOptions` in constructor (not individual primitives) and implements `WriteSettings(JsonNode)` for persistence.
 
 ### Model Info Hierarchy (ModelInfoBase)
 Abstract base class shared by `WhisperModel` and `CorrectionModelInfo`. Provides `Name`, `FileName`, `SizeBytes`, `FilePath`, `IsDownloaded`, `SizeDisplay`. `CorrectionModelInfo` extends with `DownloadUrl`.
@@ -175,14 +273,17 @@ Abstract base class shared by `WhisperModel` and `CorrectionModelInfo`. Provides
 Trigger→replacement text substitution applied after transcription. Uses compiled `Regex` with word boundary matching (`\b`), cached and invalidated on add/remove. Persisted to `%APPDATA%/WriteSpeech/snippets.json`.
 
 ### Recording Flow (OverlayViewModel)
-1. **Idle** -> User clicks mic button or presses hotkey (Ctrl+Shift+Space)
+1. **Idle** -> User clicks mic button or presses hotkey
 2. Captures `_previousForegroundWindow` via `GetForegroundWindow()`
-3. Mutes other audio apps via `IAudioMutingService`
-4. **Recording** -> Audio captured via NAudio `WaveInEvent` (16kHz, 16-bit, Mono)
-5. User clicks stop -> **Transcribing** -> Provider transcribes audio
-6. Optional: Text correction via configured provider
-7. Unmutes other apps, restores focus via `SetForegroundWindow` + `AttachThreadInput`
-8. Auto-inserts text via clipboard + simulated Ctrl+V -> Back to **Idle**
+3. Reads selected text via `ISelectedTextService` → activates command mode if text found
+4. Detects IDE via `IIDEDetectionService`, prepares workspace context via `IIDEContextService`
+5. Mutes other audio apps via `IAudioMutingService`
+6. **Recording** -> Audio captured via NAudio `WaveInEvent` (16kHz, 16-bit, Mono)
+7. User clicks stop -> **Transcribing** -> Provider transcribes audio
+8. Optional: Text correction via configured provider (mode-aware prompt, IDE context injected)
+9. If command mode: applies voice command to selected text via `VoiceCommandSystemPrompt`
+10. Unmutes other apps, restores focus via `SetForegroundWindow` + `AttachThreadInput`
+11. Auto-inserts text via clipboard + simulated Ctrl+V -> Back to **Idle**
 
 ### CUDA Path Discovery (App.xaml.cs)
 `AddCudaLibraryPaths()` scans three sources for CUDA 13.x libraries:
@@ -199,15 +300,19 @@ This is necessary because `CUDA_PATH` may point to an older CUDA version while W
 Uses `Mutex("WriteSpeech-SingleInstance")` in `OnStartup`. Shows `MessageBox` and calls `Shutdown()` if another instance is running.
 
 ### Data Preloading (App.xaml.cs)
-`Task.WhenAll()` loads history, stats, dictionary, and snippets before showing the overlay.
+`Task.WhenAll()` loads history, stats, dictionary, snippets, and modes before showing the overlay.
 
 ### Win32 Interop (NativeMethods.cs)
 - **INPUT struct**: Union must include MOUSEINPUT (32 bytes) for correct sizeof(INPUT) = 40 bytes on x64.
 - **AttachThreadInput**: Required for reliable `SetForegroundWindow` across processes.
 - **WS_EX_NOACTIVATE + WS_EX_TOOLWINDOW**: Overlay doesn't steal focus or appear in taskbar.
+- **SetWindowsHookEx**: Used by `LowLevelHookHotkeyService` for keyboard/mouse hooks.
+- **GetWindowText/GetWindowTextLength**: Must use explicit `EntryPoint = "..."W"` for Unicode P/Invoke variants.
 
 ### System Tray (TrayIconManager)
 `TrayIconManager` handles `TaskbarIcon` creation, context menu, and left/right click behavior. Requires `ForceCreate()` when not placed in WPF visual tree. KB135788 workaround isolated in `SetupRightClickBehavior()` — temporarily removes `WS_EX_NOACTIVATE` to allow `SetForegroundWindow`.
+
+Context menu items: Show/Hide Overlay, Language submenu, Microphone submenu, **Mode submenu** (auto + all modes), Paste Last Transcript, **Transcribe File** (opens file dialog), Settings, History, Exit. Mode submenu rebuilt lazily via `_modeDirty` flag.
 
 ### Audio Muting (AudioMutingService)
 Uses NAudio `CoreAudioApi` (`MMDeviceEnumerator` -> `AudioSessionManager.Sessions`). Mutes all audio sessions except own process (PID) and system sounds (PID 0). Thread-safe via `Lock`.
@@ -232,15 +337,16 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `Local.ModelDirectory`: path to models dir (default: `%APPDATA%/WriteSpeech/models`)
 - `Local.GpuAcceleration`: enable CUDA for local Whisper (default: `true`)
 - `Language`: language code or null for auto-detect
-- `Hotkey.Toggle`: default `"Control, Shift"` + `"Space"`
-- `Hotkey.PushToTalk`: default `"Control"` + `"Space"`
+- `Hotkey.Method`: `"RegisterHotKey"` (default) or `"LowLevelHook"` (required for mouse buttons)
+- `Hotkey.Toggle`: default `"Control, Shift"` + `"Space"` (supports `MouseButton` for LowLevelHook)
+- `Hotkey.PushToTalk`: default `"Control"` + `"Space"` (supports `MouseButton` for LowLevelHook)
 - `Audio.SampleRate`: default 16000
 - `Audio.DeviceIndex`: default 0 (system default mic)
 - `Audio.CompressBeforeUpload`: compress WAV→MP3 before cloud upload (default: `true`)
 - `Audio.MuteWhileDictating`: mute other apps during recording (default: `true`)
 - `Audio.MaxRecordingSeconds`: max recording length (default: 300)
 - `TextCorrection.Provider`: `"Off"`, `"Cloud"`, or `"Local"`
-- `TextCorrection.Model`: cloud correction model (default: `"gpt-4o-mini"`)
+- `TextCorrection.Model`: cloud correction model (default: `"gpt-4.1-mini"`)
 - `TextCorrection.SystemPrompt`: custom system prompt for correction
 - `TextCorrection.LocalModelName`: GGUF model filename for local correction
 - `TextCorrection.LocalModelDirectory`: path to local correction models (default: `%APPDATA%/WriteSpeech/correction-models`)
@@ -248,6 +354,12 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `TextCorrection.UseCombinedAudioModel`: use GPT-4o audio input (default: `false`)
 - `TextCorrection.CombinedAudioModel`: combined model name (default: `"gpt-4o-mini-audio-preview"`)
 - `TextCorrection.CombinedSystemPrompt`: custom system prompt for combined audio model
+- `TextCorrection.AutoAddToDictionary`: auto-add detected vocabulary to dictionary (default: `true`)
+- `TextCorrection.ActiveMode`: pinned correction mode name (default: `null`, uses auto-switch)
+- `TextCorrection.AutoSwitchMode`: enable auto-switch by active app (default: `true`)
+- `Integration.VariableRecognition`: inject code identifiers from IDE workspace (default: `true`)
+- `Integration.FileTagging`: inject file names from IDE workspace (default: `true`)
+- `Integration.IncludeForLocalModels`: apply IDE context to local correction models too (default: `false`)
 - `Overlay.AlwaysVisible`: keep overlay visible in Idle state (default: `true`)
 - `Overlay.AutoDismissSeconds`: auto-dismiss result after N seconds (default: 10)
 - `Overlay.ShowInTaskbar`: show overlay in taskbar (default: `false`)
@@ -267,6 +379,8 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 |---|---|
 | NAudio 2.2.1 | Audio recording (WaveInEvent) + muting (CoreAudioApi) |
 | NAudio.Lame 2.1.0 | Audio compression (WAV → MP3) |
+| NAudio.Vorbis | OGG/Vorbis audio file reading |
+| Concentus | OGG/Opus audio decoding |
 | OpenAI 2.8.0 | Cloud transcription (Whisper API) + text correction (ChatCompletions) |
 | Whisper.net 1.9.0 | Local transcription via GGML models |
 | Whisper.net.Runtime 1.9.0 | Whisper CPU runtime |
@@ -294,6 +408,10 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 - **appsettings.json contains API key locally**: Only `appsettings.Development.json` and `appsettings.Local.json` are gitignored — the main `appsettings.json` is tracked. Always check `git diff` before staging to avoid committing secrets.
 - **Single-instance Mutex**: `App.xaml.cs` uses `Mutex("WriteSpeech-SingleInstance")` — if the app crashes without disposing the mutex, you may need to restart or wait for the OS to release it.
 - **TestOptionsMonitor.OnChange() returns null**: `_optionsChangeRegistration` must be `IDisposable?` (nullable) because the test helper doesn't implement change notifications.
+- **LowLevelHook GetModuleHandle**: `GetModuleHandle(null)` must succeed for `SetWindowsHookEx`. Use the exe module name as entry point; crashes if called before module is loaded.
+- **P/Invoke W variants**: `GetWindowText` and `GetWindowTextLength` need explicit `EntryPoint = "GetWindowTextW"` / `"GetWindowTextLengthW"` for correct Unicode behavior.
+- **VS Code workspace resolution**: Multiple storage.json formats exist (legacy `openedPathsList`, modern `windowsState`). URI paths may contain `%3A` for drive letters — must decode before use. File locking can occur when VS Code writes concurrently.
+- **VocabExtraction disabled for local models**: Local models produce meta-commentary and translation artifacts when vocab extraction instructions are appended to the prompt.
 
 ## Git Repository
 
