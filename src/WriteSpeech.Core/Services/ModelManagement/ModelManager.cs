@@ -19,6 +19,7 @@ public class ModelManager : IModelManager
         (GgmlType.Small, "Small", "ggml-small.bin", 466_000_000),
         (GgmlType.Medium, "Medium", "ggml-medium.bin", 1_500_000_000),
         (GgmlType.LargeV3, "Large v3", "ggml-large-v3.bin", 3_000_000_000),
+        (GgmlType.LargeV3Turbo, "Large v3 Turbo", "ggml-large-v3-turbo.bin", 1_600_000_000),
     ];
 
     public string ModelDirectory => _optionsMonitor.CurrentValue.Local.GetModelDirectory();

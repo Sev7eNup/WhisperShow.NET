@@ -371,6 +371,7 @@ public partial class ModelManagementViewModel : ObservableObject
         "ggml-small.bin" => GgmlType.Small,
         "ggml-medium.bin" => GgmlType.Medium,
         "ggml-large-v3.bin" => GgmlType.LargeV3,
+        "ggml-large-v3-turbo.bin" => GgmlType.LargeV3Turbo,
         _ => throw new ArgumentException($"Unknown model: {fileName}")
     };
 }
