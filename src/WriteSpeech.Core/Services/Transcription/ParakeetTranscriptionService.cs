@@ -157,6 +157,17 @@ public class ParakeetTranscriptionService : ITranscriptionService, IDisposable
         }
     }
 
+    public void UnloadModel()
+    {
+        lock (_loadLock)
+        {
+            _recognizer?.Dispose();
+            _recognizer = null;
+            _loadedModelDir = null;
+            _logger.LogInformation("Parakeet model unloaded");
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;

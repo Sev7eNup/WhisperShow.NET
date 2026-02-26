@@ -7,6 +7,7 @@ namespace WriteSpeech.Core.Services.ModelManagement;
 public class ModelPreloadService : IModelPreloadService
 {
     private readonly LocalTranscriptionService? _localTranscription;
+    private readonly ParakeetTranscriptionService? _parakeetTranscription;
     private readonly LocalTextCorrectionService? _localCorrection;
     private readonly ILogger<ModelPreloadService> _logger;
 
@@ -16,6 +17,7 @@ public class ModelPreloadService : IModelPreloadService
         ILogger<ModelPreloadService> logger)
     {
         _localTranscription = transcriptionServices.OfType<LocalTranscriptionService>().FirstOrDefault();
+        _parakeetTranscription = transcriptionServices.OfType<ParakeetTranscriptionService>().FirstOrDefault();
         _localCorrection = correctionServices.OfType<LocalTextCorrectionService>().FirstOrDefault();
         _logger = logger;
     }
@@ -72,6 +74,38 @@ public class ModelPreloadService : IModelPreloadService
                 _logger.LogError(ex, "Background correction model preload failed");
             }
         });
+    }
+
+    public void PreloadParakeetModel()
+    {
+        if (_parakeetTranscription is null)
+        {
+            _logger.LogWarning("ParakeetTranscriptionService not available for preloading");
+            return;
+        }
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                _logger.LogInformation("Preloading Parakeet model (from config)");
+                _parakeetTranscription.Preload();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Background Parakeet model preload failed");
+            }
+        });
+    }
+
+    public void UnloadTranscriptionModel()
+    {
+        _localTranscription?.UnloadModel();
+    }
+
+    public void UnloadParakeetModel()
+    {
+        _parakeetTranscription?.UnloadModel();
     }
 
     public void UnloadCorrectionModel()

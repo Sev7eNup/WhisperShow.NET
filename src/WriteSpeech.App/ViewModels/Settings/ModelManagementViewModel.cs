@@ -27,6 +27,7 @@ public partial class ModelManagementViewModel : ObservableObject
     private Func<string> _getParakeetModelName;
     private Action<string> _setParakeetModelName;
     private Action<TranscriptionProvider> _setProvider;
+    private Func<TranscriptionProvider> _getProvider;
 
     public ObservableCollection<ModelItemViewModel> ModelItems { get; } = [];
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];
@@ -46,7 +47,8 @@ public partial class ModelManagementViewModel : ObservableObject
         Action<string> setCorrectionLocalModelName,
         Func<string> getParakeetModelName,
         Action<string> setParakeetModelName,
-        Action<TranscriptionProvider> setProvider)
+        Action<TranscriptionProvider> setProvider,
+        Func<TranscriptionProvider> getProvider)
     {
         _modelManager = modelManager;
         _correctionModelManager = correctionModelManager;
@@ -62,6 +64,7 @@ public partial class ModelManagementViewModel : ObservableObject
         _getParakeetModelName = getParakeetModelName;
         _setParakeetModelName = setParakeetModelName;
         _setProvider = setProvider;
+        _getProvider = getProvider;
     }
 
     // --- Whisper Models ---
@@ -70,11 +73,12 @@ public partial class ModelManagementViewModel : ObservableObject
     public void RefreshModels()
     {
         ModelItems.Clear();
+        var isLocalProvider = _getProvider() == TranscriptionProvider.Local;
         foreach (var model in _modelManager.GetAllModels())
         {
             var ggmlType = FileNameToGgmlType(model.FileName);
             var item = new ModelItemViewModel(model, ggmlType);
-            item.IsActive = model.FileName == _getTranscriptionModel() && model.IsDownloaded;
+            item.IsActive = isLocalProvider && model.FileName == _getTranscriptionModel() && model.IsDownloaded;
             if (item.IsActive) item.StatusText = "Active";
             ModelItems.Add(item);
         }
@@ -140,6 +144,7 @@ public partial class ModelManagementViewModel : ObservableObject
         _setTranscriptionModel(item.FileName);
         _setProvider(TranscriptionProvider.Local);
         _scheduleSave();
+        _preloadService.UnloadParakeetModel();
         _preloadService.PreloadTranscriptionModel(item.FileName);
     }
 
@@ -263,10 +268,11 @@ public partial class ModelManagementViewModel : ObservableObject
     public void RefreshParakeetModels()
     {
         ParakeetModelItems.Clear();
+        var isParakeetProvider = _getProvider() == TranscriptionProvider.Parakeet;
         foreach (var model in _parakeetModelManager.GetAllModels())
         {
             var item = new ParakeetModelItemViewModel(model);
-            item.IsActive = model.DirectoryName == _getParakeetModelName() && model.IsDirectoryComplete;
+            item.IsActive = isParakeetProvider && model.DirectoryName == _getParakeetModelName() && model.IsDirectoryComplete;
             if (item.IsActive) item.StatusText = "Active";
             ParakeetModelItems.Add(item);
         }
@@ -332,6 +338,8 @@ public partial class ModelManagementViewModel : ObservableObject
         _setParakeetModelName(item.DirectoryName);
         _setProvider(TranscriptionProvider.Parakeet);
         _scheduleSave();
+        _preloadService.UnloadTranscriptionModel();
+        _preloadService.PreloadParakeetModel();
     }
 
     [RelayCommand]
