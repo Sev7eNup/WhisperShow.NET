@@ -32,6 +32,7 @@ src/
     Configuration/            # WriteSpeechOptions (strongly-typed config, IOptionsMonitor)
     Models/                   # RecordingState, TranscriptionResult, TranscriptionProvider,
                               # ModelInfoBase (abstract base), WhisperModel, CorrectionModelInfo,
+                              # ParakeetModelInfo (directory-based model with IsDirectoryComplete),
                               # TextCorrectionProvider, TranscriptionHistoryEntry, UsageStats,
                               # CorrectionMode (Name, SystemPrompt, AppPatterns, IsBuiltIn, TargetLanguage),
                               # IDEInfo, SupportedLanguages
@@ -42,11 +43,15 @@ src/
                               # IAudioFileReader (interface for multi-format audio reading)
                               # ISoundEffectService (interface only, impl in App)
       Transcription/          # ITranscriptionService, OpenAiTranscriptionService, LocalTranscriptionService
+                              # ParakeetTranscriptionService (sherpa-onnx, English-only, IDisposable)
+                              # IStreamingTranscriptionService (segment-by-segment async enumerable)
                               # TranscriptionProviderFactory (provider pattern)
-      TextCorrection/         # ITextCorrectionService, OpenAiTextCorrectionService (GPT)
+      TextCorrection/         # ITextCorrectionService, CloudTextCorrectionServiceBase (abstract)
+                              # OpenAiTextCorrectionService, AnthropicTextCorrectionService
+                              # GoogleTextCorrectionService, GroqTextCorrectionService
                               # LocalTextCorrectionService (LLamaSharp)
                               # ICombinedTranscriptionCorrectionService, CombinedAudioTranscriptionService
-                              # TextCorrectionProviderFactory (Off/Cloud/Local)
+                              # TextCorrectionProviderFactory (Off/OpenAI/Anthropic/Google/Groq/Local)
                               # TextCorrectionDefaults (shared system prompt constants)
                               # IDictionaryService, DictionaryService (custom word dictionary)
                               # VocabResponseParser (extract vocabulary from correction responses)
@@ -58,6 +63,7 @@ src/
       Snippets/               # ISnippetService, SnippetService (trigger→replacement with cached regex)
       ModelManagement/        # IModelManager, ModelManager (Whisper GGML model download)
                               # ICorrectionModelManager, CorrectionModelManager (GGUF model download)
+                              # IParakeetModelManager, ParakeetModelManager (Parakeet model download from HuggingFace)
                               # IModelPreloadService, ModelPreloadService
                               # ModelDownloadHelper (shared download logic, uses IHttpClientFactory)
       History/                # ITranscriptionHistoryService, TranscriptionHistoryService
@@ -89,6 +95,7 @@ src/
       ModelItemViewModelBase.cs # Abstract base for model download items
       ModelItemViewModel.cs   # Whisper model download item
       CorrectionModelItemViewModel.cs # Correction model download item
+      ParakeetModelItemViewModel.cs # Parakeet model download item
       Settings/               # Sub-ViewModels for settings pages
         GeneralSettingsViewModel.cs   # Hotkey, microphone, language, hotkey method settings
         SystemSettingsViewModel.cs    # Theme, sound, autostart settings
@@ -157,7 +164,7 @@ tests/
 dotnet test tests/WriteSpeech.Tests
 ```
 
-44 test files, ~726 test methods across services, ViewModels, views, models, converters, and configuration.
+46 test files, ~857 test methods across services, ViewModels, views, models, converters, and configuration.
 
 Key test patterns:
 - **Mocking**: NSubstitute for all service interfaces
@@ -177,20 +184,25 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 
 ### Transcription Providers
 - **OpenAI**: Uses `OpenAI` SDK (`AudioClient.TranscribeAudioAsync`) — cloud-based, requires API key
-- **Local**: Uses `Whisper.net` (`WhisperFactory.FromPath`) — offline, requires GGML model file
+- **Local**: Uses `Whisper.net` (`WhisperFactory.FromPath`) — offline, requires GGML model file. Implements `IStreamingTranscriptionService` for segment-by-segment results.
+- **Parakeet**: Uses `sherpa-onnx` (`OfflineRecognizer`) — offline, English-only, NVIDIA Parakeet TDT 0.6B model. Directory-based model with 4 files (encoder/decoder/joiner .int8.onnx + tokens.txt). GPU (CUDA) or CPU inference. Auto-fallback to Whisper for non-English.
 - Switched via `TranscriptionProviderFactory` based on `WriteSpeechOptions.Provider` enum
 
 ### Text Correction Providers
-- **Cloud (OpenAI)**: Uses `ChatClient` (GPT-4.1-mini default) for post-processing transcriptions
+- **OpenAI**: Uses `ChatClient` (GPT-4.1-mini default) for post-processing transcriptions. Extends `CloudTextCorrectionServiceBase`.
+- **Anthropic**: Uses `IHttpClientFactory` + REST API (`api.anthropic.com/v1/messages`). No extra NuGet needed. Extends `CloudTextCorrectionServiceBase`.
+- **Google (Gemini)**: Uses OpenAI SDK with Gemini-compatible endpoint. Extends `CloudTextCorrectionServiceBase`.
+- **Groq**: Uses OpenAI SDK with Groq-compatible endpoint. Extends `CloudTextCorrectionServiceBase`.
 - **Local**: Uses `LLamaSharp` with GGUF models for offline correction
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
+- **Base class**: `CloudTextCorrectionServiceBase` — shared prompt building, response processing, vocab extraction, error handling
 - **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/WriteSpeech/custom-dictionary.json`)
 - **Shared prompts**: Default system prompts live in `TextCorrectionDefaults` (not duplicated per service)
 - **Smart self-correction**: All prompts instruct the AI to apply mid-speech corrections (e.g. "at 2pm... no, 4pm" → outputs only the corrected version)
 - **Filler-word removal**: All prompts instruct the AI to strip verbal hesitations (um, uh, ähm, basically, you know, etc.)
 - **Translation**: When a mode has `TargetLanguage` set, the user message includes `[Translate to: {language}]` instead of the normal language hint
 - **Vocabulary extraction**: `VocabResponseParser` extracts proper nouns/brand names/technical terms from correction responses, auto-adds to dictionary
-- Switched via `TextCorrectionProviderFactory` (Off/Cloud/Local)
+- Switched via `TextCorrectionProviderFactory` (Off/OpenAI/Anthropic/Google/Groq/Local). Legacy `Cloud` maps to `OpenAI`.
 
 ### Correction Modes (IModeService)
 Context-aware text correction with different system prompts based on active application.
@@ -300,7 +312,7 @@ Trigger→replacement text substitution applied after transcription. Uses compil
 This is necessary because `CUDA_PATH` may point to an older CUDA version while Whisper.net needs CUDA 13.
 
 ### Background Model Preloading (App.xaml.cs)
-`PreloadLocalModels()` fires a background `Task.Run` at startup to load Whisper and/or correction models if their respective providers are set to Local. Does not block the UI thread.
+`PreloadLocalModels()` fires a background `Task.Run` at startup to load Whisper, Parakeet, and/or correction models if their respective providers are set to Local/Parakeet. Does not block the UI thread.
 
 ### Single-Instance Enforcement (App.xaml.cs)
 Uses `Mutex("WriteSpeech-SingleInstance")` in `OnStartup`. Shows `MessageBox` and calls `Shutdown()` if another instance is running.
@@ -335,13 +347,17 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 ## Configuration
 
 `appsettings.json` under section `"WriteSpeech"`:
-- `Provider`: `"OpenAI"` or `"Local"`
+- `Provider`: `"OpenAI"`, `"Local"`, or `"Parakeet"`
 - `OpenAI.ApiKey`: OpenAI API key (keep out of git!)
 - `OpenAI.Model`: default `"whisper-1"`
 - `OpenAI.Endpoint`: custom OpenAI-compatible endpoint URL (default: `null`, validated as URI)
 - `Local.ModelName`: GGML model filename, default `"ggml-small.bin"`
 - `Local.ModelDirectory`: path to models dir (default: `%APPDATA%/WriteSpeech/models`)
 - `Local.GpuAcceleration`: enable CUDA for local Whisper (default: `true`)
+- `Parakeet.ModelName`: Parakeet model directory name (default: `"sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8"`)
+- `Parakeet.ModelDirectory`: path to Parakeet models (default: `%APPDATA%/WriteSpeech/parakeet-models`)
+- `Parakeet.GpuAcceleration`: enable CUDA for Parakeet (default: `true`)
+- `Parakeet.NumThreads`: inference threads (default: 4, min: 1)
 - `Language`: language code or null for auto-detect
 - `Hotkey.Method`: `"RegisterHotKey"` (default) or `"LowLevelHook"` (required for mouse buttons)
 - `Hotkey.Toggle`: default `"Control, Shift"` + `"Space"` (supports `MouseButton` for LowLevelHook)
@@ -351,7 +367,15 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `Audio.CompressBeforeUpload`: compress WAV→MP3 before cloud upload (default: `true`)
 - `Audio.MuteWhileDictating`: mute other apps during recording (default: `true`)
 - `Audio.MaxRecordingSeconds`: max recording length (default: 300)
-- `TextCorrection.Provider`: `"Off"`, `"Cloud"`, or `"Local"`
+- `TextCorrection.Provider`: `"Off"`, `"Cloud"` (legacy→OpenAI), `"OpenAI"`, `"Anthropic"`, `"Google"`, `"Groq"`, or `"Local"`
+- `TextCorrection.Anthropic.ApiKey`: Anthropic API key
+- `TextCorrection.Anthropic.Model`: default `"claude-sonnet-4-5-20250514"`
+- `TextCorrection.Google.ApiKey`: Google AI API key
+- `TextCorrection.Google.Endpoint`: Gemini OpenAI-compatible endpoint
+- `TextCorrection.Google.Model`: default `"gemini-2.5-flash"`
+- `TextCorrection.Groq.ApiKey`: Groq API key
+- `TextCorrection.Groq.Endpoint`: Groq OpenAI-compatible endpoint
+- `TextCorrection.Groq.Model`: default `"llama-3.3-70b-versatile"`
 - `TextCorrection.Model`: cloud correction model (default: `"gpt-4.1-mini"`)
 - `TextCorrection.SystemPrompt`: custom system prompt for correction
 - `TextCorrection.LocalModelName`: GGUF model filename for local correction
@@ -391,6 +415,7 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 | Whisper.net 1.9.0 | Local transcription via GGML models |
 | Whisper.net.Runtime 1.9.0 | Whisper CPU runtime |
 | Whisper.net.Runtime.Cuda 1.9.0 | Whisper CUDA GPU runtime |
+| org.k2fsa.sherpa.onnx 1.12.27 | Parakeet local transcription (NVIDIA NeMo via ONNX) |
 | LLamaSharp 0.26.0 | Local text correction via GGUF LLM models |
 | LLamaSharp.Backend.Cuda12 0.26.0 | CUDA backend for LLamaSharp |
 | Microsoft.Extensions.Hosting 10.0.3 | Host builder, DI container, app lifetime |
@@ -418,6 +443,9 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 - **P/Invoke W variants**: `GetWindowText` and `GetWindowTextLength` need explicit `EntryPoint = "GetWindowTextW"` / `"GetWindowTextLengthW"` for correct Unicode behavior.
 - **VS Code workspace resolution**: Multiple storage.json formats exist (legacy `openedPathsList`, modern `windowsState`). URI paths may contain `%3A` for drive letters — must decode before use. File locking can occur when VS Code writes concurrently.
 - **VocabExtraction disabled for local models**: Local models produce meta-commentary and translation artifacts when vocab extraction instructions are appended to the prompt.
+- **sherpa-onnx structs are StructLayout(Sequential)**: Config types (`OfflineRecognizerConfig`, `OfflineModelConfig`) are value-type structs — use direct property assignment (e.g. `config.ModelConfig.Transducer.Encoder = "..."`) NOT object initializers with `new`.
+- **sherpa-onnx property naming**: Use `config.ModelConfig.Transducer` (not `TransducerConfig`), `config.ModelConfig.ModelType` (not `ModelType` on config root).
+- **Parakeet English-only**: Parakeet TDT models only support English. UI must show "English only" notice. Non-English languages should fall back to Whisper.
 
 ## Git Repository
 
