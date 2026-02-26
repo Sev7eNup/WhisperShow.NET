@@ -101,6 +101,7 @@ public partial class App : Application
                 services.AddSingleton<ITextCorrectionService, AnthropicTextCorrectionService>();
                 services.AddSingleton<ITextCorrectionService, GoogleTextCorrectionService>();
                 services.AddSingleton<ITextCorrectionService, GroqTextCorrectionService>();
+                services.AddSingleton<ITextCorrectionService, CustomTextCorrectionService>();
                 services.AddSingleton<ITextCorrectionService, LocalTextCorrectionService>();
                 services.AddSingleton<TextCorrectionProviderFactory>();
                 services.AddSingleton<ICombinedTranscriptionCorrectionService, CombinedAudioTranscriptionService>();

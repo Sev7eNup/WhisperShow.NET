@@ -586,17 +586,17 @@ public class TranscriptionSettingsViewModelTests
     [Fact]
     public void GoogleCorrectionModels_ContainsExpectedModels()
     {
-        TranscriptionSettingsViewModel.GoogleCorrectionModels.Should().HaveCount(2);
+        TranscriptionSettingsViewModel.GoogleCorrectionModels.Should().HaveCount(3);
         TranscriptionSettingsViewModel.GoogleCorrectionModels.Select(m => m.Id)
-            .Should().Contain(["gemini-2.5-flash", "gemini-2.5-pro"]);
+            .Should().Contain(["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-2.5-flash-lite"]);
     }
 
     [Fact]
     public void GroqCorrectionModels_ContainsExpectedModels()
     {
-        TranscriptionSettingsViewModel.GroqCorrectionModels.Should().HaveCount(3);
+        TranscriptionSettingsViewModel.GroqCorrectionModels.Should().HaveCount(7);
         TranscriptionSettingsViewModel.GroqCorrectionModels.Select(m => m.Id)
-            .Should().Contain(["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]);
+            .Should().Contain(["qwen/qwen3-32b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "gemma2-9b-it"]);
     }
 
     // --- Per-provider initialization ---
@@ -761,6 +761,70 @@ public class TranscriptionSettingsViewModelTests
         vm.SelectCorrectionProviderCommand.Execute("Groq");
 
         vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Groq);
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_Custom_TriggersSave()
+    {
+        var vm = CreateViewModel();
+
+        vm.SelectCorrectionProviderCommand.Execute("Custom");
+
+        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Custom);
+        _saveCalled.Should().BeTrue();
+    }
+
+    // --- Custom correction provider properties ---
+
+    [Fact]
+    public void Constructor_InitializesCustomCorrectionProperties()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.TextCorrection.Custom.Endpoint = "https://my-server.com/v1";
+            o.TextCorrection.Custom.ApiKey = "custom-key-1234";
+            o.TextCorrection.Custom.Model = "my-model";
+        });
+
+        vm.CustomCorrectionEndpoint.Should().Be("https://my-server.com/v1");
+        vm.CustomCorrectionApiKey.Should().Be("custom-key-1234");
+        vm.CustomCorrectionModel.Should().Be("my-model");
+    }
+
+    [Fact]
+    public void ApplyCustomCorrectionEndpoint_SetsValueAndSaves()
+    {
+        var vm = CreateViewModel();
+
+        vm.ApplyCustomCorrectionEndpoint("https://new-server.com/v1");
+
+        vm.CustomCorrectionEndpoint.Should().Be("https://new-server.com/v1");
+        vm.IsEditingCustomCorrectionEndpoint.Should().BeFalse();
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ApplyCustomCorrectionApiKey_SetsValueAndSaves()
+    {
+        var vm = CreateViewModel();
+
+        vm.ApplyCustomCorrectionApiKey("new-api-key");
+
+        vm.CustomCorrectionApiKey.Should().Be("new-api-key");
+        vm.IsEditingCustomCorrectionApiKey.Should().BeFalse();
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ApplyCustomCorrectionModel_SetsValueAndSaves()
+    {
+        var vm = CreateViewModel();
+
+        vm.ApplyCustomCorrectionModel("custom-llama-3");
+
+        vm.CustomCorrectionModel.Should().Be("custom-llama-3");
+        vm.IsEditingCustomProviderModel.Should().BeFalse();
         _saveCalled.Should().BeTrue();
     }
 

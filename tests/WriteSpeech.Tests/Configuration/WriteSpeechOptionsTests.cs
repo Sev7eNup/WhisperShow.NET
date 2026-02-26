@@ -89,7 +89,7 @@ public class WriteSpeechOptionsTests
         var options = new TextCorrectionOptions();
 
         options.Google.Endpoint.Should().Be("https://generativelanguage.googleapis.com/v1beta/openai/");
-        options.Google.Model.Should().Be("gemini-2.5-flash");
+        options.Google.Model.Should().Be("gemini-3-flash-preview");
         options.Google.ApiKey.Should().BeNull();
     }
 
@@ -99,7 +99,7 @@ public class WriteSpeechOptionsTests
         var options = new TextCorrectionOptions();
 
         options.Groq.Endpoint.Should().Be("https://api.groq.com/openai/v1");
-        options.Groq.Model.Should().Be("llama-3.3-70b-versatile");
+        options.Groq.Model.Should().Be("qwen/qwen3-32b");
         options.Groq.ApiKey.Should().BeNull();
     }
 

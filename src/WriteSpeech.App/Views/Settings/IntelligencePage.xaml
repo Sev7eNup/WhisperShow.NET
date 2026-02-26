@@ -9,7 +9,7 @@
                    FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap" Margin="0,0,0,16"/>
 
-        <!-- Correction provider picker: 6 cards in 2 rows -->
+        <!-- Correction provider picker: 7 cards in 3 rows -->
         <Grid Margin="0,0,0,4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -19,6 +19,8 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="8"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="8"/>
                 <RowDefinition Height="Auto"/>
@@ -164,8 +166,37 @@
                 </Grid>
             </Border>
 
+            <!-- Custom card -->
+            <Border Grid.Row="2" Grid.Column="4" Tag="Custom" MouseLeftButtonDown="CorrectionProviderCard_Click"
+                    Cursor="Hand" BorderThickness="2"
+                    Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CorrectionProvider}" Value="Custom">
+                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <StackPanel>
+                        <TextBlock Text="Custom" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="OpenAI-compatible" FontSize="10.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="11.5"
+                               Foreground="{DynamicResource SelectedBorderBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Top"
+                               Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Custom}"/>
+                </Grid>
+            </Border>
+
             <!-- Local card -->
-            <Border Grid.Row="2" Grid.Column="4" Tag="Local" MouseLeftButtonDown="CorrectionProviderCard_Click"
+            <Border Grid.Row="4" Grid.Column="0" Tag="Local" MouseLeftButtonDown="CorrectionProviderCard_Click"
                     Cursor="Hand" BorderThickness="2"
                     Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12">
                 <Border.Style>
@@ -510,6 +541,111 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+        </StackPanel>
+
+        <!-- ═══════════════ Custom correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Custom}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="Custom settings" Style="{StaticResource GroupHeaderStyle}"/>
+
+            <!-- API Endpoint -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="CustomProviderEndpoint_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingCustomCorrectionEndpoint, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Endpoint" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock.Text>
+                                <Binding Path="CustomCorrectionEndpoint" FallbackValue="Not configured">
+                                    <Binding.TargetNullValue>Not configured</Binding.TargetNullValue>
+                                </Binding>
+                            </TextBlock.Text>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CustomCorrectionEndpoint}" Value="">
+                                            <Setter Property="Text" Value="Not configured"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingCustomCorrectionEndpoint, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Endpoint" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding CustomCorrectionEndpoint}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomProviderEndpointTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- API Key -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="CustomProviderApiKey_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingCustomCorrectionApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding CustomCorrectionApiKeyDisplay}" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingCustomCorrectionApiKey, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding CustomCorrectionApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomProviderApiKeyTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Model -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="CustomProviderModel_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingCustomProviderModel, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock.Text>
+                                <Binding Path="CustomCorrectionModel" FallbackValue="Not configured">
+                                    <Binding.TargetNullValue>Not configured</Binding.TargetNullValue>
+                                </Binding>
+                            </TextBlock.Text>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CustomCorrectionModel}" Value="">
+                                            <Setter Property="Text" Value="Not configured"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingCustomProviderModel, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding CustomCorrectionModel}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomProviderModelTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </StackPanel>
 
         <!-- ═══════════════ Local correction settings ═══════════════ -->

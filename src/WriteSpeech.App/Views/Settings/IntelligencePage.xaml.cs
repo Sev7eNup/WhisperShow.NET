@@ -133,4 +133,65 @@ public partial class IntelligencePage : UserControl
         if (sender is Border border && border.Tag is string modelId)
             ViewModel.SelectGroqModelCommand.Execute(modelId);
     }
+
+    // --- Custom Provider ---
+
+    private void CustomProviderEndpoint_Click(object sender, MouseButtonEventArgs e)
+    {
+        ViewModel.IsEditingCustomCorrectionEndpoint = true;
+    }
+
+    private void CustomProviderEndpointTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            ViewModel.ApplyCustomCorrectionEndpoint(tb.Text);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            ViewModel.IsEditingCustomCorrectionEndpoint = false;
+            e.Handled = true;
+        }
+    }
+
+    private void CustomProviderApiKey_Click(object sender, MouseButtonEventArgs e)
+    {
+        ViewModel.IsEditingCustomCorrectionApiKey = true;
+    }
+
+    private void CustomProviderApiKeyTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            ViewModel.ApplyCustomCorrectionApiKey(tb.Text);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            ViewModel.IsEditingCustomCorrectionApiKey = false;
+            e.Handled = true;
+        }
+    }
+
+    private void CustomProviderModel_Click(object sender, MouseButtonEventArgs e)
+    {
+        ViewModel.IsEditingCustomProviderModel = true;
+    }
+
+    private void CustomProviderModelTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            if (!string.IsNullOrWhiteSpace(tb.Text))
+                ViewModel.ApplyCustomCorrectionModel(tb.Text);
+            ViewModel.IsEditingCustomProviderModel = false;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            ViewModel.IsEditingCustomProviderModel = false;
+            e.Handled = true;
+        }
+    }
 }

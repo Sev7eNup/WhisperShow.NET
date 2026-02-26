@@ -104,13 +104,14 @@ public class TextCorrectionOptions
     public OpenAiCompatibleCorrectionOptions Google { get; set; } = new()
     {
         Endpoint = "https://generativelanguage.googleapis.com/v1beta/openai/",
-        Model = "gemini-2.5-flash"
+        Model = "gemini-3-flash-preview"
     };
     public OpenAiCompatibleCorrectionOptions Groq { get; set; } = new()
     {
         Endpoint = "https://api.groq.com/openai/v1",
-        Model = "llama-3.3-70b-versatile"
+        Model = "qwen/qwen3-32b"
     };
+    public OpenAiCompatibleCorrectionOptions Custom { get; set; } = new();
 
     // Local correction
     public string LocalModelName { get; set; } = "";

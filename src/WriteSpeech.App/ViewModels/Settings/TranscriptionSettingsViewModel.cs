@@ -39,15 +39,20 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     public static IReadOnlyList<CloudModelOption> GoogleCorrectionModels { get; } =
     [
-        new("gemini-2.5-flash", "Gemini 2.5 Flash", "Fast and efficient"),
-        new("gemini-2.5-pro", "Gemini 2.5 Pro", "Most capable"),
+        new("gemini-3-flash-preview", "Gemini 3 Flash", "Fast and efficient"),
+        new("gemini-3.1-pro-preview", "Gemini 3.1 Pro", "Most capable"),
+        new("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite", "Lightweight"),
     ];
 
     public static IReadOnlyList<CloudModelOption> GroqCorrectionModels { get; } =
     [
-        new("llama-3.3-70b-versatile", "Llama 3.3 70B", "Most capable"),
-        new("llama-3.1-8b-instant", "Llama 3.1 8B", "Ultra-fast"),
-        new("mixtral-8x7b-32768", "Mixtral 8x7B", "Balanced"),
+        new("qwen/qwen3-32b", "Qwen3 32B", "Powerful reasoning, 131K context"),
+        new("openai/gpt-oss-120b", "GPT-OSS 120B", "OpenAI's open-source flagship"),
+        new("openai/gpt-oss-20b", "GPT-OSS 20B", "Fast open-source model"),
+        new("llama-3.3-70b-versatile", "LLaMA 3.3 70B", "Meta's versatile model"),
+        new("llama-3.1-8b-instant", "LLaMA 3.1 8B", "Ultra-fast, 131K context"),
+        new("mixtral-8x7b-32768", "Mixtral 8x7B", "32K context, mixture of experts"),
+        new("gemma2-9b-it", "Gemma 2 9B", "Google's efficient model"),
     ];
 
     private readonly IModelPreloadService _preloadService;
@@ -115,13 +120,22 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [ObservableProperty] private string _googleApiKey = "";
     [ObservableProperty] private string _googleApiKeyDisplay = "";
     [ObservableProperty] private bool _isEditingGoogleApiKey;
-    [ObservableProperty] private string _googleModel = "gemini-2.5-flash";
+    [ObservableProperty] private string _googleModel = "gemini-3-flash-preview";
 
     // --- Groq ---
     [ObservableProperty] private string _groqApiKey = "";
     [ObservableProperty] private string _groqApiKeyDisplay = "";
     [ObservableProperty] private bool _isEditingGroqApiKey;
-    [ObservableProperty] private string _groqModel = "llama-3.3-70b-versatile";
+    [ObservableProperty] private string _groqModel = "qwen/qwen3-32b";
+
+    // --- Custom Correction Provider ---
+    [ObservableProperty] private string _customCorrectionEndpoint = "";
+    [ObservableProperty] private bool _isEditingCustomCorrectionEndpoint;
+    [ObservableProperty] private string _customCorrectionApiKey = "";
+    [ObservableProperty] private string _customCorrectionApiKeyDisplay = "";
+    [ObservableProperty] private bool _isEditingCustomCorrectionApiKey;
+    [ObservableProperty] private string _customCorrectionModel = "";
+    [ObservableProperty] private bool _isEditingCustomProviderModel;
 
     // --- Combined Audio Model ---
     [ObservableProperty] private bool _useCombinedAudioModel;
@@ -183,6 +197,9 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _googleModel = options.TextCorrection.Google.Model;
         _groqApiKey = options.TextCorrection.Groq.ApiKey ?? "";
         _groqModel = options.TextCorrection.Groq.Model;
+        _customCorrectionEndpoint = options.TextCorrection.Custom.Endpoint ?? "";
+        _customCorrectionApiKey = options.TextCorrection.Custom.ApiKey ?? "";
+        _customCorrectionModel = options.TextCorrection.Custom.Model;
         _useCombinedAudioModel = options.TextCorrection.UseCombinedAudioModel;
         _combinedAudioModel = options.TextCorrection.CombinedAudioModel;
 
@@ -190,6 +207,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         UpdateProviderApiKeyDisplay(AnthropicApiKey, v => AnthropicApiKeyDisplay = v);
         UpdateProviderApiKeyDisplay(GoogleApiKey, v => GoogleApiKeyDisplay = v);
         UpdateProviderApiKeyDisplay(GroqApiKey, v => GroqApiKeyDisplay = v);
+        UpdateProviderApiKeyDisplay(CustomCorrectionApiKey, v => CustomCorrectionApiKeyDisplay = v);
 
         Models = new ModelManagementViewModel(
             modelManager, correctionModelManager, parakeetModelManager,
@@ -393,6 +411,28 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    public void ApplyCustomCorrectionEndpoint(string endpoint)
+    {
+        CustomCorrectionEndpoint = endpoint;
+        IsEditingCustomCorrectionEndpoint = false;
+        _scheduleSave();
+    }
+
+    public void ApplyCustomCorrectionApiKey(string key)
+    {
+        CustomCorrectionApiKey = key;
+        IsEditingCustomCorrectionApiKey = false;
+        UpdateProviderApiKeyDisplay(key, v => CustomCorrectionApiKeyDisplay = v);
+        _scheduleSave();
+    }
+
+    public void ApplyCustomCorrectionModel(string model)
+    {
+        CustomCorrectionModel = model;
+        IsEditingCustomProviderModel = false;
+        _scheduleSave();
+    }
+
     [RelayCommand]
     private void ToggleCombinedAudioModel() => _scheduleSave();
 
@@ -452,5 +492,10 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         var groq = SettingsViewModel.EnsureObject(correction, "Groq");
         groq["ApiKey"] = GroqApiKey;
         groq["Model"] = GroqModel;
+
+        var custom = SettingsViewModel.EnsureObject(correction, "Custom");
+        custom["ApiKey"] = CustomCorrectionApiKey;
+        custom["Model"] = CustomCorrectionModel;
+        custom["Endpoint"] = string.IsNullOrWhiteSpace(CustomCorrectionEndpoint) ? null : CustomCorrectionEndpoint;
     }
 }

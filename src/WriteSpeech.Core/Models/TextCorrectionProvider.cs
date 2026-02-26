@@ -8,5 +8,6 @@ public enum TextCorrectionProvider
     Anthropic,
     Google,
     Groq,
+    Custom,
     Local
 }
