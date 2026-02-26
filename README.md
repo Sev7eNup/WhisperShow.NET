@@ -5,7 +5,7 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
-![Tests 685+](https://img.shields.io/badge/tests-685%2B-brightgreen)
+![Tests 726+](https://img.shields.io/badge/tests-726%2B-brightgreen)
 ![CI](https://github.com/Sev7eNup/WriteSpeech.NET/actions/workflows/ci.yml/badge.svg)
 
 <!-- TODO: Add screenshot of overlay + settings window -->
@@ -26,7 +26,9 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 - 🔄 **Snippet Expansion** — Define trigger-to-replacement text pairs with word-boundary matching
 - 📜 **Transcription History** — Browse, search, copy, and re-insert recent transcriptions
 - 📊 **Usage Statistics** — Track transcription counts, recording time, audio bytes, and per-provider breakdown
-- 🎯 **Correction Modes** — 5 built-in modes (Default, Email, Message, Code, Note) with auto-switch by active app, plus custom modes
+- 🎯 **Correction Modes** — 6 built-in modes (Default, Email, Message, Code, Note, Translate) with auto-switch by active app, plus custom modes
+- 🌐 **Translation Mode** — Speak in one language, output in another (e.g., speak German → get English text). Configurable target language per mode
+- 🧹 **Smart Cleanup** — Automatically removes filler words (um, uh, ähm, basically, you know) and applies mid-speech self-corrections
 - 🗣️ **Voice Commands** — Select text in any app, then speak a command to transform it (translate, reformat, fix grammar, etc.)
 - 📁 **File Transcription** — Transcribe audio files (MP3, WAV, M4A, FLAC, OGG, MP4) via tray menu
 - 🔌 **IDE Integration** — Auto-detect VS Code, Cursor, Windsurf — injects workspace identifiers and file names into correction prompts for better accuracy
@@ -205,7 +207,7 @@ src/
       Transcription/             #   ITranscriptionService + OpenAI/Local implementations
       TextCorrection/            #   ITextCorrectionService + Cloud/Local/Combined + Dictionary
                                  #   VocabResponseParser (vocabulary extraction from responses)
-      Modes/                     #   IModeService, ModeService, CorrectionModeDefaults (5 built-in modes)
+      Modes/                     #   IModeService, ModeService, CorrectionModeDefaults (6 built-in modes)
       IDE/                       #   IIDEDetectionService, IIDEContextService, SourceFileParser
       Snippets/                  #   Trigger→replacement with cached regex
       ModelManagement/           #   Model download/delete + background preloading
@@ -238,7 +240,7 @@ src/
                                  #   SelectedText, AudioFileReader, IDEDetection, Tray, ...
 
 tests/
-  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (685+ tests)
+  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (726+ tests)
     Services/                    #   Service unit tests (incl. ModeService, IDE, HotkeyMatcher, Vocab)
     ViewModels/                  #   ViewModel unit tests (incl. CommandMode, FileTranscription, Modes)
     Views/                       #   WPF-specific tests (themes, code-behind helpers)
@@ -279,7 +281,7 @@ Idle → [Hotkey/Click] → Recording → [Stop] → Transcribing → [Done] →
 | `IDispatcherService` | Testable UI thread dispatch abstraction |
 | `ModelDownloadHelper` | Shared model download logic using `IHttpClientFactory` |
 | `TextCorrectionDefaults` | Shared system prompt constants (no duplication across services) |
-| `IModeService` / `CorrectionModeDefaults` | Context-aware correction modes with auto-switch by active app |
+| `IModeService` / `CorrectionModeDefaults` | Context-aware correction modes with auto-switch by active app, translation support |
 | `IIDEContextService` / `SourceFileParser` | IDE workspace scanning + code identifier extraction |
 | `HotkeyServiceProxy` | Runtime hot-swap between RegisterHotKey and LowLevelHook methods |
 | `VocabResponseParser` | Extract and auto-learn vocabulary from AI correction responses |
@@ -298,7 +300,7 @@ Idle → [Hotkey/Click] → Recording → [Stop] → Transcribing → [Done] →
 dotnet test tests/WriteSpeech.Tests
 ```
 
-- **685+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
+- **726+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
 - **Framework:** xUnit 2.9 + NSubstitute 5.3 + FluentAssertions 8.2
 - **WPF Tests:** `WpfTestHelper.EnsureApplication()` provides thread-safe WPF `Application` initialization for parallel xUnit execution
 - **Testable dispatch:** `SynchronousDispatcherService` replaces WPF `Dispatcher` in tests

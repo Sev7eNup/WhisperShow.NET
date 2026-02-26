@@ -33,7 +33,8 @@ src/
     Models/                   # RecordingState, TranscriptionResult, TranscriptionProvider,
                               # ModelInfoBase (abstract base), WhisperModel, CorrectionModelInfo,
                               # TextCorrectionProvider, TranscriptionHistoryEntry, UsageStats,
-                              # CorrectionMode, IDEInfo, SupportedLanguages
+                              # CorrectionMode (Name, SystemPrompt, AppPatterns, IsBuiltIn, TargetLanguage),
+                              # IDEInfo, SupportedLanguages
     Services/
       Audio/                  # IAudioRecordingService, AudioRecordingService (NAudio WaveInEvent)
                               # IAudioMutingService, AudioMutingService (NAudio CoreAudioApi)
@@ -50,7 +51,7 @@ src/
                               # IDictionaryService, DictionaryService (custom word dictionary)
                               # VocabResponseParser (extract vocabulary from correction responses)
       Modes/                  # IModeService, ModeService (context-aware correction modes)
-                              # CorrectionModeDefaults (5 built-in modes: Default, Email, Message, Code, Note)
+                              # CorrectionModeDefaults (6 built-in modes: Default, Email, Message, Code, Note, Translate)
       IDE/                    # IIDEDetectionService (detect active IDE from window handle)
                               # IIDEContextService, IDEContextService (scan workspace for identifiers/files)
                               # SourceFileParser (static: extract identifiers from source code)
@@ -156,7 +157,7 @@ tests/
 dotnet test tests/WriteSpeech.Tests
 ```
 
-44 test files, ~685 test methods across services, ViewModels, views, models, converters, and configuration.
+44 test files, ~726 test methods across services, ViewModels, views, models, converters, and configuration.
 
 Key test patterns:
 - **Mocking**: NSubstitute for all service interfaces
@@ -185,16 +186,20 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
 - **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/WriteSpeech/custom-dictionary.json`)
 - **Shared prompts**: Default system prompts live in `TextCorrectionDefaults` (not duplicated per service)
+- **Smart self-correction**: All prompts instruct the AI to apply mid-speech corrections (e.g. "at 2pm... no, 4pm" → outputs only the corrected version)
+- **Filler-word removal**: All prompts instruct the AI to strip verbal hesitations (um, uh, ähm, basically, you know, etc.)
+- **Translation**: When a mode has `TargetLanguage` set, the user message includes `[Translate to: {language}]` instead of the normal language hint
 - **Vocabulary extraction**: `VocabResponseParser` extracts proper nouns/brand names/technical terms from correction responses, auto-adds to dictionary
 - Switched via `TextCorrectionProviderFactory` (Off/Cloud/Local)
 
 ### Correction Modes (IModeService)
 Context-aware text correction with different system prompts based on active application.
-- **5 built-in modes**: Default, Email, Message, Code, Note — each with tailored system prompts and app patterns
+- **6 built-in modes**: Default, Email, Message, Code, Note, Translate — each with tailored system prompts and app patterns
 - **Custom modes**: Users can create modes with custom prompts and app-matching patterns
 - **Auto-switch**: When enabled, automatically selects mode based on foreground process name matching against `AppPatterns`
 - **Manual pin**: Users can pin a specific mode that overrides auto-switch
 - **Resolution**: `ResolveSystemPrompt(processName)` returns mode-specific prompt (null for Default → services use their own default)
+- **Translation**: `ResolveTargetLanguage(processName)` returns target language when the resolved mode has one configured (e.g. Translate → "English")
 - **Persistence**: `%APPDATA%/WriteSpeech/modes.json` via `DebouncedSaveHelper`
 - **Tray integration**: Mode submenu in system tray context menu for quick switching
 
@@ -203,6 +208,7 @@ Built-in mode app patterns:
 - **Message**: Slack, Teams, Discord, Telegram, WhatsApp, Signal
 - **Code**: Code, Cursor, Windsurf, devenv, rider64, idea64
 - **Note**: Obsidian, Notion, WINWORD, EXCEL, notepad, OneNote
+- **Translate**: (no app patterns — manual selection only, default target: English)
 
 ### Voice Command Mode (OverlayViewModel)
 When text is selected in the active window before recording starts:
@@ -280,7 +286,7 @@ Trigger→replacement text substitution applied after transcription. Uses compil
 5. Mutes other audio apps via `IAudioMutingService`
 6. **Recording** -> Audio captured via NAudio `WaveInEvent` (16kHz, 16-bit, Mono)
 7. User clicks stop -> **Transcribing** -> Provider transcribes audio
-8. Optional: Text correction via configured provider (mode-aware prompt, IDE context injected)
+8. Optional: Text correction via configured provider (mode-aware prompt, IDE context injected, targetLanguage for Translate mode)
 9. If command mode: applies voice command to selected text via `VoiceCommandSystemPrompt`
 10. Unmutes other apps, restores focus via `SetForegroundWindow` + `AttachThreadInput`
 11. Auto-inserts text via clipboard + simulated Ctrl+V -> Back to **Idle**
