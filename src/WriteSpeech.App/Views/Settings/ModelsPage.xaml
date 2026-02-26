@@ -15,6 +15,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Cloud card -->
@@ -68,7 +70,7 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
                         <TextBlock Text="Local" FontSize="12.5" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="On-device processing" FontSize="11.5"
+                        <TextBlock Text="Whisper.net" FontSize="11.5"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
@@ -76,6 +78,37 @@
                                Foreground="{DynamicResource SelectedBorderBrush}"
                                HorizontalAlignment="Right" VerticalAlignment="Top"
                                Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Local}"/>
+                </Grid>
+            </Border>
+
+            <!-- Parakeet card -->
+            <Border Grid.Column="4" Tag="Parakeet" MouseLeftButtonDown="ProviderCard_Click"
+                    Cursor="Hand" BorderThickness="2"
+                    Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="20,16">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
+                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <StackPanel>
+                        <TextBlock Text="&#xE770;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="Parakeet" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="NVIDIA (English)" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12.5"
+                               Foreground="{DynamicResource SelectedBorderBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Top"
+                               Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Parakeet}"/>
                 </Grid>
             </Border>
         </Grid>
@@ -373,6 +406,209 @@
                                             Foreground="{DynamicResource TextPrimaryBrush}"
                                             VerticalAlignment="Center" Margin="6,0,0,0"
                                             Command="{Binding DataContext.Models.DeleteModelCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Visibility>
+                                            <MultiBinding>
+                                                <MultiBinding.Converter>
+                                                    <converters:ModelDeleteVisibilityConverter/>
+                                                </MultiBinding.Converter>
+                                                <Binding Path="IsDownloaded"/>
+                                                <Binding Path="IsDownloading"/>
+                                                <Binding Path="IsActive"/>
+                                            </MultiBinding>
+                                        </Button.Visibility>
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
+                                                        CornerRadius="10" Padding="14,6"
+                                                        BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Progress bar -->
+                                <ProgressBar Grid.Row="1" Minimum="0" Maximum="1"
+                                             Value="{Binding DownloadProgress}"
+                                             Height="4" Margin="0,8,0,0"
+                                             Foreground="#7C5CFC"
+                                             Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- ===== Parakeet settings (visible when Provider=Parakeet) ===== -->
+        <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Parakeet}">
+            <TextBlock Text="Parakeet settings" Style="{StaticResource GroupHeaderStyle}"/>
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+                <StackPanel>
+                    <!-- English only notice -->
+                    <Grid Margin="16,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x2139;" FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Top" Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Text="NVIDIA Parakeet supports English only. For other languages, use the Cloud or Local (Whisper) provider."/>
+                    </Grid>
+                    <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                    <!-- GPU acceleration -->
+                    <Grid Margin="20,10,20,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                      IsChecked="{Binding ParakeetGpuAcceleration}"
+                                      Command="{Binding ToggleParakeetGpuAccelerationCommand}" VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Available Parakeet models -->
+            <TextBlock Text="Available models" Style="{StaticResource GroupHeaderStyle}"/>
+            <ItemsControl ItemsSource="{Binding Models.ParakeetModelItems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12"
+                                Padding="20,10" Margin="0,0,0,8" BorderThickness="2">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding SizeDisplay}" FontSize="11.5"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="10.5"
+                                                   FontFamily="Segoe UI Variable, Segoe UI"
+                                                   Margin="0,3,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                            <Setter Property="Foreground" Value="{DynamicResource SelectedBorderBrush}"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!-- Download button -->
+                                    <Button Grid.Column="1" Content="Download" Cursor="Hand"
+                                            FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                            Foreground="{DynamicResource TextPrimaryBrush}"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding DataContext.Models.DownloadParakeetModelCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Visibility>
+                                            <MultiBinding>
+                                                <MultiBinding.Converter>
+                                                    <converters:ModelActionVisibilityConverter/>
+                                                </MultiBinding.Converter>
+                                                <Binding Path="IsDownloaded"/>
+                                                <Binding Path="IsDownloading"/>
+                                            </MultiBinding>
+                                        </Button.Visibility>
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bd" Background="{DynamicResource ButtonBgBrush}"
+                                                        CornerRadius="10" Padding="14,6"
+                                                        BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+
+                                    <!-- Use button -->
+                                    <Button Grid.Column="1" Content="Use" Cursor="Hand"
+                                            FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding DataContext.Models.ActivateParakeetModelCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Visibility>
+                                            <MultiBinding>
+                                                <MultiBinding.Converter>
+                                                    <converters:ModelUseVisibilityConverter/>
+                                                </MultiBinding.Converter>
+                                                <Binding Path="IsDownloaded"/>
+                                                <Binding Path="IsDownloading"/>
+                                                <Binding Path="IsActive"/>
+                                            </MultiBinding>
+                                        </Button.Visibility>
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bd" Background="#7C5CFC"
+                                                        CornerRadius="10" Padding="14,6">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                        <Button.Foreground>
+                                            <SolidColorBrush Color="White"/>
+                                        </Button.Foreground>
+                                    </Button>
+
+                                    <!-- Delete button -->
+                                    <Button Grid.Column="2" Content="Delete" Cursor="Hand"
+                                            FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                            Foreground="{DynamicResource TextPrimaryBrush}"
+                                            VerticalAlignment="Center" Margin="6,0,0,0"
+                                            Command="{Binding DataContext.Models.DeleteParakeetModelCommand,
                                                 RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                             CommandParameter="{Binding}">
                                         <Button.Visibility>

@@ -13,29 +13,34 @@ public class ModelManagementViewModelTests
 {
     private readonly IModelManager _modelManager;
     private readonly ICorrectionModelManager _correctionModelManager;
+    private readonly IParakeetModelManager _parakeetModelManager;
     private readonly IModelPreloadService _preloadService;
     private readonly Action _scheduleSave;
 
     private string _transcriptionModel = "ggml-small.bin";
     private string _correctionLocalModelName = "gemma-2b.gguf";
+    private string _parakeetModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
     private bool _saveCalled;
 
     public ModelManagementViewModelTests()
     {
         _modelManager = Substitute.For<IModelManager>();
         _correctionModelManager = Substitute.For<ICorrectionModelManager>();
+        _parakeetModelManager = Substitute.For<IParakeetModelManager>();
         _preloadService = Substitute.For<IModelPreloadService>();
         _scheduleSave = () => _saveCalled = true;
 
         // Default: return empty lists
         _modelManager.GetAllModels().Returns([]);
         _correctionModelManager.GetAllModels().Returns([]);
+        _parakeetModelManager.GetAllModels().Returns([]);
     }
 
     private ModelManagementViewModel CreateViewModel() =>
         new(
             _modelManager,
             _correctionModelManager,
+            _parakeetModelManager,
             _preloadService,
             NullLogger.Instance,
             new SynchronousDispatcherService(),
@@ -43,7 +48,9 @@ public class ModelManagementViewModelTests
             () => _transcriptionModel,
             value => _transcriptionModel = value,
             () => _correctionLocalModelName,
-            value => _correctionLocalModelName = value);
+            value => _correctionLocalModelName = value,
+            () => _parakeetModelName,
+            value => _parakeetModelName = value);
 
     // --- Whisper Models ---
 

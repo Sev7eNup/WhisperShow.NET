@@ -93,6 +93,7 @@ public partial class App : Application
                 services.AddSingleton<IAudioFileReader, AudioFileReader>();
                 services.AddSingleton<ITranscriptionService, OpenAiTranscriptionService>();
                 services.AddSingleton<ITranscriptionService, LocalTranscriptionService>();
+                services.AddSingleton<ITranscriptionService, ParakeetTranscriptionService>();
                 services.AddSingleton<TranscriptionProviderFactory>();
                 services.AddSingleton<ITextInsertionService, TextInsertionService>();
                 services.AddSingleton<ISelectedTextService, SelectedTextService>();
@@ -109,6 +110,7 @@ public partial class App : Application
                 services.AddSingleton<ModelDownloadHelper>();
                 services.AddSingleton<IModelManager, ModelManager>();
                 services.AddSingleton<ICorrectionModelManager, CorrectionModelManager>();
+                services.AddSingleton<IParakeetModelManager, ParakeetModelManager>();
                 services.AddSingleton<IModelPreloadService, ModelPreloadService>();
                 services.AddSingleton<IDictionaryService, DictionaryService>();
                 services.AddSingleton<IIDEContextService, IDEContextService>();
@@ -188,6 +190,13 @@ public partial class App : Application
 
         if (opts.Provider == TranscriptionProvider.Local)
             preloadService.PreloadTranscriptionModel();
+
+        if (opts.Provider == TranscriptionProvider.Parakeet)
+        {
+            var parakeetService = _host!.Services.GetServices<ITranscriptionService>()
+                .OfType<ParakeetTranscriptionService>().FirstOrDefault();
+            parakeetService?.Preload();
+        }
 
         if (opts.TextCorrection.Provider == TextCorrectionProvider.Local)
             preloadService.PreloadCorrectionModel();

@@ -85,4 +85,18 @@ public class TranscriptionProviderFactoryTests
         var all = _factory.GetAllProviders();
         all.Should().HaveCount(2);
     }
+
+    [Fact]
+    public void GetProvider_Parakeet_ReturnsParakeetService()
+    {
+        var optionsMonitor = OptionsHelper.CreateMonitor();
+        var parakeetService = new ParakeetTranscriptionService(
+            NullLogger<ParakeetTranscriptionService>.Instance, optionsMonitor);
+
+        ITranscriptionService[] providers = [_openAiService, _localService, parakeetService];
+        var factory = new TranscriptionProviderFactory(providers);
+
+        var provider = factory.GetProvider(TranscriptionProvider.Parakeet);
+        provider.Should().BeSameAs(parakeetService);
+    }
 }

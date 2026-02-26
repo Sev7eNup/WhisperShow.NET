@@ -473,4 +473,72 @@ public class WriteSpeechOptionsTests
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("ApiKey");
     }
+
+    // --- Parakeet ---
+
+    [Fact]
+    public void ParakeetOptions_DefaultValues()
+    {
+        var options = new ParakeetOptions();
+
+        options.ModelName.Should().Be("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8");
+        options.ModelDirectory.Should().BeNull();
+        options.GpuAcceleration.Should().BeTrue();
+        options.NumThreads.Should().Be(4);
+    }
+
+    [Fact]
+    public void ParakeetOptions_GetModelDirectory_WithNull_ReturnsAppDataPath()
+    {
+        var options = new ParakeetOptions { ModelDirectory = null };
+        var result = options.GetModelDirectory();
+        result.Should().Contain("WriteSpeech");
+        result.Should().Contain("parakeet-models");
+    }
+
+    [Fact]
+    public void ParakeetOptions_GetModelDirectory_WithCustomDir_ReturnsCustom()
+    {
+        var options = new ParakeetOptions { ModelDirectory = @"C:\models\parakeet" };
+        options.GetModelDirectory().Should().Be(@"C:\models\parakeet");
+    }
+
+    [Fact]
+    public void Validator_ParakeetProvider_RequiresModelName()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Provider = TranscriptionProvider.Parakeet;
+        options.Parakeet.ModelName = "";
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("Parakeet");
+    }
+
+    [Fact]
+    public void Validator_ParakeetProvider_WithModelName_Succeeds()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Provider = TranscriptionProvider.Parakeet;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validator_InvalidParakeetNumThreads_Fails()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Parakeet.NumThreads = 0;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("NumThreads");
+    }
 }

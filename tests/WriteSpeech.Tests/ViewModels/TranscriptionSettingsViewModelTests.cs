@@ -14,6 +14,7 @@ public class TranscriptionSettingsViewModelTests
 {
     private readonly IModelManager _modelManager = Substitute.For<IModelManager>();
     private readonly ICorrectionModelManager _correctionModelManager = Substitute.For<ICorrectionModelManager>();
+    private readonly IParakeetModelManager _parakeetModelManager = Substitute.For<IParakeetModelManager>();
     private readonly IModelPreloadService _preloadService = Substitute.For<IModelPreloadService>();
     private bool _saveCalled;
 
@@ -26,7 +27,7 @@ public class TranscriptionSettingsViewModelTests
         };
         configure?.Invoke(options);
         return new TranscriptionSettingsViewModel(
-            _modelManager, _correctionModelManager, _preloadService,
+            _modelManager, _correctionModelManager, _parakeetModelManager, _preloadService,
             NullLogger<TranscriptionSettingsViewModel>.Instance,
             new SynchronousDispatcherService(),
             () => _saveCalled = true,
@@ -776,5 +777,102 @@ public class TranscriptionSettingsViewModelTests
         json["TextCorrection"]!["Google"]!["Model"]!.GetValue<string>().Should().Be("gemini-2.5-pro");
         json["TextCorrection"]!["Groq"]!["ApiKey"]!.GetValue<string>().Should().Be("gsk-test");
         json["TextCorrection"]!["Groq"]!["Model"]!.GetValue<string>().Should().Be("mixtral-8x7b-32768");
+    }
+
+    // --- Parakeet ---
+
+    [Fact]
+    public void Constructor_ParakeetProvider_SetsParakeetModel()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Provider = TranscriptionProvider.Parakeet;
+            o.Parakeet.ModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
+        });
+
+        vm.Provider.Should().Be(TranscriptionProvider.Parakeet);
+        vm.TranscriptionModel.Should().Be("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8");
+    }
+
+    [Fact]
+    public void Constructor_ParakeetProvider_LoadsGpuAcceleration()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Provider = TranscriptionProvider.Parakeet;
+            o.Parakeet.GpuAcceleration = false;
+            o.Parakeet.NumThreads = 8;
+        });
+
+        vm.ParakeetGpuAcceleration.Should().BeFalse();
+        vm.ParakeetNumThreads.Should().Be(8);
+    }
+
+    [Fact]
+    public void SelectProvider_Parakeet_SchedulesSave()
+    {
+        var vm = CreateViewModel();
+        vm.SelectProviderCommand.Execute("Parakeet");
+
+        vm.Provider.Should().Be(TranscriptionProvider.Parakeet);
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ApplyProvider_SwitchingToParakeet_RestoresParakeetModel()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Provider = TranscriptionProvider.OpenAI;
+            o.Parakeet.ModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
+        });
+
+        vm.ApplyProvider(TranscriptionProvider.Parakeet);
+
+        vm.TranscriptionModel.Should().Be("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8");
+    }
+
+    [Fact]
+    public void ToggleParakeetGpuAcceleration_TogglesAndSaves()
+    {
+        var vm = CreateViewModel();
+        var initial = vm.ParakeetGpuAcceleration;
+
+        vm.ToggleParakeetGpuAccelerationCommand.Execute(null);
+
+        vm.ParakeetGpuAcceleration.Should().Be(!initial);
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void WriteSettings_IncludesParakeetSection()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Provider = TranscriptionProvider.Parakeet;
+            o.Parakeet.ModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
+        });
+        vm.ParakeetGpuAcceleration = false;
+        vm.ParakeetNumThreads = 8;
+
+        var json = JsonNode.Parse("{}")!;
+        vm.WriteSettings(json);
+
+        json["Provider"]!.GetValue<string>().Should().Be("Parakeet");
+        json["Parakeet"]!["ModelName"]!.GetValue<string>().Should().Be("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8");
+        json["Parakeet"]!["GpuAcceleration"]!.GetValue<bool>().Should().BeFalse();
+        json["Parakeet"]!["NumThreads"]!.GetValue<int>().Should().Be(8);
+    }
+
+    [Fact]
+    public void ShowCloudUsageHint_True_WhenParakeetAndOpenAICorrection()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Provider = TranscriptionProvider.Parakeet;
+            o.TextCorrection.Provider = TextCorrectionProvider.OpenAI;
+        });
+
+        vm.ShowCloudUsageHint.Should().BeTrue();
     }
 }

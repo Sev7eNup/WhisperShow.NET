@@ -3,5 +3,6 @@ namespace WriteSpeech.Core.Models;
 public enum TranscriptionProvider
 {
     OpenAI,
-    Local
+    Local,
+    Parakeet
 }

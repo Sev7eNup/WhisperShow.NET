@@ -11,6 +11,7 @@ public class WriteSpeechOptions
     public TranscriptionProvider Provider { get; set; } = TranscriptionProvider.OpenAI;
     public OpenAiOptions OpenAI { get; set; } = new();
     public LocalWhisperOptions Local { get; set; } = new();
+    public ParakeetOptions Parakeet { get; set; } = new();
     public string? Language { get; set; }
     public HotkeyOptions Hotkey { get; set; } = new();
     public AudioOptions Audio { get; set; } = new();
@@ -42,6 +43,17 @@ public class LocalWhisperOptions
 
     public string GetModelDirectory() =>
         WriteSpeechOptions.ResolveModelDirectory(ModelDirectory, "models");
+}
+
+public class ParakeetOptions
+{
+    public string ModelName { get; set; } = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
+    public string? ModelDirectory { get; set; }
+    public bool GpuAcceleration { get; set; } = true;
+    public int NumThreads { get; set; } = 4;
+
+    public string GetModelDirectory() =>
+        WriteSpeechOptions.ResolveModelDirectory(ModelDirectory, "parakeet-models");
 }
 
 public class HotkeyOptions
@@ -180,6 +192,13 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         if (options.Provider == TranscriptionProvider.OpenAI
             && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
             failures.Add("OpenAI transcription provider requires an API key (OpenAI.ApiKey).");
+
+        if (options.Provider == TranscriptionProvider.Parakeet
+            && string.IsNullOrWhiteSpace(options.Parakeet.ModelName))
+            failures.Add("Parakeet transcription provider requires a model name (Parakeet.ModelName).");
+
+        if (options.Parakeet.NumThreads < 1)
+            failures.Add($"Parakeet.NumThreads must be at least 1 (got {options.Parakeet.NumThreads}).");
 
         if (options.TextCorrection.Provider is TextCorrectionProvider.Cloud or TextCorrectionProvider.OpenAI
             && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))

@@ -13,6 +13,7 @@ public partial class ModelManagementViewModel : ObservableObject
 {
     private readonly IModelManager _modelManager;
     private readonly ICorrectionModelManager _correctionModelManager;
+    private readonly IParakeetModelManager _parakeetModelManager;
     private readonly IModelPreloadService _preloadService;
     private readonly ILogger _logger;
     private readonly IDispatcherService _dispatcher;
@@ -23,13 +24,17 @@ public partial class ModelManagementViewModel : ObservableObject
     private Action<string> _setTranscriptionModel;
     private Func<string> _getCorrectionLocalModelName;
     private Action<string> _setCorrectionLocalModelName;
+    private Func<string> _getParakeetModelName;
+    private Action<string> _setParakeetModelName;
 
     public ObservableCollection<ModelItemViewModel> ModelItems { get; } = [];
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];
+    public ObservableCollection<ParakeetModelItemViewModel> ParakeetModelItems { get; } = [];
 
     public ModelManagementViewModel(
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
+        IParakeetModelManager parakeetModelManager,
         IModelPreloadService preloadService,
         ILogger logger,
         IDispatcherService dispatcher,
@@ -37,10 +42,13 @@ public partial class ModelManagementViewModel : ObservableObject
         Func<string> getTranscriptionModel,
         Action<string> setTranscriptionModel,
         Func<string> getCorrectionLocalModelName,
-        Action<string> setCorrectionLocalModelName)
+        Action<string> setCorrectionLocalModelName,
+        Func<string> getParakeetModelName,
+        Action<string> setParakeetModelName)
     {
         _modelManager = modelManager;
         _correctionModelManager = correctionModelManager;
+        _parakeetModelManager = parakeetModelManager;
         _preloadService = preloadService;
         _logger = logger;
         _dispatcher = dispatcher;
@@ -49,6 +57,8 @@ public partial class ModelManagementViewModel : ObservableObject
         _setTranscriptionModel = setTranscriptionModel;
         _getCorrectionLocalModelName = getCorrectionLocalModelName;
         _setCorrectionLocalModelName = setCorrectionLocalModelName;
+        _getParakeetModelName = getParakeetModelName;
+        _setParakeetModelName = setParakeetModelName;
     }
 
     // --- Whisper Models ---
@@ -234,6 +244,98 @@ public partial class ModelManagementViewModel : ObservableObject
         {
             item.StatusText = $"Error: {ex.Message}";
             _logger.LogError(ex, "Failed to delete correction model {Name}", item.Name);
+        }
+    }
+
+    // --- Parakeet Models ---
+
+    [RelayCommand]
+    public void RefreshParakeetModels()
+    {
+        ParakeetModelItems.Clear();
+        foreach (var model in _parakeetModelManager.GetAllModels())
+        {
+            var item = new ParakeetModelItemViewModel(model);
+            item.IsActive = model.DirectoryName == _getParakeetModelName() && model.IsDirectoryComplete;
+            if (item.IsActive) item.StatusText = "Active";
+            ParakeetModelItems.Add(item);
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadParakeetModel(ParakeetModelItemViewModel item)
+    {
+        if (item.IsDownloading) return;
+
+        item.IsDownloading = true;
+        item.StatusText = "Downloading...";
+        item.DownloadProgress = 0;
+
+        try
+        {
+            var progress = new Progress<float>(p =>
+            {
+                _dispatcher.Invoke(() =>
+                {
+                    item.DownloadProgress = p;
+                    item.StatusText = $"Downloading... {p * 100:F0}%";
+                });
+            });
+
+            await _parakeetModelManager.DownloadModelAsync(item.DirectoryName, progress);
+
+            item.IsDownloaded = true;
+            item.StatusText = "Downloaded";
+            _logger.LogInformation("Parakeet model {Name} downloaded successfully", item.Name);
+
+            if (!ParakeetModelItems.Any(m => m.IsActive))
+                ActivateParakeetModel(item);
+        }
+        catch (Exception ex)
+        {
+            item.StatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to download Parakeet model {Name}", item.Name);
+        }
+        finally
+        {
+            item.IsDownloading = false;
+        }
+    }
+
+    [RelayCommand]
+    public void ActivateParakeetModel(ParakeetModelItemViewModel item)
+    {
+        if (!item.IsDownloaded) return;
+        foreach (var m in ParakeetModelItems)
+        {
+            m.IsActive = false;
+            if (m.IsDownloaded) m.StatusText = "Downloaded";
+        }
+        item.IsActive = true;
+        item.StatusText = "Active";
+        _setParakeetModelName(item.DirectoryName);
+        _scheduleSave();
+    }
+
+    [RelayCommand]
+    private void DeleteParakeetModel(ParakeetModelItemViewModel item)
+    {
+        try
+        {
+            var model = _parakeetModelManager.GetAllModels().FirstOrDefault(m => m.DirectoryName == item.DirectoryName);
+            if (model is not null)
+            {
+                _parakeetModelManager.DeleteModel(model);
+                item.IsDownloaded = false;
+                item.IsActive = false;
+                item.StatusText = "Not downloaded";
+                _logger.LogInformation("Parakeet model {Name} deleted", item.Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            item.StatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to delete Parakeet model {Name}", item.Name);
         }
     }
 
