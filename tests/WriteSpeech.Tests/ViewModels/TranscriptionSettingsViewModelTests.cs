@@ -864,4 +864,41 @@ public class TranscriptionSettingsViewModelTests
 
         vm.ShowCloudUsageHint.Should().BeTrue();
     }
+
+    // --- Preload/Unload on provider switch ---
+
+    [Fact]
+    public void ApplyProvider_Local_PreloadsWhisperAndUnloadsParakeet()
+    {
+        var vm = CreateViewModel(o => o.Local.ModelName = "ggml-large.bin");
+
+        vm.ApplyProvider(TranscriptionProvider.Local);
+
+        _preloadService.Received(1).UnloadParakeetModel();
+        _preloadService.Received(1).PreloadTranscriptionModel("ggml-large.bin");
+    }
+
+    [Fact]
+    public void ApplyProvider_Parakeet_PreloadsParakeetAndUnloadsWhisper()
+    {
+        var vm = CreateViewModel();
+
+        vm.ApplyProvider(TranscriptionProvider.Parakeet);
+
+        _preloadService.Received(1).UnloadTranscriptionModel();
+        _preloadService.Received(1).PreloadParakeetModel();
+    }
+
+    [Fact]
+    public void ApplyProvider_OpenAi_DoesNotPreloadOrUnload()
+    {
+        var vm = CreateViewModel(o => o.Provider = TranscriptionProvider.Local);
+
+        vm.ApplyProvider(TranscriptionProvider.OpenAI);
+
+        _preloadService.DidNotReceive().PreloadTranscriptionModel(Arg.Any<string>());
+        _preloadService.DidNotReceive().PreloadParakeetModel();
+        _preloadService.DidNotReceive().UnloadTranscriptionModel();
+        _preloadService.DidNotReceive().UnloadParakeetModel();
+    }
 }

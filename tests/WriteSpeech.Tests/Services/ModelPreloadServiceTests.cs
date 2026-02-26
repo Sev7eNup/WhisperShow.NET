@@ -90,4 +90,61 @@ public class ModelPreloadServiceTests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void PreloadParakeetModel_NoParakeetService_DoesNotThrow()
+    {
+        var service = new ModelPreloadService(
+            Enumerable.Empty<ITranscriptionService>(),
+            Enumerable.Empty<ITextCorrectionService>(),
+            NullLogger<ModelPreloadService>.Instance);
+
+        var act = () => service.PreloadParakeetModel();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void UnloadTranscriptionModel_NoLocalService_DoesNotThrow()
+    {
+        var service = new ModelPreloadService(
+            Enumerable.Empty<ITranscriptionService>(),
+            Enumerable.Empty<ITextCorrectionService>(),
+            NullLogger<ModelPreloadService>.Instance);
+
+        var act = () => service.UnloadTranscriptionModel();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void UnloadParakeetModel_NoParakeetService_DoesNotThrow()
+    {
+        var service = new ModelPreloadService(
+            Enumerable.Empty<ITranscriptionService>(),
+            Enumerable.Empty<ITextCorrectionService>(),
+            NullLogger<ModelPreloadService>.Instance);
+
+        var act = () => service.UnloadParakeetModel();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void UnloadTranscriptionModel_WithLocalService_CallsUnload()
+    {
+        var localService = new LocalTranscriptionService(
+            NullLogger<LocalTranscriptionService>.Instance,
+            OptionsHelper.CreateMonitor(o => o.Local.ModelDirectory = @"C:\nonexistent-dir-xyz"));
+
+        var service = new ModelPreloadService(
+            new ITranscriptionService[] { localService },
+            Enumerable.Empty<ITextCorrectionService>(),
+            NullLogger<ModelPreloadService>.Instance);
+
+        // Should not throw even when no model is loaded
+        var act = () => service.UnloadTranscriptionModel();
+
+        act.Should().NotThrow();
+    }
 }

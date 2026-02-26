@@ -32,6 +32,17 @@ public class LocalTranscriptionServiceTests
         service.ProviderName.Should().Be("Lokal (Whisper.net)");
     }
 
+    [Fact]
+    public void UnloadModel_WhenNoModelLoaded_DoesNotThrow()
+    {
+        var service = CreateService();
+
+        var act = () => service.UnloadModel();
+
+        act.Should().NotThrow();
+        service.IsModelLoaded.Should().BeFalse();
+    }
+
     private static LocalTranscriptionService CreateService(
         string modelDir = @"C:\nonexistent", string modelName = "ggml-small.bin")
     {

@@ -25,6 +25,24 @@ public interface IModelPreloadService
     void PreloadCorrectionModel(string? modelName = null);
 
     /// <summary>
+    /// Preload the Parakeet transcription model on a background thread.
+    /// Reads model directory from configuration.
+    /// </summary>
+    void PreloadParakeetModel();
+
+    /// <summary>
+    /// Unload the local Whisper transcription model to free memory.
+    /// Called when switching to a different transcription provider.
+    /// </summary>
+    void UnloadTranscriptionModel();
+
+    /// <summary>
+    /// Unload the Parakeet transcription model to free memory.
+    /// Called when switching to a different transcription provider.
+    /// </summary>
+    void UnloadParakeetModel();
+
+    /// <summary>
     /// Unload the local text correction model to free VRAM.
     /// Called when switching away from the Local correction provider.
     /// </summary>

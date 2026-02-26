@@ -52,7 +52,8 @@ public class ModelManagementViewModelTests
             value => _correctionLocalModelName = value,
             () => _parakeetModelName,
             value => _parakeetModelName = value,
-            provider => _provider = provider);
+            provider => _provider = provider,
+            () => _provider);
 
     // --- Whisper Models ---
 
@@ -195,6 +196,162 @@ public class ModelManagementViewModelTests
         _saveCalled.Should().BeTrue();
         _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
     }
+
+    [Fact]
+    public void ActivateModel_SetsProviderToLocal()
+    {
+        _provider = TranscriptionProvider.Parakeet;
+        var model = new WhisperModel { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000 };
+        var item = new ModelItemViewModel(model, Whisper.net.Ggml.GgmlType.Small);
+        item.IsDownloaded = true;
+
+        var vm = CreateViewModel();
+        vm.ModelItems.Add(item);
+
+        vm.ActivateModelCommand.Execute(item);
+
+        _provider.Should().Be(TranscriptionProvider.Local);
+    }
+
+    [Fact]
+    public void ActivateModel_UnloadsParakeetAndPreloadsWhisper()
+    {
+        var model = new WhisperModel { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000 };
+        var item = new ModelItemViewModel(model, Whisper.net.Ggml.GgmlType.Small);
+        item.IsDownloaded = true;
+
+        var vm = CreateViewModel();
+        vm.ModelItems.Add(item);
+
+        vm.ActivateModelCommand.Execute(item);
+
+        _preloadService.Received(1).UnloadParakeetModel();
+        _preloadService.Received(1).PreloadTranscriptionModel("ggml-small.bin");
+    }
+
+    [Fact]
+    public void ActivateModel_DeactivatesParakeetModels()
+    {
+        var whisperModel = new WhisperModel { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000 };
+        var whisperItem = new ModelItemViewModel(whisperModel, Whisper.net.Ggml.GgmlType.Small);
+        whisperItem.IsDownloaded = true;
+
+        var parakeetModel = new ParakeetModelInfo { Name = "Parakeet", FileName = "parakeet-v2", DirectoryName = "parakeet-v2", SizeBytes = 300_000_000, DownloadUrl = "https://example.com/parakeet" };
+        var parakeetItem = new ParakeetModelItemViewModel(parakeetModel);
+        parakeetItem.IsDownloaded = true;
+        parakeetItem.IsActive = true;
+        parakeetItem.StatusText = "Active";
+
+        var vm = CreateViewModel();
+        vm.ModelItems.Add(whisperItem);
+        vm.ParakeetModelItems.Add(parakeetItem);
+
+        vm.ActivateModelCommand.Execute(whisperItem);
+
+        whisperItem.IsActive.Should().BeTrue();
+        parakeetItem.IsActive.Should().BeFalse();
+        parakeetItem.StatusText.Should().Be("Downloaded");
+    }
+
+    [Fact]
+    public void RefreshModels_WhenParakeetProvider_NoWhisperActive()
+    {
+        _provider = TranscriptionProvider.Parakeet;
+        _transcriptionModel = "ggml-small.bin";
+        _modelManager.GetAllModels().Returns(new List<WhisperModel>
+        {
+            new() { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000 }
+        });
+
+        var vm = CreateViewModel();
+        vm.RefreshModelsCommand.Execute(null);
+
+        // Even though model name matches, provider is Parakeet so no Whisper model should be active
+        vm.ModelItems.Should().OnlyContain(m => !m.IsActive);
+    }
+
+    // --- Parakeet Models ---
+
+    [Fact]
+    public void RefreshParakeetModels_WhenLocalProvider_NoParakeetActive()
+    {
+        _provider = TranscriptionProvider.Local;
+        _parakeetModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
+
+        var model = new ParakeetModelInfo
+        {
+            Name = "Parakeet TDT 0.6B v2 (int8)",
+            FileName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8",
+            DirectoryName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8",
+            SizeBytes = 300_000_000,
+            DownloadUrl = "https://example.com/parakeet"
+        };
+        _parakeetModelManager.GetAllModels().Returns(new List<ParakeetModelInfo> { model });
+
+        var vm = CreateViewModel();
+        vm.RefreshParakeetModelsCommand.Execute(null);
+
+        // Even though directory name matches, provider is Local so no Parakeet model should be active
+        vm.ParakeetModelItems.Should().OnlyContain(m => !m.IsActive);
+    }
+
+    [Fact]
+    public void ActivateParakeetModel_SetsProviderToParakeet()
+    {
+        _provider = TranscriptionProvider.Local;
+        var model = new ParakeetModelInfo { Name = "Parakeet", FileName = "parakeet-v2", DirectoryName = "parakeet-v2", SizeBytes = 300_000_000, DownloadUrl = "https://example.com/parakeet" };
+        var item = new ParakeetModelItemViewModel(model);
+        item.IsDownloaded = true;
+
+        var vm = CreateViewModel();
+        vm.ParakeetModelItems.Add(item);
+
+        vm.ActivateParakeetModelCommand.Execute(item);
+
+        _provider.Should().Be(TranscriptionProvider.Parakeet);
+    }
+
+    [Fact]
+    public void ActivateParakeetModel_UnloadsWhisperAndPreloadsParakeet()
+    {
+        var model = new ParakeetModelInfo { Name = "Parakeet", FileName = "parakeet-v2", DirectoryName = "parakeet-v2", SizeBytes = 300_000_000, DownloadUrl = "https://example.com/parakeet" };
+        var item = new ParakeetModelItemViewModel(model);
+        item.IsDownloaded = true;
+
+        var vm = CreateViewModel();
+        vm.ParakeetModelItems.Add(item);
+
+        vm.ActivateParakeetModelCommand.Execute(item);
+
+        _preloadService.Received(1).UnloadTranscriptionModel();
+        _preloadService.Received(1).PreloadParakeetModel();
+    }
+
+    [Fact]
+    public void ActivateParakeetModel_DeactivatesWhisperModels()
+    {
+        var whisperModel = new WhisperModel { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000 };
+        var whisperItem = new ModelItemViewModel(whisperModel, Whisper.net.Ggml.GgmlType.Small);
+        whisperItem.IsDownloaded = true;
+        whisperItem.IsActive = true;
+        whisperItem.StatusText = "Active";
+
+        var parakeetModel = new ParakeetModelInfo { Name = "Parakeet", FileName = "parakeet-v2", DirectoryName = "parakeet-v2", SizeBytes = 300_000_000, DownloadUrl = "https://example.com/parakeet" };
+        var parakeetItem = new ParakeetModelItemViewModel(parakeetModel);
+        parakeetItem.IsDownloaded = true;
+
+        var vm = CreateViewModel();
+        vm.ModelItems.Add(whisperItem);
+        vm.ParakeetModelItems.Add(parakeetItem);
+
+        vm.ActivateParakeetModelCommand.Execute(parakeetItem);
+
+        parakeetItem.IsActive.Should().BeTrue();
+        whisperItem.IsActive.Should().BeFalse();
+        whisperItem.StatusText.Should().Be("Downloaded");
+    }
+
+    // --- Correction Models ---
 
     [Fact]
     public void DeleteCorrectionModel_UpdatesItemState()

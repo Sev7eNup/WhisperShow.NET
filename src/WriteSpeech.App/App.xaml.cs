@@ -190,13 +190,8 @@ public partial class App : Application
 
         if (opts.Provider == TranscriptionProvider.Local)
             preloadService.PreloadTranscriptionModel();
-
-        if (opts.Provider == TranscriptionProvider.Parakeet)
-        {
-            var parakeetService = _host!.Services.GetServices<ITranscriptionService>()
-                .OfType<ParakeetTranscriptionService>().FirstOrDefault();
-            parakeetService?.Preload();
-        }
+        else if (opts.Provider == TranscriptionProvider.Parakeet)
+            preloadService.PreloadParakeetModel();
 
         if (opts.TextCorrection.Provider == TextCorrectionProvider.Local)
             preloadService.PreloadCorrectionModel();

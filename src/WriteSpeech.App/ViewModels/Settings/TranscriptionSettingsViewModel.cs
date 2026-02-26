@@ -194,7 +194,8 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
             name => CorrectionLocalModelName = name,
             () => _parakeetModelName,
             name => { _parakeetModelName = name; },
-            provider => { Provider = provider; });
+            provider => { Provider = provider; },
+            () => Provider);
     }
 
     private void UpdateApiKeyDisplay()
@@ -232,7 +233,15 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
 
         if (provider == TranscriptionProvider.Local)
+        {
+            _preloadService.UnloadParakeetModel();
             _preloadService.PreloadTranscriptionModel(_localModelName);
+        }
+        else if (provider == TranscriptionProvider.Parakeet)
+        {
+            _preloadService.UnloadTranscriptionModel();
+            _preloadService.PreloadParakeetModel();
+        }
     }
 
     [RelayCommand]

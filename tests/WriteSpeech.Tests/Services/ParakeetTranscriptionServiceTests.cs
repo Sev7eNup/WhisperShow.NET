@@ -66,6 +66,17 @@ public class ParakeetTranscriptionServiceTests
         act.Should().NotThrow();
     }
 
+    [Fact]
+    public void UnloadModel_WhenNoModelLoaded_DoesNotThrow()
+    {
+        var service = CreateService();
+
+        var act = () => service.UnloadModel();
+
+        act.Should().NotThrow();
+        service.IsModelLoaded.Should().BeFalse();
+    }
+
     // --- WAV conversion ---
 
     [Fact]

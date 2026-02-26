@@ -137,6 +137,17 @@ public class LocalTranscriptionService : ITranscriptionService, IStreamingTransc
         }
     }
 
+    public void UnloadModel()
+    {
+        lock (_loadLock)
+        {
+            _factory?.Dispose();
+            _factory = null;
+            _loadedModelPath = null;
+            _logger.LogInformation("Whisper model unloaded");
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
