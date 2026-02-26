@@ -73,10 +73,10 @@ public class CombinedAudioTranscriptionService : ICombinedTranscriptionCorrectio
                 systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
 
             string langSuffix;
-            if (systemPromptOverride is not null)
-                langSuffix = "";
-            else if (!string.IsNullOrEmpty(targetLanguage))
+            if (!string.IsNullOrEmpty(targetLanguage))
                 langSuffix = $"\n[Translate to: {targetLanguage}]";
+            else if (systemPromptOverride is not null)
+                langSuffix = "";
             else if (!string.IsNullOrEmpty(language))
                 langSuffix = $"\n[Output language MUST be: {language}]";
             else

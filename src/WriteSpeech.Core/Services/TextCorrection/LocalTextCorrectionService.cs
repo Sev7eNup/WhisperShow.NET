@@ -61,13 +61,13 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
                 systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
 
             string userMessage;
-            if (systemPromptOverride is not null)
-            {
-                userMessage = rawText;
-            }
-            else if (!string.IsNullOrEmpty(targetLanguage))
+            if (!string.IsNullOrEmpty(targetLanguage))
             {
                 userMessage = $"[Translate to: {targetLanguage}]\n{rawText}";
+            }
+            else if (systemPromptOverride is not null)
+            {
+                userMessage = rawText;
             }
             else
             {
