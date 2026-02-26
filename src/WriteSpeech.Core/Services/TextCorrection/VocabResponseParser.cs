@@ -28,8 +28,9 @@ public static class VocabResponseParser
 
         var words = vocabSection
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(w => w.TrimStart('-', '*', ' '))
+            .Select(w => w.Trim('-', '*', ' ', ':'))
             .Where(w => w.Length >= 2 && w.Length <= 100)
+            .Where(w => !w.Contains("---"))
             .Where(IsValidVocabEntry)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -55,6 +56,12 @@ public static class VocabResponseParser
         // Multi-word entries ending in sentence punctuation are sentences, not terms
         // (single-word like "Dr." or "Inc." is OK)
         if (wordCount > 1 && (entry.EndsWith('.') || entry.EndsWith('?') || entry.EndsWith('!')))
+            return false;
+
+        // Reject hyphenated descriptions with 3+ segments (e.g., "Maus-Low-Level-Hook",
+        // "Overlay-Mikrofon-Icon") — real terms rarely have that many hyphens
+        var hyphenSegments = entry.Split('-', StringSplitOptions.RemoveEmptyEntries).Length;
+        if (hyphenSegments >= 3)
             return false;
 
         return true;

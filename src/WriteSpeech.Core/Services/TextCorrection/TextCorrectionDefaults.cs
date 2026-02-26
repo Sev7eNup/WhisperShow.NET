@@ -51,8 +51,9 @@ public static class TextCorrectionDefaults
         """
 
         After the corrected text, if you detected any proper nouns, brand names, or technical terms, add a line containing only "---VOCAB---" followed by one term per line.
-        ONLY include: names of people, companies, products, places, or technical terms with a capital letter.
-        NEVER include: common words, verbs, adjectives, or full sentences.
+        ONLY include: names of people, companies, products, places, or widely established technical terms (e.g., "TensorFlow", "Kubernetes", "CUDA").
+        NEVER include: common nouns (even if capitalized in German — German capitalizes all nouns), verbs, adjectives, full sentences, descriptive phrases, hyphenated compound descriptions, or UI element names.
+        Each entry must be a specific, widely recognized proper name or established term — not a general description.
         If no special terms were detected, do NOT add the ---VOCAB--- delimiter.
         """;
 }

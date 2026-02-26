@@ -285,6 +285,9 @@ public class VocabResponseParserTests
     [InlineData("Inc.", true)]
     [InlineData("Finanz Informatik", true)]
     [InlineData("San Francisco Bay Area", true)]
+    [InlineData("Wi-Fi", true)]
+    [InlineData("COVID-19", true)]
+    [InlineData("Command-Modus", true)]
     [InlineData("was", false)]
     [InlineData("noch", false)]
     [InlineData("financial informatics", false)]
@@ -292,9 +295,58 @@ public class VocabResponseParserTests
     [InlineData("Du sollst es einfach nur wiedergeben.", false)]
     [InlineData("CRITICAL: NEVER change the language.", false)]
     [InlineData("This Is A Very Long Phrase That Exceeds Four Words", false)]
+    [InlineData("Maus-Low-Level-Hook", false)]
+    [InlineData("Overlay-Mikrofon-Icon", false)]
+    [InlineData("Some-Long-Hyphenated-Description", false)]
     public void IsValidVocabEntry_ValidatesCorrectly(string entry, bool expected)
     {
         VocabResponseParser.IsValidVocabEntry(entry).Should().Be(expected);
+    }
+
+    // --- Trailing dash / delimiter leakage ---
+
+    [Fact]
+    public void Parse_TrimsTrailingDashes()
+    {
+        var response = "Text.\n---VOCAB---\n- Dabbedababa---\n- TensorFlow---";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        // After Trim, "Dabbedababa" has uppercase D but is a single word — passes validation
+        // "TensorFlow" after trim is a valid entry
+        vocab.Should().Contain("TensorFlow");
+    }
+
+    [Fact]
+    public void Parse_RejectsEntriesWithTripleDash()
+    {
+        var response = "Text.\n---VOCAB---\nMhm---VOCAB---\nTensorFlow";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        vocab.Should().ContainSingle().Which.Should().Be("TensorFlow");
+    }
+
+    [Fact]
+    public void Parse_RejectsHyphenatedDescriptions()
+    {
+        var response = "Text.\n---VOCAB---\nMaus-Low-Level-Hook\nOverlay-Mikrofon-Icon\nWi-Fi";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        vocab.Should().ContainSingle().Which.Should().Be("Wi-Fi");
+    }
+
+    [Fact]
+    public void Parse_TrimsTrailingColonsAndDashes()
+    {
+        var response = "Text.\n---VOCAB---\n- TensorFlow:\n* Kubernetes-";
+
+        var (text, vocab) = VocabResponseParser.Parse(response);
+
+        vocab.Should().HaveCount(2);
+        vocab.Should().Contain("TensorFlow");
+        vocab.Should().Contain("Kubernetes");
     }
 
     // --- AddExtractedVocabulary ---
