@@ -65,7 +65,10 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isEditingProvider;
 
     // --- Transcription: Endpoint ---
-    [ObservableProperty] private string _openAiEndpoint = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCustomEndpoint))]
+    [NotifyPropertyChangedFor(nameof(IsCustomCloudModel))]
+    private string _openAiEndpoint = "";
     [ObservableProperty] private bool _isEditingEndpoint;
 
     // --- Transcription: API Key ---
@@ -125,10 +128,13 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [ObservableProperty] private string _combinedAudioModel = "gpt-4o-mini-audio-preview";
     [ObservableProperty] private bool _isEditingCombinedAudioModel;
 
+    // --- Custom endpoint ---
+    public bool HasCustomEndpoint => !string.IsNullOrWhiteSpace(OpenAiEndpoint);
+
     // --- Custom cloud model ---
     public bool IsCustomCloudModel =>
         Provider == TranscriptionProvider.OpenAI &&
-        CloudTranscriptionModels.All(m => m.Id != TranscriptionModel);
+        (HasCustomEndpoint || CloudTranscriptionModels.All(m => m.Id != TranscriptionModel));
 
     // --- Custom correction model ---
     public bool IsCustomCorrectionModel =>

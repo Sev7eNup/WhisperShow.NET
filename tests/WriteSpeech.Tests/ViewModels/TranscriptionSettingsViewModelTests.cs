@@ -279,6 +279,43 @@ public class TranscriptionSettingsViewModelTests
         vm.IsCustomCloudModel.Should().BeFalse();
     }
 
+    // --- HasCustomEndpoint ---
+
+    [Fact]
+    public void HasCustomEndpoint_ReturnsFalse_WhenEndpointEmpty()
+    {
+        var vm = CreateViewModel();
+
+        vm.HasCustomEndpoint.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasCustomEndpoint_ReturnsTrue_WhenEndpointSet()
+    {
+        var vm = CreateViewModel(o => o.OpenAI.Endpoint = "https://my-server.com/v1");
+
+        vm.HasCustomEndpoint.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsCustomCloudModel_ReturnsTrue_WhenHasCustomEndpoint()
+    {
+        // Even with a predefined model name like "whisper-1", custom endpoint forces custom mode
+        var vm = CreateViewModel(o => o.OpenAI.Endpoint = "https://my-server.com/v1");
+
+        vm.TranscriptionModel.Should().Be("whisper-1");
+        vm.IsCustomCloudModel.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsCustomCloudModel_ReturnsFalse_WhenDefaultEndpoint_And_PredefinedModel()
+    {
+        var vm = CreateViewModel(); // default endpoint (empty), default model (whisper-1)
+
+        vm.HasCustomEndpoint.Should().BeFalse();
+        vm.IsCustomCloudModel.Should().BeFalse();
+    }
+
     [Fact]
     public void ApplyCorrectionModel_SetsValueAndTriggersSave()
     {
