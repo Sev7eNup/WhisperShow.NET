@@ -73,7 +73,7 @@ public partial class SettingsViewModel : ObservableObject
             hotkeyService, logger, dispatcher, ScheduleSave, opts);
 
         System = new SystemSettingsViewModel(
-            autoStartService, ScheduleSave, opts);
+            autoStartService, persistenceService, ScheduleSave, opts);
 
         Transcription = new TranscriptionSettingsViewModel(
             modelManager, correctionModelManager, parakeetModelManager,

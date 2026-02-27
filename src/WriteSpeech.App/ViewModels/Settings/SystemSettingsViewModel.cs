@@ -9,6 +9,7 @@ namespace WriteSpeech.App.ViewModels.Settings;
 public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly IAutoStartService _autoStartService;
+    private readonly ISettingsPersistenceService _persistenceService;
     private readonly Action _scheduleSave;
 
     // --- App settings ---
@@ -38,10 +39,12 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     public SystemSettingsViewModel(
         IAutoStartService autoStartService,
+        ISettingsPersistenceService persistenceService,
         Action scheduleSave,
         WriteSpeechOptions options)
     {
         _autoStartService = autoStartService;
+        _persistenceService = persistenceService;
         _scheduleSave = scheduleSave;
 
         _launchAtLogin = options.App.LaunchAtLogin;
@@ -111,6 +114,17 @@ public partial class SystemSettingsViewModel : ObservableObject
         MaxRecordingSeconds = Math.Max(10, seconds);
         IsEditingMaxRecording = false;
         _scheduleSave();
+    }
+
+    // --- Setup wizard ---
+
+    [RelayCommand]
+    internal void ResetSetupWizard()
+    {
+        _persistenceService.ScheduleUpdate(section =>
+        {
+            SettingsViewModel.EnsureObject(section, "App")["SetupCompleted"] = false;
+        });
     }
 
     // --- Persistence ---

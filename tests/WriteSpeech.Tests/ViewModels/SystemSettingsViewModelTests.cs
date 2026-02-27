@@ -10,6 +10,7 @@ namespace WriteSpeech.Tests.ViewModels;
 public class SystemSettingsViewModelTests
 {
     private readonly IAutoStartService _autoStartService = Substitute.For<IAutoStartService>();
+    private readonly ISettingsPersistenceService _persistenceService = Substitute.For<ISettingsPersistenceService>();
     private bool _saveCalled;
 
     private SystemSettingsViewModel CreateViewModel(Action<WriteSpeechOptions>? configure = null)
@@ -19,6 +20,7 @@ public class SystemSettingsViewModelTests
         configure?.Invoke(options);
         return new SystemSettingsViewModel(
             _autoStartService,
+            _persistenceService,
             () => _saveCalled = true,
             options);
     }
@@ -233,5 +235,35 @@ public class SystemSettingsViewModelTests
         var vm = CreateViewModel();
         vm.ApplyMaxRecording(input);
         vm.MaxRecordingSeconds.Should().Be(expected);
+    }
+
+    // --- Reset setup wizard ---
+
+    [Fact]
+    public void ResetSetupWizard_CallsScheduleUpdate()
+    {
+        var vm = CreateViewModel();
+
+        vm.ResetSetupWizardCommand.Execute(null);
+
+        _persistenceService.Received(1).ScheduleUpdate(Arg.Any<Action<JsonNode>>());
+    }
+
+    [Fact]
+    public void ResetSetupWizard_SetsSetupCompletedFalse()
+    {
+        var vm = CreateViewModel();
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.ResetSetupWizardCommand.Execute(null);
+
+        capturedSection!["App"]!["SetupCompleted"]!.GetValue<bool>().Should().BeFalse();
     }
 }

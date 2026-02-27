@@ -72,11 +72,30 @@ public partial class SetupWizardViewModel : ObservableObject
     public SetupWizardViewModel(
         ISettingsPersistenceService persistenceService,
         IDispatcherService dispatcher,
-        ILogger<SetupWizardViewModel> logger)
+        ILogger<SetupWizardViewModel> logger,
+        WriteSpeechOptions? existingOptions = null)
     {
         _persistenceService = persistenceService;
         _dispatcher = dispatcher;
         _logger = logger;
+
+        if (existingOptions is not null)
+        {
+            _provider = existingOptions.Provider;
+            _openAiApiKey = existingOptions.OpenAI.ApiKey ?? "";
+            _correctionProvider = existingOptions.TextCorrection.Provider;
+            _correctionApiKey = existingOptions.TextCorrection.Provider switch
+            {
+                TextCorrectionProvider.Anthropic => existingOptions.TextCorrection.Anthropic.ApiKey ?? "",
+                TextCorrectionProvider.Google => existingOptions.TextCorrection.Google.ApiKey ?? "",
+                TextCorrectionProvider.Groq => existingOptions.TextCorrection.Groq.ApiKey ?? "",
+                _ => ""
+            };
+            _selectedLanguageCode = existingOptions.Language;
+            _isAutoDetectLanguage = existingOptions.Language == null;
+            _selectedMicrophoneIndex = existingOptions.Audio.DeviceIndex;
+        }
+
         LoadMicrophones();
     }
 
