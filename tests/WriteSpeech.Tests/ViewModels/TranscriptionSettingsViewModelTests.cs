@@ -850,6 +850,19 @@ public class TranscriptionSettingsViewModelTests
     }
 
     [Fact]
+    public void SelectProvider_Whisper_WhenParakeet_SwitchesToLocal()
+    {
+        var vm = CreateViewModel(o => o.Provider = TranscriptionProvider.Parakeet);
+        _saveCalled = false;
+
+        vm.SelectProviderCommand.Execute("Whisper");
+
+        // Clicking Whisper sub-provider pill when on Parakeet should switch to Local
+        vm.Provider.Should().Be(TranscriptionProvider.Local);
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
     public void ApplyProvider_SwitchingToParakeet_RestoresParakeetModel()
     {
         var vm = CreateViewModel(o =>

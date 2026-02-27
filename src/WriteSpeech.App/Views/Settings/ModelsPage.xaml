@@ -448,7 +448,7 @@
                     HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal">
                     <!-- Whisper tab -->
-                    <Border Tag="Local" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
+                    <Border Tag="Whisper" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
                             CornerRadius="16" Padding="16,6" Margin="0,0,2,0">
                         <Border.Style>
                             <Style TargetType="Border">

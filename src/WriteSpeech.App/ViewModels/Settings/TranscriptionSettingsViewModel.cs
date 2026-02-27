@@ -295,8 +295,16 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void SelectProvider(string providerName)
     {
+        // Sub-provider pill: direct switch to Whisper (Local)
+        if (providerName == "Whisper")
+        {
+            ApplyProvider(TranscriptionProvider.Local);
+            return;
+        }
+
+        // Top-level "Local" toggle — don't reset when already on a local provider
         if (providerName == "Local" && Provider is TranscriptionProvider.Local or TranscriptionProvider.Parakeet)
-            return; // Already showing the local section — don't reset provider
+            return;
 
         if (providerName == "Local")
         {
