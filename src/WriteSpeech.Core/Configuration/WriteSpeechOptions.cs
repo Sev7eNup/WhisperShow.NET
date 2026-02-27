@@ -9,7 +9,10 @@ public class WriteSpeechOptions
     public const string AppDataFolderName = "WriteSpeech";
 
     public TranscriptionProvider Provider { get; set; } = TranscriptionProvider.OpenAI;
+    public string CloudTranscriptionProvider { get; set; } = "OpenAI";
     public OpenAiOptions OpenAI { get; set; } = new();
+    public GroqTranscriptionOptions GroqTranscription { get; set; } = new();
+    public CustomTranscriptionOptions CustomTranscription { get; set; } = new();
     public LocalWhisperOptions Local { get; set; } = new();
     public ParakeetOptions Parakeet { get; set; } = new();
     public string? Language { get; set; }
@@ -33,6 +36,20 @@ public class OpenAiOptions
     public string? ApiKey { get; set; }
     public string Model { get; set; } = "whisper-1";
     public string? Endpoint { get; set; }
+}
+
+public class GroqTranscriptionOptions
+{
+    public string? ApiKey { get; set; }
+    public string Model { get; set; } = "whisper-large-v3-turbo";
+    public string Endpoint => "https://api.groq.com/openai/v1";
+}
+
+public class CustomTranscriptionOptions
+{
+    public string? ApiKey { get; set; }
+    public string? Endpoint { get; set; }
+    public string Model { get; set; } = "";
 }
 
 public class LocalWhisperOptions
@@ -191,8 +208,14 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
             failures.Add("Local transcription provider requires a model name (Local.ModelName).");
 
         if (options.Provider == TranscriptionProvider.OpenAI
+            && options.CloudTranscriptionProvider == "OpenAI"
             && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
             failures.Add("OpenAI transcription provider requires an API key (OpenAI.ApiKey).");
+
+        if (options.Provider == TranscriptionProvider.OpenAI
+            && options.CloudTranscriptionProvider == "Custom"
+            && string.IsNullOrWhiteSpace(options.CustomTranscription.Endpoint))
+            failures.Add("Custom transcription provider requires an endpoint (CustomTranscription.Endpoint).");
 
         if (options.Provider == TranscriptionProvider.Parakeet
             && string.IsNullOrWhiteSpace(options.Parakeet.ModelName))

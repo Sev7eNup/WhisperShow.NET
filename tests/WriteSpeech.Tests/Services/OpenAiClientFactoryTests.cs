@@ -116,4 +116,63 @@ public class OpenAiClientFactoryTests
 
         chatClient.Should().NotBeNull();
     }
+
+    // --- Explicit credentials overloads ---
+
+    [Fact]
+    public void GetClient_WithExplicitCredentials_ReturnsClient()
+    {
+        var monitor = OptionsHelper.CreateMonitor();
+        var factory = new OpenAiClientFactory(monitor);
+
+        var client = factory.GetClient(TestApiKey, null);
+
+        client.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void GetClient_WithExplicitCredentials_CachesByKeyAndEndpoint()
+    {
+        var monitor = OptionsHelper.CreateMonitor();
+        var factory = new OpenAiClientFactory(monitor);
+
+        var first = factory.GetClient(TestApiKey, "https://api.groq.com/v1");
+        var second = factory.GetClient(TestApiKey, "https://api.groq.com/v1");
+
+        ReferenceEquals(first, second).Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetClient_WithDifferentEndpoints_ReturnsDifferentClients()
+    {
+        var monitor = OptionsHelper.CreateMonitor();
+        var factory = new OpenAiClientFactory(monitor);
+
+        var groqClient = factory.GetClient(TestApiKey, "https://api.groq.com/v1");
+        var customClient = factory.GetClient(TestApiKey, "https://custom.api.com/v1");
+
+        ReferenceEquals(groqClient, customClient).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetClient_WithExplicitEmptyKey_Throws()
+    {
+        var monitor = OptionsHelper.CreateMonitor();
+        var factory = new OpenAiClientFactory(monitor);
+
+        var act = () => factory.GetClient("", null);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void GetAudioClient_WithExplicitCredentials_ReturnsNonNull()
+    {
+        var monitor = OptionsHelper.CreateMonitor();
+        var factory = new OpenAiClientFactory(monitor);
+
+        var audioClient = factory.GetAudioClient("whisper-large-v3", TestApiKey, "https://api.groq.com/v1");
+
+        audioClient.Should().NotBeNull();
+    }
 }
