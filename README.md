@@ -1,11 +1,11 @@
 # ✍️ WriteSpeech.NET
 
-Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflow.com). Record speech via microphone, transcribe it using OpenAI Whisper or a local model, optionally correct it with AI, and auto-insert the text at the cursor position in any application. Supports voice commands on selected text, file transcription, context-aware correction modes, and IDE integration.
+Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflow.com). Record speech via microphone, transcribe it using OpenAI Whisper, Groq, a local Whisper model, or NVIDIA Parakeet, optionally correct it with AI, and auto-insert the text at the cursor position in any application. Supports voice commands on selected text, file transcription, context-aware correction modes, and IDE integration.
 
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
-![Tests 726+](https://img.shields.io/badge/tests-726%2B-brightgreen)
+![Tests 857+](https://img.shields.io/badge/tests-857%2B-brightgreen)
 ![CI](https://github.com/Sev7eNup/WriteSpeech.NET/actions/workflows/ci.yml/badge.svg)
 
 <!-- TODO: Add screenshot of overlay + settings window -->
@@ -13,10 +13,12 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 ## ✨ Features
 
 - 🎙️ **Speech-to-Text Overlay** — Transparent, always-on-top speech bubble with real-time waveform visualization and recording timer
-- ☁️ **Cloud Transcription** — OpenAI Whisper API with configurable model and custom endpoint support (Azure, LM Studio, etc.)
+- ☁️ **Cloud Transcription** — OpenAI Whisper API, Groq, or any custom OpenAI-compatible endpoint — configurable model and endpoint per sub-provider
 - 💻 **Local Transcription** — Offline via Whisper.net (GGML models, 5 sizes from 75 MB to 3 GB) with optional CUDA GPU acceleration
-- 🤖 **AI Text Correction** — Post-process transcriptions with GPT-4.1-mini (cloud) or LLamaSharp (local GGUF models, 4 models available)
-- 🎧 **Combined Audio Model** — Direct audio-to-text via GPT-4o audio input (single API call for transcription + correction)
+- 🦜 **NVIDIA Parakeet Transcription** — Offline English-only transcription via NVIDIA NeMo Parakeet TDT 0.6B (sherpa-onnx), GPU (CUDA) or CPU — auto-falls back to Whisper for non-English languages
+- 📡 **Realtime Streaming** — Progressive segment-by-segment text display during local transcription; cloud providers show a sweep animation
+- 🤖 **AI Text Correction** — Post-process transcriptions with **OpenAI** (GPT-4.1-mini), **Anthropic** (Claude), **Google** (Gemini), **Groq**, **Custom** (any OpenAI-compatible endpoint), or **Local** (LLamaSharp, offline GGUF models)
+- 🎧 **Combined Audio Model** — Direct audio-to-text via GPT-4o audio input (single API call for transcription + correction; requires OpenAI as cloud sub-provider)
 - 📋 **Auto-Insert** — Automatically pastes transcribed text at the cursor position in any app via clipboard + Win32 SendInput
 - ⌨️ **Global Hotkeys** — Toggle recording (Ctrl+Shift+Space), Push-to-Talk (Ctrl+Space), Escape to dismiss — all fully configurable with keyboard or mouse buttons
 - 🖱️ **Mouse Button Hotkeys** — Low-level hook method supporting XButton1/2 and Middle mouse button with modifier combinations
@@ -47,7 +49,7 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 | **Windows 10/11** (x64) | WPF + Win32 P/Invoke, not cross-platform |
 | **.NET 10 SDK** | [Download](https://dotnet.microsoft.com/download) |
 | **OpenAI API Key** | Required for cloud transcription/correction (optional if using local models only) |
-| **NVIDIA GPU + CUDA 13.x** | Optional — for local GPU acceleration (Whisper.net + LLamaSharp) |
+| **NVIDIA GPU + CUDA 13.x** | Optional — for GPU acceleration with Whisper.net, Parakeet (sherpa-onnx), and LLamaSharp |
 
 ## 🚀 Build & Run
 
@@ -73,6 +75,22 @@ dotnet run --project src/WriteSpeech.App
 
 For cloud transcription, enter your OpenAI API key in Settings > Transcription. For offline use, switch to Local provider and download a Whisper model in Settings > Models.
 
+## 📦 Installation
+
+### Pre-built Installer (Recommended)
+
+Download the latest installer from the [GitHub Releases](https://github.com/Sev7eNup/WriteSpeech.NET/releases) page:
+
+- **`WriteSpeech-Setup-{version}.exe`** — Self-contained Inno Setup installer, no admin rights required
+- Installs to `%LOCALAPPDATA%\WriteSpeech` (user-level, no UAC prompt)
+- Optional: desktop shortcut, optional: start with Windows
+- **Preserves your settings** (`appsettings.json`) on upgrades
+- Requires Windows 10/11 x64
+
+### Build from Source
+
+See the [Build & Run](#-build--run) section above.
+
 ## 🔧 Configuration
 
 All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpeech"` section. They can also be modified via the Settings UI (right-click tray icon > Settings).
@@ -81,22 +99,43 @@ All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpe
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `Provider` | string | `"OpenAI"` | `"OpenAI"` or `"Local"` |
+| `Provider` | string | `"OpenAI"` | `"OpenAI"`, `"Local"`, or `"Parakeet"` |
+| `CloudTranscriptionProvider` | string | `"OpenAI"` | Cloud sub-provider: `"OpenAI"`, `"Groq"`, or `"Custom"` |
 | `OpenAI.ApiKey` | string | — | OpenAI API key |
 | `OpenAI.Model` | string | `"whisper-1"` | OpenAI transcription model |
 | `OpenAI.Endpoint` | string | — | Custom OpenAI-compatible endpoint |
+| `GroqTranscription.ApiKey` | string | — | Groq API key for transcription |
+| `GroqTranscription.Model` | string | `"whisper-large-v3-turbo"` | Groq transcription model |
+| `CustomTranscription.ApiKey` | string | — | API key for custom transcription endpoint |
+| `CustomTranscription.Endpoint` | string | — | Custom OpenAI-compatible transcription endpoint (required) |
+| `CustomTranscription.Model` | string | — | Model name for custom transcription endpoint |
 | `Local.ModelName` | string | `"ggml-small.bin"` | GGML model filename |
 | `Local.ModelDirectory` | string | — | Custom model directory (default: `%APPDATA%/WriteSpeech/models`) |
 | `Local.GpuAcceleration` | bool | `true` | Enable CUDA for local Whisper |
+| `Parakeet.ModelName` | string | `"sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8"` | Parakeet model directory name |
+| `Parakeet.ModelDirectory` | string | — | Custom model directory (default: `%APPDATA%/WriteSpeech/parakeet-models`) |
+| `Parakeet.GpuAcceleration` | bool | `true` | Enable CUDA for Parakeet inference |
+| `Parakeet.NumThreads` | int | `4` | CPU inference threads (min: 1) |
 | `Language` | string | — | Language code (`"de"`, `"en"`, ...) or null for auto-detect |
 
 ### Text Correction
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `TextCorrection.Provider` | string | `"Off"` | `"Off"`, `"Cloud"`, or `"Local"` |
-| `TextCorrection.Model` | string | `"gpt-4.1-mini"` | Cloud correction model |
+| `TextCorrection.Provider` | string | `"Off"` | `"Off"`, `"OpenAI"`, `"Anthropic"`, `"Google"`, `"Groq"`, `"Custom"`, `"Local"` (`"Cloud"` is a legacy alias for `"OpenAI"`) |
+| `TextCorrection.Model` | string | `"gpt-4.1-mini"` | OpenAI correction model |
 | `TextCorrection.SystemPrompt` | string | — | Custom system prompt (null = built-in default) |
+| `TextCorrection.Anthropic.ApiKey` | string | — | Anthropic API key |
+| `TextCorrection.Anthropic.Model` | string | `"claude-sonnet-4-6"` | Anthropic correction model |
+| `TextCorrection.Google.ApiKey` | string | — | Google AI API key |
+| `TextCorrection.Google.Endpoint` | string | `"https://generativelanguage.googleapis.com/v1beta/openai/"` | Gemini OpenAI-compatible endpoint |
+| `TextCorrection.Google.Model` | string | `"gemini-3-flash-preview"` | Google correction model |
+| `TextCorrection.Groq.ApiKey` | string | — | Groq API key |
+| `TextCorrection.Groq.Endpoint` | string | `"https://api.groq.com/openai/v1"` | Groq OpenAI-compatible endpoint |
+| `TextCorrection.Groq.Model` | string | `"qwen/qwen3-32b"` | Groq correction model |
+| `TextCorrection.Custom.ApiKey` | string | — | API key for custom correction endpoint |
+| `TextCorrection.Custom.Endpoint` | string | — | Custom OpenAI-compatible correction endpoint |
+| `TextCorrection.Custom.Model` | string | — | Model name for custom correction endpoint |
 | `TextCorrection.LocalModelName` | string | — | GGUF model filename |
 | `TextCorrection.LocalModelDirectory` | string | — | Custom correction model directory |
 | `TextCorrection.LocalGpuAcceleration` | bool | `true` | Enable CUDA for local correction |
@@ -188,7 +227,15 @@ WRITESPEECH_PROVIDER=Local
 | Qwen 2.5 3B Instruct | `qwen2.5-3b-instruct-q4_k_m.gguf` | ~2 GB |
 | Phi-3.5 Mini 3.8B | `Phi-3.5-mini-instruct-Q4_K_M.gguf` | ~2.4 GB |
 
-All models can be downloaded directly from the Settings UI (Settings > Models). They are stored in `%APPDATA%/WriteSpeech/models/` and `%APPDATA%/WriteSpeech/correction-models/` respectively.
+### Parakeet Models (Offline English Transcription)
+
+| Model | Directory Name | Size | Notes |
+|---|---|---|---|
+| Parakeet TDT 0.6B v2 (int8) | `sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8` | ~260 MB | English only, 4 ONNX files (encoder/decoder/joiner + tokens.txt) |
+
+Parakeet models are stored in `%APPDATA%/WriteSpeech/parakeet-models/` and can be downloaded from Settings > Models.
+
+All Whisper and correction models can be downloaded directly from the Settings UI (Settings > Models). They are stored in `%APPDATA%/WriteSpeech/models/` and `%APPDATA%/WriteSpeech/correction-models/` respectively.
 
 ## 📁 Project Structure
 
@@ -196,21 +243,26 @@ All models can be downloaded directly from the Settings UI (Settings > Models). 
 WriteSpeech.slnx
 .github/
   workflows/ci.yml               # GitHub Actions: Build + Test on Windows
+  workflows/release.yml          # Automated release: Test → Publish → Installer → GitHub Release
 
 src/
   WriteSpeech.Core/              # Platform-independent core logic (net10.0)
     Configuration/               #   WriteSpeechOptions (strongly-typed config)
     Models/                      #   RecordingState, TranscriptionResult, ModelInfoBase,
+                                 #   ParakeetModelInfo (directory-based with IsDirectoryComplete),
                                  #   CorrectionMode, IDEInfo, SupportedLanguages, ...
     Services/
       Audio/                     #   Recording (NAudio), muting, WAV→MP3 compression, IAudioFileReader
-      Transcription/             #   ITranscriptionService + OpenAI/Local implementations
-      TextCorrection/            #   ITextCorrectionService + Cloud/Local/Combined + Dictionary
+      Transcription/             #   ITranscriptionService + OpenAI/Local/Parakeet implementations
+                                 #   IStreamingTranscriptionService (segment-by-segment async enumerable)
+      TextCorrection/            #   ITextCorrectionService + CloudTextCorrectionServiceBase (abstract)
+                                 #   OpenAI/Anthropic/Google/Groq/Custom/Local + CombinedAudio + Dictionary
                                  #   VocabResponseParser (vocabulary extraction from responses)
       Modes/                     #   IModeService, ModeService, CorrectionModeDefaults (6 built-in modes)
       IDE/                       #   IIDEDetectionService, IIDEContextService, SourceFileParser
       Snippets/                  #   Trigger→replacement with cached regex
       ModelManagement/           #   Model download/delete + background preloading
+                                 #   IParakeetModelManager, ParakeetModelManager (HuggingFace download)
       History/                   #   Transcription history persistence
       Statistics/                #   Usage statistics tracking
       TextInsertion/             #   ITextInsertionService, IWindowFocusService, ISelectedTextService
@@ -226,6 +278,8 @@ src/
       OverlayViewModel.cs        #   Main state machine + voice command mode + IDE context
       SettingsViewModel.cs       #   Settings coordinator + page navigation
       FileTranscriptionViewModel.cs #   File-based audio transcription
+      ModelItemViewModelBase.cs  #   Abstract base for model download items
+      ParakeetModelItemViewModel.cs # Parakeet model download item
       Settings/                  #   Sub-VMs: General, System, Transcription, Modes, Integrations,
                                  #   Models, Stats, Dictionary
     Views/
@@ -240,7 +294,7 @@ src/
                                  #   SelectedText, AudioFileReader, IDEDetection, Tray, ...
 
 tests/
-  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (726+ tests)
+  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (857+ tests)
     Services/                    #   Service unit tests (incl. ModeService, IDE, HotkeyMatcher, Vocab)
     ViewModels/                  #   ViewModel unit tests (incl. CommandMode, FileTranscription, Modes)
     Views/                       #   WPF-specific tests (themes, code-behind helpers)
@@ -285,14 +339,30 @@ Idle → [Hotkey/Click] → Recording → [Stop] → Transcribing → [Done] →
 | `IIDEContextService` / `SourceFileParser` | IDE workspace scanning + code identifier extraction |
 | `HotkeyServiceProxy` | Runtime hot-swap between RegisterHotKey and LowLevelHook methods |
 | `VocabResponseParser` | Extract and auto-learn vocabulary from AI correction responses |
+| `CloudTextCorrectionServiceBase` | Abstract base for all cloud correction providers — shared prompt building, response processing, vocab extraction, error handling |
+| `IStreamingTranscriptionService` | Segment-by-segment async enumerable (`IAsyncEnumerable<string>`) for progressive transcription display |
 
 ### CUDA Path Discovery
 
-`AddCudaLibraryPaths()` in `App.xaml.cs` scans three sources for CUDA 13.x libraries, since `CUDA_PATH` may point to an older version:
+`AddCudaLibraryPaths()` in `App.xaml.cs` scans three sources for CUDA 13.x libraries, since `CUDA_PATH` may point to an older version. This affects Whisper.net, Parakeet (sherpa-onnx), and LLamaSharp:
 
 1. Versioned env vars (`CUDA_PATH_V13_1`, etc.)
 2. Generic `CUDA_PATH`
 3. Filesystem: `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.*`
+
+### CI/CD Pipeline
+
+Two GitHub Actions workflows run on `windows-latest` with .NET 10:
+
+- **CI** (`.github/workflows/ci.yml`): Triggered on every push/PR to `main`. Builds the solution and runs all tests.
+- **Release** (`.github/workflows/release.yml`): Triggered by version tags matching `v*.*.*`. Pipeline: run tests → publish self-contained win-x64 app → verify no API keys in `appsettings.json` → build Inno Setup installer → create GitHub Release with installer attached.
+
+To trigger a release:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
 
 ## 🧪 Testing
 
@@ -300,7 +370,7 @@ Idle → [Hotkey/Click] → Recording → [Stop] → Transcribing → [Done] →
 dotnet test tests/WriteSpeech.Tests
 ```
 
-- **726+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
+- **857+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
 - **Framework:** xUnit 2.9 + NSubstitute 5.3 + FluentAssertions 8.2
 - **WPF Tests:** `WpfTestHelper.EnsureApplication()` provides thread-safe WPF `Application` initialization for parallel xUnit execution
 - **Testable dispatch:** `SynchronousDispatcherService` replaces WPF `Dispatcher` in tests
@@ -319,6 +389,7 @@ All user data is stored in `%APPDATA%/WriteSpeech/`:
 | `logs/log-YYYYMMDD.txt` | 📝 Serilog rolling logs (7-day retention) |
 | `models/` | 🧠 Whisper GGML model files |
 | `correction-models/` | 🤖 GGUF correction model files |
+| `parakeet-models/` | 🦜 NVIDIA Parakeet ONNX model files (directory-based, 4 files per model) |
 | `custom-dictionary.json` | 📖 Custom vocabulary words |
 | `snippets.json` | 🔄 Snippet trigger→replacement entries |
 | `transcription-history.json` | 📜 Recent transcription history |
@@ -331,11 +402,12 @@ All user data is stored in `%APPDATA%/WriteSpeech/`:
 |---|---|---|
 | NAudio | 2.2.1 | 🎙️ Audio recording + muting (CoreAudioApi) |
 | NAudio.Lame | 2.1.0 | 🗜️ WAV → MP3 compression |
-| NAudio.Vorbis | — | 🎵 OGG/Vorbis audio file reading |
-| Concentus | — | 🎵 OGG/Opus audio decoding |
+| NAudio.Vorbis | 1.5.0 | 🎵 OGG/Vorbis audio file reading |
+| Concentus | 2.2.2 | 🎵 OGG/Opus audio decoding |
 | OpenAI | 2.8.0 | ☁️ Cloud transcription (Whisper) + text correction (ChatCompletions) |
 | Whisper.net | 1.9.0 | 💻 Local transcription via GGML models |
 | Whisper.net.Runtime.Cuda | 1.9.0 | ⚡ Whisper CUDA GPU runtime |
+| org.k2fsa.sherpa.onnx | 1.12.27 | 🦜 Parakeet local transcription (NVIDIA NeMo via ONNX) |
 | LLamaSharp | 0.26.0 | 🤖 Local text correction via GGUF models |
 | LLamaSharp.Backend.Cuda12 | 0.26.0 | ⚡ CUDA backend for LLamaSharp |
 | CommunityToolkit.Mvvm | 8.4.0 | 🏗️ MVVM source generators |
@@ -381,6 +453,14 @@ taskkill /F /IM WriteSpeech.App.exe
 
 - Mouse button bindings (XButton1, XButton2, Middle) require `Hotkey.Method` set to `"LowLevelHook"` in Settings > General
 - The default method `RegisterHotKey` only supports keyboard hotkeys
+
+### 🦜 Parakeet not working / English-only limitation
+
+Parakeet (NVIDIA NeMo TDT) is an English-only model. If your language is set to anything other than English (or auto-detect resolves to a non-English language), the app automatically falls back to the configured Whisper model for transcription. To use Parakeet reliably:
+
+- Set the language to `"en"` (English) in Settings > General, or keep it on auto-detect when speaking English
+- Ensure the Parakeet model is fully downloaded (Settings > Models — all 4 ONNX files must be present)
+- For GPU acceleration: CUDA 13.x must be installed (same requirement as Whisper.net)
 
 ### 🔒 Second instance shows error
 
