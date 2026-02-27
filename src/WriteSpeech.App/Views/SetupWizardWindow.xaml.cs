@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using WriteSpeech.App.ViewModels;
 using WriteSpeech.App.ViewModels.Settings;
+using WriteSpeech.Core.Models;
 
 namespace WriteSpeech.App.Views;
 
@@ -52,8 +53,24 @@ public partial class SetupWizardWindow : Window
             }, System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
-        if (e.PropertyName is nameof(SetupWizardViewModel.Provider))
-            Dispatcher.BeginInvoke(UpdateProviderHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
+        if (e.PropertyName is nameof(SetupWizardViewModel.Provider)
+            or nameof(SetupWizardViewModel.CloudTranscriptionProvider))
+            Dispatcher.BeginInvoke(() =>
+            {
+                UpdateProviderHighlight();
+                UpdateTranscriptionModelHighlight();
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
+
+        if (e.PropertyName is nameof(SetupWizardViewModel.OpenAiTranscriptionModel)
+            or nameof(SetupWizardViewModel.GroqTranscriptionModel))
+            Dispatcher.BeginInvoke(UpdateTranscriptionModelHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
+
+        if (e.PropertyName is nameof(SetupWizardViewModel.CorrectionProvider)
+            or nameof(SetupWizardViewModel.CorrectionModel)
+            or nameof(SetupWizardViewModel.AnthropicModel)
+            or nameof(SetupWizardViewModel.GoogleModel)
+            or nameof(SetupWizardViewModel.GroqCorrectionModel))
+            Dispatcher.BeginInvoke(UpdateCorrectionModelHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
 
         if (e.PropertyName is nameof(SetupWizardViewModel.SelectedLanguageCode)
             or nameof(SetupWizardViewModel.IsAutoDetectLanguage))
@@ -197,13 +214,125 @@ public partial class SetupWizardWindow : Window
         }
     }
 
-    private void CorrectionApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    // --- Cloud sub-provider tabs ---
+
+    private void CloudSubProviderTab_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border && border.Tag is string provider)
+            _viewModel.SelectCloudTranscriptionProviderCommand.Execute(provider);
+    }
+
+    // --- Model card selection ---
+
+    private void TranscriptionModelCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border && border.Tag is string modelId)
+            _viewModel.SelectTranscriptionModelCommand.Execute(modelId);
+    }
+
+    private void CorrectionModelCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border && border.Tag is string modelId)
+            _viewModel.SelectCorrectionModelCommand.Execute(modelId);
+    }
+
+    // --- GPU toggles ---
+
+    private void ToggleLocalGpu_Click(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.LocalGpuAcceleration = !_viewModel.LocalGpuAcceleration;
+    }
+
+    private void ToggleParakeetGpu_Click(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.ParakeetGpuAcceleration = !_viewModel.ParakeetGpuAcceleration;
+    }
+
+    // --- Per-provider correction API keys ---
+
+    private void GroqTranscriptionApiKeyBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter && sender is TextBox tb)
         {
-            _viewModel.SetCorrectionApiKey(tb.Text);
+            _viewModel.SetGroqTranscriptionApiKey(tb.Text);
             Keyboard.ClearFocus();
             e.Handled = true;
+        }
+    }
+
+    private void AnthropicApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetAnthropicApiKey(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
+    private void GoogleApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetGoogleApiKey(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
+    private void GroqCorrectionApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetGroqCorrectionApiKey(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
+    // --- Model card highlighting ---
+
+    private void UpdateTranscriptionModelHighlight()
+    {
+        if (_viewModel.CurrentStep != SetupStep.Transcription) return;
+        var selectedModel = _viewModel.CloudTranscriptionProvider == "Groq"
+            ? _viewModel.GroqTranscriptionModel
+            : _viewModel.OpenAiTranscriptionModel;
+        HighlightModelCards("TranscriptionModelCard_Click", selectedModel);
+    }
+
+    private void UpdateCorrectionModelHighlight()
+    {
+        if (_viewModel.CurrentStep != SetupStep.Correction) return;
+        var selectedModel = _viewModel.CorrectionProvider switch
+        {
+            TextCorrectionProvider.Anthropic => _viewModel.AnthropicModel,
+            TextCorrectionProvider.Google => _viewModel.GoogleModel,
+            TextCorrectionProvider.Groq => _viewModel.GroqCorrectionModel,
+            _ => _viewModel.CorrectionModel
+        };
+        HighlightModelCards("CorrectionModelCard_Click", selectedModel);
+    }
+
+    private static readonly HashSet<string> s_nonModelTags =
+        ["OpenAI", "Local", "Parakeet", "Off", "Anthropic", "Google", "Groq", "Cloud", "unused"];
+
+    private void HighlightModelCards(string _, string selectedModelId)
+    {
+        var contentArea = FindDescendant<ScrollViewer>(this);
+        if (contentArea == null) return;
+        var accentBrush = (SolidColorBrush)FindResource("SelectedBorderBrush");
+
+        // Model cards: CornerRadius=8, BorderThickness=2, Tag is model ID (not a provider name).
+        foreach (var border in FindDescendants<Border>(contentArea))
+        {
+            if (border.Tag is string tag
+                && border.CornerRadius.TopLeft == 8
+                && border.BorderThickness.Left == 2
+                && !s_nonModelTags.Contains(tag))
+            {
+                border.BorderBrush = tag == selectedModelId ? accentBrush : Brushes.Transparent;
+            }
         }
     }
 

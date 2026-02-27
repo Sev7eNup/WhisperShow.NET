@@ -37,10 +37,15 @@ public class SetupWizardViewModelTests
         vm.IsAutoDetectLanguage.Should().BeTrue();
         vm.SelectedLanguageCode.Should().BeNull();
         vm.Provider.Should().Be(TranscriptionProvider.OpenAI);
+        vm.CloudTranscriptionProvider.Should().Be("OpenAI");
+        vm.OpenAiTranscriptionModel.Should().Be("whisper-1");
         vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Off);
+        vm.CorrectionModel.Should().Be("gpt-4.1-mini");
         vm.OpenAiApiKey.Should().BeEmpty();
-        vm.CorrectionApiKey.Should().BeEmpty();
+        vm.AnthropicApiKey.Should().BeEmpty();
         vm.SelectedMicrophoneIndex.Should().Be(0);
+        vm.LocalGpuAcceleration.Should().BeTrue();
+        vm.ParakeetGpuAcceleration.Should().BeTrue();
         vm.IsCompleted.Should().BeFalse();
         vm.CanGoBack.Should().BeFalse();
         vm.CanGoNext.Should().BeTrue();
@@ -63,25 +68,44 @@ public class SetupWizardViewModelTests
         var options = new WriteSpeechOptions
         {
             Provider = TranscriptionProvider.Local,
+            CloudTranscriptionProvider = "Groq",
             Language = "de",
-            OpenAI = new OpenAiOptions { ApiKey = "sk-existing" },
+            OpenAI = new OpenAiOptions { ApiKey = "sk-existing", Model = "gpt-4o-transcribe" },
+            GroqTranscription = new GroqTranscriptionOptions { ApiKey = "gsk-tx", Model = "whisper-large-v3" },
+            Local = new LocalWhisperOptions { GpuAcceleration = false },
+            Parakeet = new ParakeetOptions { GpuAcceleration = false },
             Audio = new AudioOptions { DeviceIndex = 2 },
             TextCorrection = new TextCorrectionOptions
             {
                 Provider = TextCorrectionProvider.Anthropic,
-                Anthropic = new AnthropicCorrectionOptions { ApiKey = "ant-key" }
+                Model = "gpt-5-mini",
+                Anthropic = new AnthropicCorrectionOptions { ApiKey = "ant-key", Model = "claude-opus-4-6" },
+                Google = new OpenAiCompatibleCorrectionOptions { ApiKey = "goog-key", Model = "gemini-3.1-pro-preview" },
+                Groq = new OpenAiCompatibleCorrectionOptions { ApiKey = "groq-key", Model = "llama-3.3-70b-versatile" }
             }
         };
 
         var vm = CreateViewModel(options);
 
         vm.Provider.Should().Be(TranscriptionProvider.Local);
+        vm.CloudTranscriptionProvider.Should().Be("Groq");
         vm.OpenAiApiKey.Should().Be("sk-existing");
+        vm.OpenAiTranscriptionModel.Should().Be("gpt-4o-transcribe");
+        vm.GroqTranscriptionApiKey.Should().Be("gsk-tx");
+        vm.GroqTranscriptionModel.Should().Be("whisper-large-v3");
+        vm.LocalGpuAcceleration.Should().BeFalse();
+        vm.ParakeetGpuAcceleration.Should().BeFalse();
         vm.SelectedLanguageCode.Should().Be("de");
         vm.IsAutoDetectLanguage.Should().BeFalse();
         vm.SelectedMicrophoneIndex.Should().Be(2);
         vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Anthropic);
-        vm.CorrectionApiKey.Should().Be("ant-key");
+        vm.CorrectionModel.Should().Be("gpt-5-mini");
+        vm.AnthropicApiKey.Should().Be("ant-key");
+        vm.AnthropicModel.Should().Be("claude-opus-4-6");
+        vm.GoogleApiKey.Should().Be("goog-key");
+        vm.GoogleModel.Should().Be("gemini-3.1-pro-preview");
+        vm.GroqCorrectionApiKey.Should().Be("groq-key");
+        vm.GroqCorrectionModel.Should().Be("llama-3.3-70b-versatile");
     }
 
     [Fact]
@@ -343,13 +367,35 @@ public class SetupWizardViewModelTests
     }
 
     [Fact]
-    public void SetCorrectionApiKey_TrimsAndSets()
+    public void SetGroqTranscriptionApiKey_TrimsAndSets()
     {
         var vm = CreateViewModel();
+        vm.SetGroqTranscriptionApiKey("  gsk-123  ");
+        vm.GroqTranscriptionApiKey.Should().Be("gsk-123");
+    }
 
-        vm.SetCorrectionApiKey("  key-123  ");
+    [Fact]
+    public void SetAnthropicApiKey_TrimsAndSets()
+    {
+        var vm = CreateViewModel();
+        vm.SetAnthropicApiKey("  ant-key  ");
+        vm.AnthropicApiKey.Should().Be("ant-key");
+    }
 
-        vm.CorrectionApiKey.Should().Be("key-123");
+    [Fact]
+    public void SetGoogleApiKey_TrimsAndSets()
+    {
+        var vm = CreateViewModel();
+        vm.SetGoogleApiKey("  goog-key  ");
+        vm.GoogleApiKey.Should().Be("goog-key");
+    }
+
+    [Fact]
+    public void SetGroqCorrectionApiKey_TrimsAndSets()
+    {
+        var vm = CreateViewModel();
+        vm.SetGroqCorrectionApiKey("  groq-key  ");
+        vm.GroqCorrectionApiKey.Should().Be("groq-key");
     }
 
     // --- Reusable OpenAI key ---
@@ -373,22 +419,92 @@ public class SetupWizardViewModelTests
         vm.IsReusableOpenAiKey.Should().BeFalse();
     }
 
+    // --- Cloud sub-provider ---
+
     [Fact]
-    public void NeedsCorrectionApiKey_TrueForAnthropic()
+    public void SelectCloudTranscriptionProvider_SetsProvider()
     {
         var vm = CreateViewModel();
-        vm.SelectCorrectionProvider("Anthropic");
-
-        vm.NeedsCorrectionApiKey.Should().BeTrue();
+        vm.SelectCloudTranscriptionProvider("Groq");
+        vm.CloudTranscriptionProvider.Should().Be("Groq");
     }
 
     [Fact]
-    public void NeedsCorrectionApiKey_FalseForOff()
+    public void CanGoNext_CloudGroq_WithoutApiKey_IsFalse()
     {
         var vm = CreateViewModel();
-        vm.SelectCorrectionProvider("Off");
+        vm.NavigateNext(); // Go to Transcription
+        vm.SelectProvider("OpenAI");
+        vm.SelectCloudTranscriptionProvider("Groq");
 
-        vm.NeedsCorrectionApiKey.Should().BeFalse();
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CloudGroq_WithApiKey_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.NavigateNext();
+        vm.SelectProvider("OpenAI");
+        vm.SelectCloudTranscriptionProvider("Groq");
+        vm.SetGroqTranscriptionApiKey("gsk-test");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    // --- Model selection ---
+
+    [Fact]
+    public void SelectTranscriptionModel_OpenAI_SetsModel()
+    {
+        var vm = CreateViewModel();
+        vm.SelectTranscriptionModel("gpt-4o-transcribe");
+        vm.OpenAiTranscriptionModel.Should().Be("gpt-4o-transcribe");
+    }
+
+    [Fact]
+    public void SelectTranscriptionModel_Groq_SetsModel()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCloudTranscriptionProvider("Groq");
+        vm.SelectTranscriptionModel("whisper-large-v3");
+        vm.GroqTranscriptionModel.Should().Be("whisper-large-v3");
+    }
+
+    [Fact]
+    public void SelectCorrectionModel_OpenAI_SetsModel()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCorrectionProvider("OpenAI");
+        vm.SelectCorrectionModel("gpt-5-mini");
+        vm.CorrectionModel.Should().Be("gpt-5-mini");
+    }
+
+    [Fact]
+    public void SelectCorrectionModel_Anthropic_SetsModel()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCorrectionProvider("Anthropic");
+        vm.SelectCorrectionModel("claude-opus-4-6");
+        vm.AnthropicModel.Should().Be("claude-opus-4-6");
+    }
+
+    [Fact]
+    public void SelectCorrectionModel_Google_SetsModel()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCorrectionProvider("Google");
+        vm.SelectCorrectionModel("gemini-3.1-pro-preview");
+        vm.GoogleModel.Should().Be("gemini-3.1-pro-preview");
+    }
+
+    [Fact]
+    public void SelectCorrectionModel_Groq_SetsModel()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCorrectionProvider("Groq");
+        vm.SelectCorrectionModel("llama-3.3-70b-versatile");
+        vm.GroqCorrectionModel.Should().Be("llama-3.3-70b-versatile");
     }
 
     // --- Microphone ---
@@ -563,12 +679,13 @@ public class SetupWizardViewModelTests
     }
 
     [Fact]
-    public void FinishSetup_WritesAnthropicApiKey()
+    public void FinishSetup_WritesAnthropicApiKeyAndModel()
     {
         var vm = CreateViewModel();
         vm.Provider = TranscriptionProvider.Local;
         vm.SelectCorrectionProvider("Anthropic");
-        vm.SetCorrectionApiKey("ant-key-123");
+        vm.SetAnthropicApiKey("ant-key-123");
+        vm.SelectCorrectionModel("claude-opus-4-6");
 
         JsonNode? capturedSection = null;
         _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
@@ -581,6 +698,109 @@ public class SetupWizardViewModelTests
         vm.FinishSetup();
 
         capturedSection!["TextCorrection"]!["Anthropic"]!["ApiKey"]!.GetValue<string>().Should().Be("ant-key-123");
+        capturedSection!["TextCorrection"]!["Anthropic"]!["Model"]!.GetValue<string>().Should().Be("claude-opus-4-6");
+    }
+
+    [Fact]
+    public void FinishSetup_WritesCloudTranscriptionProvider()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCloudTranscriptionProvider("Groq");
+        vm.SetGroqTranscriptionApiKey("gsk-key");
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["CloudTranscriptionProvider"]!.GetValue<string>().Should().Be("Groq");
+        capturedSection!["GroqTranscription"]!["ApiKey"]!.GetValue<string>().Should().Be("gsk-key");
+    }
+
+    [Fact]
+    public void FinishSetup_WritesOpenAiTranscriptionModel()
+    {
+        var vm = CreateViewModel();
+        vm.SetOpenAiApiKey("sk-test");
+        vm.SelectTranscriptionModel("gpt-4o-transcribe");
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["OpenAI"]!["Model"]!.GetValue<string>().Should().Be("gpt-4o-transcribe");
+    }
+
+    [Fact]
+    public void FinishSetup_WritesLocalGpuAcceleration()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.LocalGpuAcceleration = false;
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["Local"]!["GpuAcceleration"]!.GetValue<bool>().Should().BeFalse();
+    }
+
+    [Fact]
+    public void FinishSetup_WritesParakeetGpuAcceleration()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Parakeet;
+        vm.ParakeetGpuAcceleration = false;
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["Parakeet"]!["GpuAcceleration"]!.GetValue<bool>().Should().BeFalse();
+    }
+
+    [Fact]
+    public void FinishSetup_WritesCorrectionModel_ForOpenAI()
+    {
+        var vm = CreateViewModel();
+        vm.SetOpenAiApiKey("sk-test");
+        vm.SelectCorrectionProvider("OpenAI");
+        vm.SelectCorrectionModel("gpt-5-mini");
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["TextCorrection"]!["Model"]!.GetValue<string>().Should().Be("gpt-5-mini");
     }
 
     [Fact]

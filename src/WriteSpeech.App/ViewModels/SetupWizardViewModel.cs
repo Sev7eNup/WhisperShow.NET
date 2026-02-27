@@ -42,20 +42,27 @@ public partial class SetupWizardViewModel : ObservableObject
 
     // --- Step 2: Transcription Provider ---
     [ObservableProperty] private TranscriptionProvider _provider = TranscriptionProvider.OpenAI;
+    [ObservableProperty] private string _cloudTranscriptionProvider = "OpenAI";
     [ObservableProperty] private string _openAiApiKey = "";
+    [ObservableProperty] private string _openAiTranscriptionModel = "whisper-1";
+    [ObservableProperty] private string _groqTranscriptionApiKey = "";
+    [ObservableProperty] private string _groqTranscriptionModel = "whisper-large-v3-turbo";
+    [ObservableProperty] private bool _localGpuAcceleration = true;
+    [ObservableProperty] private bool _parakeetGpuAcceleration = true;
 
     // --- Step 3: Text Correction ---
     [ObservableProperty] private TextCorrectionProvider _correctionProvider = TextCorrectionProvider.Off;
-    [ObservableProperty] private string _correctionApiKey = "";
+    [ObservableProperty] private string _correctionModel = "gpt-4.1-mini";
+    [ObservableProperty] private string _anthropicApiKey = "";
+    [ObservableProperty] private string _anthropicModel = "claude-sonnet-4-6";
+    [ObservableProperty] private string _googleApiKey = "";
+    [ObservableProperty] private string _googleModel = "gemini-3-flash-preview";
+    [ObservableProperty] private string _groqCorrectionApiKey = "";
+    [ObservableProperty] private string _groqCorrectionModel = "qwen/qwen3-32b";
 
     public bool IsReusableOpenAiKey =>
         CorrectionProvider is TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud
         && !string.IsNullOrWhiteSpace(OpenAiApiKey);
-
-    public bool NeedsCorrectionApiKey =>
-        CorrectionProvider is TextCorrectionProvider.Anthropic or TextCorrectionProvider.Google or TextCorrectionProvider.Groq
-        || (CorrectionProvider is TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud
-            && string.IsNullOrWhiteSpace(OpenAiApiKey));
 
     // --- Step 4: Microphone ---
     [ObservableProperty] private int _selectedMicrophoneIndex;
@@ -81,16 +88,27 @@ public partial class SetupWizardViewModel : ObservableObject
 
         if (existingOptions is not null)
         {
+            // Transcription
             _provider = existingOptions.Provider;
+            _cloudTranscriptionProvider = existingOptions.CloudTranscriptionProvider ?? "OpenAI";
             _openAiApiKey = existingOptions.OpenAI.ApiKey ?? "";
+            _openAiTranscriptionModel = existingOptions.OpenAI.Model ?? "whisper-1";
+            _groqTranscriptionApiKey = existingOptions.GroqTranscription.ApiKey ?? "";
+            _groqTranscriptionModel = existingOptions.GroqTranscription.Model ?? "whisper-large-v3-turbo";
+            _localGpuAcceleration = existingOptions.Local.GpuAcceleration;
+            _parakeetGpuAcceleration = existingOptions.Parakeet.GpuAcceleration;
+
+            // Correction
             _correctionProvider = existingOptions.TextCorrection.Provider;
-            _correctionApiKey = existingOptions.TextCorrection.Provider switch
-            {
-                TextCorrectionProvider.Anthropic => existingOptions.TextCorrection.Anthropic.ApiKey ?? "",
-                TextCorrectionProvider.Google => existingOptions.TextCorrection.Google.ApiKey ?? "",
-                TextCorrectionProvider.Groq => existingOptions.TextCorrection.Groq.ApiKey ?? "",
-                _ => ""
-            };
+            _correctionModel = existingOptions.TextCorrection.Model ?? "gpt-4.1-mini";
+            _anthropicApiKey = existingOptions.TextCorrection.Anthropic.ApiKey ?? "";
+            _anthropicModel = existingOptions.TextCorrection.Anthropic.Model ?? "claude-sonnet-4-6";
+            _googleApiKey = existingOptions.TextCorrection.Google.ApiKey ?? "";
+            _googleModel = existingOptions.TextCorrection.Google.Model ?? "gemini-3-flash-preview";
+            _groqCorrectionApiKey = existingOptions.TextCorrection.Groq.ApiKey ?? "";
+            _groqCorrectionModel = existingOptions.TextCorrection.Groq.Model ?? "qwen/qwen3-32b";
+
+            // Language & Mic
             _selectedLanguageCode = existingOptions.Language;
             _isAutoDetectLanguage = existingOptions.Language == null;
             _selectedMicrophoneIndex = existingOptions.Audio.DeviceIndex;
@@ -150,7 +168,6 @@ public partial class SetupWizardViewModel : ObservableObject
             Provider = provider;
             UpdateCanGoNext();
             OnPropertyChanged(nameof(IsReusableOpenAiKey));
-            OnPropertyChanged(nameof(NeedsCorrectionApiKey));
         }
     }
 
@@ -162,7 +179,38 @@ public partial class SetupWizardViewModel : ObservableObject
             CorrectionProvider = provider;
             UpdateCanGoNext();
             OnPropertyChanged(nameof(IsReusableOpenAiKey));
-            OnPropertyChanged(nameof(NeedsCorrectionApiKey));
+        }
+    }
+
+    [RelayCommand]
+    internal void SelectCloudTranscriptionProvider(string provider)
+    {
+        CloudTranscriptionProvider = provider;
+        UpdateCanGoNext();
+    }
+
+    [RelayCommand]
+    internal void SelectTranscriptionModel(string modelId)
+    {
+        if (CloudTranscriptionProvider == "Groq")
+            GroqTranscriptionModel = modelId;
+        else
+            OpenAiTranscriptionModel = modelId;
+    }
+
+    [RelayCommand]
+    internal void SelectCorrectionModel(string modelId)
+    {
+        switch (CorrectionProvider)
+        {
+            case TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud:
+                CorrectionModel = modelId; break;
+            case TextCorrectionProvider.Anthropic:
+                AnthropicModel = modelId; break;
+            case TextCorrectionProvider.Google:
+                GoogleModel = modelId; break;
+            case TextCorrectionProvider.Groq:
+                GroqCorrectionModel = modelId; break;
         }
     }
 
@@ -199,14 +247,17 @@ public partial class SetupWizardViewModel : ObservableObject
         OpenAiApiKey = key.Trim();
         UpdateCanGoNext();
         OnPropertyChanged(nameof(IsReusableOpenAiKey));
-        OnPropertyChanged(nameof(NeedsCorrectionApiKey));
     }
 
-    internal void SetCorrectionApiKey(string key)
+    internal void SetGroqTranscriptionApiKey(string key)
     {
-        CorrectionApiKey = key.Trim();
+        GroqTranscriptionApiKey = key.Trim();
         UpdateCanGoNext();
     }
+
+    internal void SetAnthropicApiKey(string key) => AnthropicApiKey = key.Trim();
+    internal void SetGoogleApiKey(string key) => GoogleApiKey = key.Trim();
+    internal void SetGroqCorrectionApiKey(string key) => GroqCorrectionApiKey = key.Trim();
 
     // --- Mic test ---
 
@@ -268,7 +319,11 @@ public partial class SetupWizardViewModel : ObservableObject
         CanGoNext = CurrentStep switch
         {
             SetupStep.Transcription => Provider != TranscriptionProvider.OpenAI
-                || !string.IsNullOrWhiteSpace(OpenAiApiKey),
+                || CloudTranscriptionProvider switch
+                {
+                    "Groq" => !string.IsNullOrWhiteSpace(GroqTranscriptionApiKey),
+                    _ => !string.IsNullOrWhiteSpace(OpenAiApiKey)
+                },
             _ => true
         };
     }
@@ -286,11 +341,32 @@ public partial class SetupWizardViewModel : ObservableObject
 
             // Transcription provider
             section["Provider"] = Provider.ToString();
+            section["CloudTranscriptionProvider"] = CloudTranscriptionProvider;
 
-            if (Provider == TranscriptionProvider.OpenAI && !string.IsNullOrWhiteSpace(OpenAiApiKey))
+            if (Provider == TranscriptionProvider.OpenAI)
             {
-                var openAi = SettingsViewModel.EnsureObject(section, "OpenAI");
-                openAi["ApiKey"] = OpenAiApiKey;
+                if (CloudTranscriptionProvider == "Groq")
+                {
+                    var groqTx = SettingsViewModel.EnsureObject(section, "GroqTranscription");
+                    if (!string.IsNullOrWhiteSpace(GroqTranscriptionApiKey))
+                        groqTx["ApiKey"] = GroqTranscriptionApiKey;
+                    groqTx["Model"] = GroqTranscriptionModel;
+                }
+                else
+                {
+                    var openAi = SettingsViewModel.EnsureObject(section, "OpenAI");
+                    if (!string.IsNullOrWhiteSpace(OpenAiApiKey))
+                        openAi["ApiKey"] = OpenAiApiKey;
+                    openAi["Model"] = OpenAiTranscriptionModel;
+                }
+            }
+            else if (Provider == TranscriptionProvider.Local)
+            {
+                SettingsViewModel.EnsureObject(section, "Local")["GpuAcceleration"] = LocalGpuAcceleration;
+            }
+            else if (Provider == TranscriptionProvider.Parakeet)
+            {
+                SettingsViewModel.EnsureObject(section, "Parakeet")["GpuAcceleration"] = ParakeetGpuAcceleration;
             }
 
             // Text correction
@@ -299,35 +375,30 @@ public partial class SetupWizardViewModel : ObservableObject
 
             if (CorrectionProvider is TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud)
             {
-                // Reuse OpenAI API key if available, otherwise use correction key
+                correction["Model"] = CorrectionModel;
                 if (!string.IsNullOrWhiteSpace(OpenAiApiKey))
-                {
-                    var openAi = SettingsViewModel.EnsureObject(section, "OpenAI");
-                    openAi["ApiKey"] = OpenAiApiKey;
-                }
-                else if (!string.IsNullOrWhiteSpace(CorrectionApiKey))
-                {
-                    var openAi = SettingsViewModel.EnsureObject(section, "OpenAI");
-                    openAi["ApiKey"] = CorrectionApiKey;
-                }
+                    SettingsViewModel.EnsureObject(section, "OpenAI")["ApiKey"] = OpenAiApiKey;
             }
-            else if (CorrectionProvider == TextCorrectionProvider.Anthropic
-                     && !string.IsNullOrWhiteSpace(CorrectionApiKey))
+            else if (CorrectionProvider == TextCorrectionProvider.Anthropic)
             {
                 var anthropic = SettingsViewModel.EnsureObject(correction, "Anthropic");
-                anthropic["ApiKey"] = CorrectionApiKey;
+                if (!string.IsNullOrWhiteSpace(AnthropicApiKey))
+                    anthropic["ApiKey"] = AnthropicApiKey;
+                anthropic["Model"] = AnthropicModel;
             }
-            else if (CorrectionProvider == TextCorrectionProvider.Google
-                     && !string.IsNullOrWhiteSpace(CorrectionApiKey))
+            else if (CorrectionProvider == TextCorrectionProvider.Google)
             {
                 var google = SettingsViewModel.EnsureObject(correction, "Google");
-                google["ApiKey"] = CorrectionApiKey;
+                if (!string.IsNullOrWhiteSpace(GoogleApiKey))
+                    google["ApiKey"] = GoogleApiKey;
+                google["Model"] = GoogleModel;
             }
-            else if (CorrectionProvider == TextCorrectionProvider.Groq
-                     && !string.IsNullOrWhiteSpace(CorrectionApiKey))
+            else if (CorrectionProvider == TextCorrectionProvider.Groq)
             {
                 var groq = SettingsViewModel.EnsureObject(correction, "Groq");
-                groq["ApiKey"] = CorrectionApiKey;
+                if (!string.IsNullOrWhiteSpace(GroqCorrectionApiKey))
+                    groq["ApiKey"] = GroqCorrectionApiKey;
+                groq["Model"] = GroqCorrectionModel;
             }
 
             // Microphone

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:WriteSpeech.App.ViewModels"
+        xmlns:svm="clr-namespace:WriteSpeech.App.ViewModels.Settings"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -79,108 +80,237 @@
                                Margin="0,8,0,4"/>
                     <TextBlock Text="Choose how your speech is transcribed into text."
                                FontSize="12" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,0,0,16"/>
+                               Margin="0,0,0,12"/>
 
                     <!-- Provider cards -->
-                    <UniformGrid Columns="3" Margin="0,0,0,16">
-                        <!-- Cloud (OpenAI) -->
+                    <UniformGrid Columns="3" Margin="0,0,0,12">
                         <Border Tag="OpenAI" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
-                                CornerRadius="12" Padding="14,10" Margin="0,0,6,0"
+                                CornerRadius="12" Padding="12,8" Margin="0,0,6,0"
                                 Background="{DynamicResource CardBgBrush}"
                                 BorderThickness="2" BorderBrush="Transparent">
                             <StackPanel>
-                                <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                           Foreground="{DynamicResource SelectedBorderBrush}" Margin="0,0,0,8"/>
-                                <TextBlock Text="Cloud" FontSize="14" FontWeight="SemiBold"
+                                <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                           Foreground="{DynamicResource SelectedBorderBrush}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Cloud" FontSize="13" FontWeight="SemiBold"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="OpenAI" FontSize="11"
+                                <TextBlock Text="OpenAI / Groq" FontSize="10"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                           Margin="0,0,0,6"/>
-                                <TextBlock Text="Fast and accurate. Requires an API key and internet." FontSize="11"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="Fast and accurate. Requires API key." FontSize="10"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
-
-                        <!-- Local (Whisper) -->
                         <Border Tag="Local" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
-                                CornerRadius="12" Padding="14,10" Margin="3,0,3,0"
+                                CornerRadius="12" Padding="12,8" Margin="3,0,3,0"
                                 Background="{DynamicResource CardBgBrush}"
                                 BorderThickness="2" BorderBrush="Transparent">
                             <StackPanel>
-                                <TextBlock Text="&#xE839;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                           Foreground="{DynamicResource SelectedBorderBrush}" Margin="0,0,0,8"/>
-                                <TextBlock Text="Local" FontSize="14" FontWeight="SemiBold"
+                                <TextBlock Text="&#xE839;" FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                           Foreground="{DynamicResource SelectedBorderBrush}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Local" FontSize="13" FontWeight="SemiBold"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="Whisper" FontSize="11"
+                                <TextBlock Text="Whisper" FontSize="10"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                           Margin="0,0,0,6"/>
-                                <TextBlock Text="Offline and private. Requires a model download." FontSize="11"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="Offline and private. Needs model download." FontSize="10"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
-
-                        <!-- Parakeet -->
                         <Border Tag="Parakeet" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
-                                CornerRadius="12" Padding="14,10" Margin="6,0,0,0"
+                                CornerRadius="12" Padding="12,8" Margin="6,0,0,0"
                                 Background="{DynamicResource CardBgBrush}"
                                 BorderThickness="2" BorderBrush="Transparent">
                             <StackPanel>
-                                <TextBlock Text="&#xE945;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                           Foreground="{DynamicResource SelectedBorderBrush}" Margin="0,0,0,8"/>
-                                <TextBlock Text="Parakeet" FontSize="14" FontWeight="SemiBold"
+                                <TextBlock Text="&#xE945;" FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                           Foreground="{DynamicResource SelectedBorderBrush}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Parakeet" FontSize="13" FontWeight="SemiBold"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="NVIDIA NeMo" FontSize="11"
+                                <TextBlock Text="NVIDIA NeMo" FontSize="10"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                           Margin="0,0,0,6"/>
-                                <TextBlock Text="Fast offline. English only. Requires model download." FontSize="11"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="English only. Needs model download." FontSize="10"
                                            FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
                     </UniformGrid>
 
-                    <!-- API key (only for OpenAI) -->
-                    <StackPanel x:Name="ApiKeyPanel">
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Provider}" Value="OpenAI">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
-                        <TextBlock Text="OpenAI API Key" FontSize="12" FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Margin="0,0,0,6"/>
-                        <TextBox x:Name="OpenAiApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
-                                 Tag="sk-..." MaxWidth="500" MinWidth="300"
-                                 KeyDown="ApiKeyBox_KeyDown"/>
+                    <!-- ═══ Cloud config panel ═══ -->
+                    <StackPanel Visibility="{Binding Provider, Converter={StaticResource StringToVisibility}, ConverterParameter=OpenAI}">
+                        <!-- Sub-provider tabs: OpenAI | Groq -->
+                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="16" Padding="3" Margin="0,0,0,10"
+                                HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Tag="OpenAI" MouseLeftButtonDown="CloudSubProviderTab_Click" Cursor="Hand"
+                                        CornerRadius="14" Padding="14,5" Margin="0,0,2,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="OpenAI">
+                                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="OpenAI" FontSize="11" FontWeight="SemiBold" FontFamily="Segoe UI Variable, Segoe UI">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="OpenAI">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                                <Border Tag="Groq" MouseLeftButtonDown="CloudSubProviderTab_Click" Cursor="Hand"
+                                        CornerRadius="14" Padding="14,5">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="Groq">
+                                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="Groq" FontSize="11" FontWeight="SemiBold" FontFamily="Segoe UI Variable, Segoe UI">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="Groq">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- OpenAI cloud config -->
+                        <StackPanel Visibility="{Binding CloudTranscriptionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=OpenAI}">
+                            <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="OpenAiApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
+                                     Tag="sk-..." MaxWidth="460" MinWidth="300" KeyDown="ApiKeyBox_KeyDown"/>
+                            <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,4"/>
+                            <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.CloudTranscriptionModels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,3" Padding="10,5" Cursor="Hand"
+                                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                                BorderThickness="2" Tag="{Binding Id}"
+                                                MouseLeftButtonDown="TranscriptionModelCard_Click">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold"
+                                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="10" Margin="8,0,0,0"
+                                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Groq cloud config -->
+                        <StackPanel Visibility="{Binding CloudTranscriptionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Groq}">
+                            <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="GroqTranscriptionApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
+                                     Tag="gsk-..." MaxWidth="460" MinWidth="300" KeyDown="GroqTranscriptionApiKeyBox_KeyDown"/>
+                            <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,4"/>
+                            <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.GroqTranscriptionModels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,3" Padding="10,5" Cursor="Hand"
+                                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                                BorderThickness="2" Tag="{Binding Id}"
+                                                MouseLeftButtonDown="TranscriptionModelCard_Click">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold"
+                                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="10" Margin="8,0,0,0"
+                                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </StackPanel>
 
-                    <!-- Info text for Local/Parakeet -->
-                    <TextBlock TextWrapping="Wrap" FontSize="11.5"
-                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,4,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Provider}" Value="Local">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Text" Value="You can download the transcription model in Settings > Models after setup."/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Text" Value="English only. You can download the model in Settings > Models after setup."/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                    <!-- ═══ Local config panel ═══ -->
+                    <StackPanel Visibility="{Binding Provider, Converter={StaticResource StringToVisibility}, ConverterParameter=Local}">
+                        <CheckBox IsChecked="{Binding LocalGpuAcceleration, Mode=OneWay}"
+                                  Command="{Binding SelectCloudTranscriptionProviderCommand}" CommandParameter="unused"
+                                  Margin="0,0,0,6">
+                            <CheckBox.Template>
+                                <ControlTemplate TargetType="CheckBox">
+                                    <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="10,6" Cursor="Hand"
+                                            MouseLeftButtonDown="ToggleLocalGpu_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding LocalGpuAcceleration, Mode=OneWay}" IsHitTestVisible="False"
+                                                      VerticalAlignment="Center"/>
+                                            <TextBlock Text="GPU Acceleration (CUDA)" FontSize="11" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </CheckBox.Template>
+                        </CheckBox>
+                        <TextBlock Text="Download the transcription model in Settings &gt; Models after setup."
+                                   FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- ═══ Parakeet config panel ═══ -->
+                    <StackPanel Visibility="{Binding Provider, Converter={StaticResource StringToVisibility}, ConverterParameter=Parakeet}">
+                        <CheckBox IsChecked="{Binding ParakeetGpuAcceleration, Mode=OneWay}"
+                                  Margin="0,0,0,6">
+                            <CheckBox.Template>
+                                <ControlTemplate TargetType="CheckBox">
+                                    <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="10,6" Cursor="Hand"
+                                            MouseLeftButtonDown="ToggleParakeetGpu_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding ParakeetGpuAcceleration, Mode=OneWay}" IsHitTestVisible="False"
+                                                      VerticalAlignment="Center"/>
+                                            <TextBlock Text="GPU Acceleration (CUDA)" FontSize="11" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </CheckBox.Template>
+                        </CheckBox>
+                        <TextBlock Text="English only. Download the model in Settings &gt; Models after setup."
+                                   FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
                 </StackPanel>
             </DataTemplate>
 
@@ -335,44 +465,140 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Reusable OpenAI key notice -->
-                    <TextBlock Text="Using your OpenAI API key from the previous step."
-                               FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
-                               Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"
-                               Visibility="{Binding IsReusableOpenAiKey, Converter={StaticResource BoolToVisibility}}"/>
+                    <!-- ═══ OpenAI correction config ═══ -->
+                    <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=OpenAI}">
+                        <TextBlock Text="Using your OpenAI API key from the previous step."
+                                   FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"
+                                   Visibility="{Binding IsReusableOpenAiKey, Converter={StaticResource BoolToVisibility}}"/>
+                        <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                        <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.CloudCorrectionModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,2" Padding="10,4" Cursor="Hand"
+                                            Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                            BorderThickness="2" Tag="{Binding Id}"
+                                            MouseLeftButtonDown="CorrectionModelCard_Click">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="10" Margin="8,0,0,0"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
 
-                    <!-- Correction API key (when needed) -->
-                    <StackPanel Visibility="{Binding NeedsCorrectionApiKey, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock FontSize="12" FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Margin="0,0,0,6">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="API Key"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Anthropic">
-                                            <Setter Property="Text" Value="Anthropic API Key"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Google">
-                                            <Setter Property="Text" Value="Google AI API Key"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Groq">
-                                            <Setter Property="Text" Value="Groq API Key"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="OpenAI">
-                                            <Setter Property="Text" Value="OpenAI API Key"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <TextBox x:Name="CorrectionApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
-                                 Tag="Enter API key..." MaxWidth="500" MinWidth="300"
-                                 KeyDown="CorrectionApiKeyBox_KeyDown"/>
+                    <!-- ═══ Anthropic correction config ═══ -->
+                    <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Anthropic}">
+                        <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="AnthropicApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
+                                 Tag="sk-ant-..." MaxWidth="460" MinWidth="300" KeyDown="AnthropicApiKeyBox_KeyDown"/>
+                        <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,4"/>
+                        <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.AnthropicCorrectionModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,2" Padding="10,4" Cursor="Hand"
+                                            Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                            BorderThickness="2" Tag="{Binding Id}"
+                                            MouseLeftButtonDown="CorrectionModelCard_Click">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="10" Margin="8,0,0,0"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- ═══ Google correction config ═══ -->
+                    <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Google}">
+                        <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="GoogleApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
+                                 Tag="AI..." MaxWidth="460" MinWidth="300" KeyDown="GoogleApiKeyBox_KeyDown"/>
+                        <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,4"/>
+                        <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.GoogleCorrectionModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,2" Padding="10,4" Cursor="Hand"
+                                            Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                            BorderThickness="2" Tag="{Binding Id}"
+                                            MouseLeftButtonDown="CorrectionModelCard_Click">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="10" Margin="8,0,0,0"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- ═══ Groq correction config ═══ -->
+                    <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Groq}">
+                        <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="GroqCorrectionApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
+                                 Tag="gsk-..." MaxWidth="460" MinWidth="300" KeyDown="GroqCorrectionApiKeyBox_KeyDown"/>
+                        <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,4"/>
+                        <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.GroqCorrectionModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,2" Padding="10,4" Cursor="Hand"
+                                            Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                            BorderThickness="2" Tag="{Binding Id}"
+                                            MouseLeftButtonDown="CorrectionModelCard_Click">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="SemiBold"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="10" Margin="8,0,0,0"
+                                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
 
                     <!-- Info when Off -->
-                    <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                    <TextBlock FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
                                Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
