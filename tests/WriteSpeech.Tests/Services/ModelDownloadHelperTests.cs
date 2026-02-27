@@ -49,14 +49,9 @@ public class ModelDownloadHelperTests : IDisposable
         var targetPath = Path.Combine(_tempDir, "progress-test.bin");
 
         var progressValues = new List<float>();
-        var progress = new Progress<float>(v => progressValues.Add(v));
+        IProgress<float> progress = new SyncProgress<float>(v => progressValues.Add(v));
 
         await _helper.DownloadToFileAsync(sourceStream, targetPath, data.Length, progress);
-
-        // Allow Progress<T> callbacks to flush (they run on thread pool)
-        // Wait until the final progress value (1.0) has been reported
-        for (int i = 0; i < 50 && (progressValues.Count == 0 || progressValues.Last() < 0.99f); i++)
-            await Task.Delay(50);
 
         progressValues.Should().NotBeEmpty();
         progressValues.Last().Should().BeApproximately(1.0f, 0.01f);
@@ -99,5 +94,10 @@ public class ModelDownloadHelperTests : IDisposable
         var result = helper.CreateClient(TimeSpan.FromMinutes(10));
 
         result.Timeout.Should().Be(TimeSpan.FromMinutes(10));
+    }
+
+    private class SyncProgress<T>(Action<T> handler) : IProgress<T>
+    {
+        public void Report(T value) => handler(value);
     }
 }
