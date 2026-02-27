@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
@@ -171,6 +172,12 @@ public partial class App : Application
                     Shutdown();
                     return;
                 }
+
+                // Flush settings to disk, then restart so the app picks up new config
+                var persistence = _host.Services.GetRequiredService<ISettingsPersistenceService>();
+                await persistence.FlushAsync();
+                RestartApp();
+                return;
             }
 
             // Sync autostart registry with config
@@ -200,6 +207,12 @@ public partial class App : Application
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
         }
+    }
+
+    internal static void RestartApp()
+    {
+        Process.Start(Environment.ProcessPath!);
+        Current.Shutdown();
     }
 
     private void PreloadLocalModels(WriteSpeechOptions opts)
