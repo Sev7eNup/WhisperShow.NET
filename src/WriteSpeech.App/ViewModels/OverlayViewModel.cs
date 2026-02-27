@@ -239,7 +239,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
             // Capture selected text BEFORE recording starts (focus is still on the previous window)
             _selectedText = await _selectedTextService.ReadSelectedTextAsync();
-            _isCommandMode = !string.IsNullOrWhiteSpace(_selectedText);
+            var hasCorrectionCapability = Options.TextCorrection.Provider != TextCorrectionProvider.Off
+                || (Options.TextCorrection.UseCombinedAudioModel && _combinedService.IsAvailable);
+            _isCommandMode = !string.IsNullOrWhiteSpace(_selectedText) && hasCorrectionCapability;
             IsCommandModeActive = _isCommandMode;
 
             _logger.LogInformation(

@@ -115,14 +115,26 @@ public class OverlayViewModelCommandModeTests : IDisposable
     // --- Command Mode Detection ---
 
     [Fact]
-    public async Task StartRecording_WithSelectedText_SetsCommandMode()
+    public async Task StartRecording_WithSelectedText_AndCorrectionEnabled_SetsCommandMode()
     {
         _selectedTextService.ReadSelectedTextAsync().Returns("Hello world");
-        var vm = CreateViewModel();
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Cloud);
 
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
 
         vm.IsCommandModeActive.Should().BeTrue();
+        vm.State.Should().Be(RecordingState.Recording);
+    }
+
+    [Fact]
+    public async Task StartRecording_WithSelectedText_AndCorrectionOff_StaysInNormalMode()
+    {
+        _selectedTextService.ReadSelectedTextAsync().Returns("Hello world");
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+
+        await vm.ToggleRecordingCommand.ExecuteAsync(null);
+
+        vm.IsCommandModeActive.Should().BeFalse();
         vm.State.Should().Be(RecordingState.Recording);
     }
 
@@ -210,28 +222,31 @@ public class OverlayViewModelCommandModeTests : IDisposable
     }
 
     [Fact]
-    public async Task CommandMode_NoCorrectionProvider_FallsBackToRawText()
+    public async Task NoCorrectionProvider_WithSelectedText_DoesNotEnterCommandMode()
     {
         _selectedTextService.ReadSelectedTextAsync().Returns("Some text");
         _audioService.StopRecordingAsync().Returns(new byte[2000]);
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "make it shorter" });
 
-        // TextCorrection is Off → no corrector available
+        // TextCorrection is Off → command mode should not activate
         var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
 
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
+        vm.IsCommandModeActive.Should().BeFalse();
+
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
 
-        // Falls back to the transcribed voice command as the result
+        // Normal dictation — text is inserted as-is, not treated as a command
         vm.TranscribedText.Should().Be("make it shorter");
+        _snippetService.Received().ApplySnippets(Arg.Any<string>());
     }
 
     [Fact]
     public async Task CommandMode_DismissResult_ResetsCommandMode()
     {
         _selectedTextService.ReadSelectedTextAsync().Returns("Some text");
-        var vm = CreateViewModel();
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Cloud);
 
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
         vm.IsCommandModeActive.Should().BeTrue();
