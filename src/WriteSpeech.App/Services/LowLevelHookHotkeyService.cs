@@ -18,7 +18,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
     private HotkeyBinding _pttBinding;
     private CachedBinding _cachedToggle;
     private CachedBinding _cachedPtt;
-    private bool _escapeRegistered;
+    private volatile bool _escapeRegistered;
     private bool _isPttActive;
     private long _pttPressTimestamp;
     private bool _disposed;
@@ -43,7 +43,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
     public event EventHandler? EscapePressed;
     public event EventHandler<MouseButtonCapturedEventArgs>? MouseButtonCaptured;
 
-    private bool _suppressActions;
+    private volatile bool _suppressActions;
     public bool SuppressActions
     {
         get => _suppressActions;
@@ -291,13 +291,16 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                 var hookStruct = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
                 var (button, isDown) = HotkeyMatcher.ClassifyMouseMessage(msg, hookStruct.mouseData);
 
-                if (button != null)
+                if (button != MouseButtonKind.None)
                 {
                     // When suppressed (capture mode), route to capture event instead
                     if (_suppressActions)
                     {
                         if (isDown)
-                            _syncContext?.Post(_ => MouseButtonCaptured?.Invoke(this, new MouseButtonCapturedEventArgs(button)), null);
+                        {
+                            var buttonName = button.ToDisplayString();
+                            _syncContext?.Post(_ => MouseButtonCaptured?.Invoke(this, new MouseButtonCapturedEventArgs(buttonName)), null);
+                        }
 
                         return NativeMethods.CallNextHookEx(_mouseHookHandle, nCode, wParam, lParam);
                     }
@@ -324,7 +327,7 @@ public class LowLevelHookHotkeyService : IGlobalHotkeyService
                             _syncContext?.Post(_ => PushToTalkHotkeyPressed?.Invoke(this, EventArgs.Empty), null);
                         }
                         else if (!isDown && _isPttActive
-                            && string.Equals(ptt.MouseButton, button, StringComparison.OrdinalIgnoreCase))
+                            && ptt.MouseButtonKind == button)
                         {
                             var elapsed = Environment.TickCount64 - _pttPressTimestamp;
                             if (elapsed < MinPttHoldMs)

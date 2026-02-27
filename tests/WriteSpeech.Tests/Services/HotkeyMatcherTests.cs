@@ -15,7 +15,7 @@ public class HotkeyMatcherTests
         var (button, isDown) = HotkeyMatcher.ClassifyMouseMessage(
             NativeMethods.WM_XBUTTONDOWN, NativeMethods.XBUTTON1 << 16);
 
-        button.Should().Be("XButton1");
+        button.Should().Be(MouseButtonKind.XButton1);
         isDown.Should().BeTrue();
     }
 
@@ -25,7 +25,7 @@ public class HotkeyMatcherTests
         var (button, isDown) = HotkeyMatcher.ClassifyMouseMessage(
             NativeMethods.WM_XBUTTONUP, NativeMethods.XBUTTON2 << 16);
 
-        button.Should().Be("XButton2");
+        button.Should().Be(MouseButtonKind.XButton2);
         isDown.Should().BeFalse();
     }
 
@@ -35,7 +35,7 @@ public class HotkeyMatcherTests
         var (button, isDown) = HotkeyMatcher.ClassifyMouseMessage(
             NativeMethods.WM_MBUTTONDOWN, 0);
 
-        button.Should().Be("Middle");
+        button.Should().Be(MouseButtonKind.Middle);
         isDown.Should().BeTrue();
     }
 
@@ -45,24 +45,24 @@ public class HotkeyMatcherTests
         var (button, isDown) = HotkeyMatcher.ClassifyMouseMessage(
             NativeMethods.WM_MBUTTONUP, 0);
 
-        button.Should().Be("Middle");
+        button.Should().Be(MouseButtonKind.Middle);
         isDown.Should().BeFalse();
     }
 
     [Fact]
-    public void ClassifyMouseMessage_LeftButtonDown_ReturnsNull()
+    public void ClassifyMouseMessage_LeftButtonDown_ReturnsNone()
     {
         var (button, _) = HotkeyMatcher.ClassifyMouseMessage(0x0201, 0); // WM_LBUTTONDOWN
 
-        button.Should().BeNull();
+        button.Should().Be(MouseButtonKind.None);
     }
 
     [Fact]
-    public void ClassifyMouseMessage_UnknownMessage_ReturnsNull()
+    public void ClassifyMouseMessage_UnknownMessage_ReturnsNone()
     {
         var (button, _) = HotkeyMatcher.ClassifyMouseMessage(0x9999, 0);
 
-        button.Should().BeNull();
+        button.Should().Be(MouseButtonKind.None);
     }
 
     // --- GetXButton ---
@@ -71,28 +71,28 @@ public class HotkeyMatcherTests
     public void GetXButton_XButton1_ReturnsXButton1()
     {
         var result = HotkeyMatcher.GetXButton(NativeMethods.XBUTTON1 << 16);
-        result.Should().Be("XButton1");
+        result.Should().Be(MouseButtonKind.XButton1);
     }
 
     [Fact]
     public void GetXButton_XButton2_ReturnsXButton2()
     {
         var result = HotkeyMatcher.GetXButton(NativeMethods.XBUTTON2 << 16);
-        result.Should().Be("XButton2");
+        result.Should().Be(MouseButtonKind.XButton2);
     }
 
     [Fact]
-    public void GetXButton_UnknownValue_ReturnsNull()
+    public void GetXButton_UnknownValue_ReturnsNone()
     {
         var result = HotkeyMatcher.GetXButton(0x0003 << 16);
-        result.Should().BeNull();
+        result.Should().Be(MouseButtonKind.None);
     }
 
     [Fact]
-    public void GetXButton_Zero_ReturnsNull()
+    public void GetXButton_Zero_ReturnsNone()
     {
         var result = HotkeyMatcher.GetXButton(0);
-        result.Should().BeNull();
+        result.Should().Be(MouseButtonKind.None);
     }
 
     // --- AreModifiersPressed ---
@@ -175,7 +175,7 @@ public class HotkeyMatcherTests
         short KeyState(int vk) => vk == NativeMethods.VK_LCONTROL
             ? unchecked((short)0x8000) : (short)0;
 
-        var result = HotkeyMatcher.MatchesMouseBinding(binding, "XButton1", KeyState);
+        var result = HotkeyMatcher.MatchesMouseBinding(binding, MouseButtonKind.XButton1, KeyState);
         result.Should().BeTrue();
     }
 
@@ -186,7 +186,7 @@ public class HotkeyMatcherTests
         short KeyState(int vk) => vk == NativeMethods.VK_LCONTROL
             ? unchecked((short)0x8000) : (short)0;
 
-        var result = HotkeyMatcher.MatchesMouseBinding(binding, "XButton2", KeyState);
+        var result = HotkeyMatcher.MatchesMouseBinding(binding, MouseButtonKind.XButton2, KeyState);
         result.Should().BeFalse();
     }
 
@@ -195,7 +195,7 @@ public class HotkeyMatcherTests
     {
         var binding = new HotkeyBinding { MouseButton = "XButton1", Modifiers = "Control" };
 
-        var result = HotkeyMatcher.MatchesMouseBinding(binding, "XButton1", _ => 0);
+        var result = HotkeyMatcher.MatchesMouseBinding(binding, MouseButtonKind.XButton1, _ => 0);
         result.Should().BeFalse();
     }
 
@@ -204,7 +204,7 @@ public class HotkeyMatcherTests
     {
         var binding = new HotkeyBinding { MouseButton = "Middle", Modifiers = "" };
 
-        var result = HotkeyMatcher.MatchesMouseBinding(binding, "Middle", _ => 0);
+        var result = HotkeyMatcher.MatchesMouseBinding(binding, MouseButtonKind.Middle, _ => 0);
         result.Should().BeTrue();
     }
 
@@ -213,16 +213,16 @@ public class HotkeyMatcherTests
     {
         var binding = new HotkeyBinding { Key = "Space", Modifiers = "Control" };
 
-        var result = HotkeyMatcher.MatchesMouseBinding(binding, "XButton1", _ => 0);
+        var result = HotkeyMatcher.MatchesMouseBinding(binding, MouseButtonKind.XButton1, _ => 0);
         result.Should().BeFalse();
     }
 
     [Fact]
-    public void MatchesMouseBinding_NullButton_ReturnsFalse()
+    public void MatchesMouseBinding_NoneButton_ReturnsFalse()
     {
         var binding = new HotkeyBinding { MouseButton = "XButton1" };
 
-        var result = HotkeyMatcher.MatchesMouseBinding(binding, null, _ => 0);
+        var result = HotkeyMatcher.MatchesMouseBinding(binding, MouseButtonKind.None, _ => 0);
         result.Should().BeFalse();
     }
 
@@ -290,7 +290,7 @@ public class HotkeyMatcherTests
 
         cached.IsValid.Should().BeTrue();
         cached.IsMouseBinding.Should().BeTrue();
-        cached.MouseButton.Should().Be("XButton1");
+        cached.MouseButtonKind.Should().Be(MouseButtonKind.XButton1);
         cached.Modifiers.Should().Be(ModifierFlags.Control | ModifierFlags.Shift);
     }
 
@@ -390,7 +390,7 @@ public class HotkeyMatcherTests
         short KeyState(int vk) => vk == NativeMethods.VK_LCONTROL
             ? unchecked((short)0x8000) : (short)0;
 
-        var result = HotkeyMatcher.MatchesMouseBinding(cached, "XButton1", KeyState);
+        var result = HotkeyMatcher.MatchesMouseBinding(cached, MouseButtonKind.XButton1, KeyState);
         result.Should().BeTrue();
     }
 
@@ -402,7 +402,7 @@ public class HotkeyMatcherTests
         short KeyState(int vk) => vk == NativeMethods.VK_LCONTROL
             ? unchecked((short)0x8000) : (short)0;
 
-        var result = HotkeyMatcher.MatchesMouseBinding(cached, "XButton2", KeyState);
+        var result = HotkeyMatcher.MatchesMouseBinding(cached, MouseButtonKind.XButton2, KeyState);
         result.Should().BeFalse();
     }
 

@@ -12,12 +12,31 @@ internal enum ModifierFlags : byte
     Alt = 4
 }
 
+internal enum MouseButtonKind : byte
+{
+    None,
+    Middle,
+    XButton1,
+    XButton2
+}
+
+internal static class MouseButtonKindExtensions
+{
+    internal static string ToDisplayString(this MouseButtonKind kind) => kind switch
+    {
+        MouseButtonKind.Middle => "Middle",
+        MouseButtonKind.XButton1 => "XButton1",
+        MouseButtonKind.XButton2 => "XButton2",
+        _ => ""
+    };
+}
+
 internal sealed record CachedBinding
 {
     public uint VirtualKeyCode { get; init; }
     public ModifierFlags Modifiers { get; init; }
     public bool IsMouseBinding { get; init; }
-    public string? MouseButton { get; init; }
+    public MouseButtonKind MouseButtonKind { get; init; }
     public bool IsValid { get; init; }
 
     public static CachedBinding FromHotkeyBinding(HotkeyBinding binding)
@@ -29,7 +48,7 @@ internal sealed record CachedBinding
             return new CachedBinding
             {
                 IsMouseBinding = true,
-                MouseButton = binding.MouseButton,
+                MouseButtonKind = ParseMouseButton(binding.MouseButton),
                 Modifiers = mods,
                 VirtualKeyCode = 0,
                 IsValid = true
@@ -42,12 +61,20 @@ internal sealed record CachedBinding
         return new CachedBinding
         {
             IsMouseBinding = false,
-            MouseButton = null,
+            MouseButtonKind = MouseButtonKind.None,
             Modifiers = mods,
             VirtualKeyCode = (uint)KeyInterop.VirtualKeyFromKey(key),
             IsValid = true
         };
     }
+
+    internal static MouseButtonKind ParseMouseButton(string? mouseButton) => mouseButton switch
+    {
+        "Middle" => MouseButtonKind.Middle,
+        "XButton1" => MouseButtonKind.XButton1,
+        "XButton2" => MouseButtonKind.XButton2,
+        _ => MouseButtonKind.None
+    };
 
     internal static ModifierFlags ParseModifierFlags(string modifiers)
     {
@@ -70,26 +97,26 @@ internal sealed record CachedBinding
 
 internal static class HotkeyMatcher
 {
-    internal static (string? Button, bool IsDown) ClassifyMouseMessage(int msg, uint mouseData)
+    internal static (MouseButtonKind Button, bool IsDown) ClassifyMouseMessage(int msg, uint mouseData)
     {
         return msg switch
         {
-            NativeMethods.WM_MBUTTONDOWN => ("Middle", true),
-            NativeMethods.WM_MBUTTONUP => ("Middle", false),
+            NativeMethods.WM_MBUTTONDOWN => (MouseButtonKind.Middle, true),
+            NativeMethods.WM_MBUTTONUP => (MouseButtonKind.Middle, false),
             NativeMethods.WM_XBUTTONDOWN => (GetXButton(mouseData), true),
             NativeMethods.WM_XBUTTONUP => (GetXButton(mouseData), false),
-            _ => (null, false)
+            _ => (MouseButtonKind.None, false)
         };
     }
 
-    internal static string? GetXButton(uint mouseData)
+    internal static MouseButtonKind GetXButton(uint mouseData)
     {
         var hiWord = (mouseData >> 16) & 0xFFFF;
         return hiWord switch
         {
-            NativeMethods.XBUTTON1 => "XButton1",
-            NativeMethods.XBUTTON2 => "XButton2",
-            _ => null
+            NativeMethods.XBUTTON1 => MouseButtonKind.XButton1,
+            NativeMethods.XBUTTON2 => MouseButtonKind.XButton2,
+            _ => MouseButtonKind.None
         };
     }
 
@@ -116,10 +143,10 @@ internal static class HotkeyMatcher
         return vkCode == (uint)KeyInterop.VirtualKeyFromKey(key);
     }
 
-    internal static bool MatchesMouseBinding(HotkeyBinding binding, string? button, Func<int, short> getKeyState)
+    internal static bool MatchesMouseBinding(HotkeyBinding binding, MouseButtonKind button, Func<int, short> getKeyState)
     {
-        if (!binding.IsMouseBinding || button == null) return false;
-        if (!string.Equals(binding.MouseButton, button, StringComparison.OrdinalIgnoreCase)) return false;
+        if (!binding.IsMouseBinding || button == MouseButtonKind.None) return false;
+        if (CachedBinding.ParseMouseButton(binding.MouseButton) != button) return false;
 
         return AreModifiersPressed(binding.Modifiers, getKeyState);
     }
@@ -163,10 +190,10 @@ internal static class HotkeyMatcher
         return vkCode == cached.VirtualKeyCode;
     }
 
-    internal static bool MatchesMouseBinding(CachedBinding cached, string? button, Func<int, short> getKeyState)
+    internal static bool MatchesMouseBinding(CachedBinding cached, MouseButtonKind button, Func<int, short> getKeyState)
     {
-        if (!cached.IsValid || !cached.IsMouseBinding || button == null) return false;
-        if (!string.Equals(cached.MouseButton, button, StringComparison.OrdinalIgnoreCase)) return false;
+        if (!cached.IsValid || !cached.IsMouseBinding || button == MouseButtonKind.None) return false;
+        if (cached.MouseButtonKind != button) return false;
         return AreModifiersPressed(cached.Modifiers, getKeyState);
     }
 
