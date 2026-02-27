@@ -204,7 +204,7 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll", EntryPoint = "DispatchMessageW")]
     internal static partial IntPtr DispatchMessage(in MSG lpMsg);
 
-    [LibraryImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "PostThreadMessageW")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool PostThreadMessage(uint idThread, uint Msg, IntPtr wParam, IntPtr lParam);
 }
