@@ -73,7 +73,7 @@ public class TextInsertionService : ITextInsertionService
             await Task.Delay(200);
             try
             {
-                Application.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject(previousClipboard));
+                Application.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject(previousClipboard, copy: true));
             }
             catch (Exception ex)
             {

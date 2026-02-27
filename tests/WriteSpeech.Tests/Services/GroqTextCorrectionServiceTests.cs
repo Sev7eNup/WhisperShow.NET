@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using WriteSpeech.Core.Models;
+using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.IDE;
 using WriteSpeech.Core.Services.TextCorrection;
 using WriteSpeech.Tests.TestHelpers;
@@ -71,6 +72,7 @@ public class GroqTextCorrectionServiceTests
         return new GroqTextCorrectionService(
             NullLogger<GroqTextCorrectionService>.Instance, options,
             Substitute.For<IDictionaryService>(),
-            Substitute.For<IIDEContextService>());
+            Substitute.For<IIDEContextService>(),
+            new OpenAiClientFactory(options));
     }
 }

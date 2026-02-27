@@ -17,15 +17,17 @@ public class SelectedTextService : ISelectedTextService
     public async Task<string?> ReadSelectedTextAsync()
     {
         string? selectedText = null;
+        IDataObject? previousClipboard = null;
 
         try
         {
-            // Clear clipboard first — if it fails or stale content remains, abort
+            // Save existing clipboard content, then clear
             bool clipboardCleared = false;
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
+                    previousClipboard = Clipboard.GetDataObject();
                     Clipboard.Clear();
                     clipboardCleared = !Clipboard.ContainsText();
                 }
@@ -91,6 +93,22 @@ public class SelectedTextService : ISelectedTextService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Unexpected error reading selected text");
+        }
+        finally
+        {
+            // Restore previous clipboard content
+            if (previousClipboard is not null)
+            {
+                try
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                        Clipboard.SetDataObject(previousClipboard, copy: true));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Could not restore previous clipboard content");
+                }
+            }
         }
 
         return string.IsNullOrWhiteSpace(selectedText) ? null : selectedText;

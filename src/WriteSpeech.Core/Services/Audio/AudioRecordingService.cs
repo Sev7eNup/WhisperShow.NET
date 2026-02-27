@@ -9,6 +9,7 @@ public class AudioRecordingService : IAudioRecordingService
 {
     private readonly ILogger<AudioRecordingService> _logger;
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
+    private readonly Lock _recordingLock = new();
     private WaveInEvent? _waveIn;
     private MemoryStream? _memoryStream;
     private WaveFileWriter? _waveFileWriter;
@@ -78,7 +79,12 @@ public class AudioRecordingService : IAudioRecordingService
         try
         {
             _waveIn!.StopRecording();
-            _waveFileWriter!.Flush();
+            // Dispose the writer first to finalize the WAV header (RIFF/data chunk sizes).
+            // WaveFileWriter.Dispose() seeks back and patches the header before closing.
+            // We keep the MemoryStream reference to read the finalized data.
+            var writer = _waveFileWriter;
+            _waveFileWriter = null;
+            writer?.Dispose();
             audioData = _memoryStream!.ToArray();
         }
         finally
@@ -93,7 +99,10 @@ public class AudioRecordingService : IAudioRecordingService
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
-        _waveFileWriter?.Write(e.Buffer, 0, e.BytesRecorded);
+        lock (_recordingLock)
+        {
+            _waveFileWriter?.Write(e.Buffer, 0, e.BytesRecorded);
+        }
 
         // Calculate RMS audio level for visualization
         float sum = 0;
@@ -121,18 +130,21 @@ public class AudioRecordingService : IAudioRecordingService
 
     private void CleanupRecordingResources()
     {
-        if (_waveIn is null) return;
+        lock (_recordingLock)
+        {
+            if (_waveIn is null) return;
 
-        _waveIn.DataAvailable -= OnDataAvailable;
-        _waveIn.RecordingStopped -= OnRecordingStopped;
+            _waveIn.DataAvailable -= OnDataAvailable;
+            _waveIn.RecordingStopped -= OnRecordingStopped;
 
-        try { _waveIn.Dispose(); } catch { /* best-effort */ }
-        _waveIn = null;
+            try { _waveIn.Dispose(); } catch { /* best-effort */ }
+            _waveIn = null;
 
-        try { _waveFileWriter?.Dispose(); } catch { }
-        _waveFileWriter = null;
-        try { _memoryStream?.Dispose(); } catch { }
-        _memoryStream = null;
+            try { _waveFileWriter?.Dispose(); } catch { }
+            _waveFileWriter = null;
+            try { _memoryStream?.Dispose(); } catch { }
+            _memoryStream = null;
+        }
     }
 
     private void StartMaxDurationTimer(int maxRecordingSeconds)

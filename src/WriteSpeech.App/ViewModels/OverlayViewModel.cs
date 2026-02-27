@@ -45,6 +45,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private string? _activeProcessName;
     private string? _selectedText;
     private bool _isCommandMode;
+    private bool _isTransitioning;
     private CancellationTokenSource? _autoDismissCts;
     private CancellationTokenSource? _transcriptionCts;
     private DateTime _recordingStartTime;
@@ -166,16 +167,23 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void OnMaxDurationReached(object? sender, EventArgs e)
+    private async void OnMaxDurationReached(object? sender, EventArgs e)
     {
-        _dispatcher.Invoke(async () =>
+        try
         {
-            if (State == RecordingState.Recording)
+            await _dispatcher.InvokeAsync(async () =>
             {
-                _logger.LogInformation("Max recording duration reached, auto-stopping");
-                await StopAndTranscribeAsync();
-            }
-        });
+                if (State == RecordingState.Recording)
+                {
+                    _logger.LogInformation("Max recording duration reached, auto-stopping");
+                    await StopAndTranscribeAsync();
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Max duration handler failed");
+        }
     }
 
     private void OnOptionsChanged(WriteSpeechOptions options, string? name)
@@ -194,6 +202,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ToggleRecordingAsync()
     {
+        if (_isTransitioning) return;
+
         switch (State)
         {
             case RecordingState.Idle:
@@ -215,6 +225,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     public async Task HotkeyStartRecordingAsync()
     {
         _logger.LogDebug("HotkeyStartRecordingAsync called (current state: {State})", State);
+        if (_isTransitioning) return;
         if (State == RecordingState.Idle)
             await StartRecordingAsync();
     }
@@ -225,6 +236,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     public async Task HotkeyStopRecordingAsync()
     {
         _logger.LogDebug("HotkeyStopRecordingAsync called (current state: {State})", State);
+        if (_isTransitioning) return;
         if (State == RecordingState.Recording)
             await StopAndTranscribeAsync();
     }
@@ -232,6 +244,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private async Task StartRecordingAsync()
     {
         CancelAutoDismissTimer();
+        _isTransitioning = true;
         try
         {
             _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
@@ -262,16 +275,23 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             StopRecordingTimer();
+            if (MuteWhileDictating)
+                _mutingService.UnmuteAll();
             _logger.LogError(ex, "Failed to start recording");
             ErrorMessage = $"Recording failed: {ex.Message}";
             State = RecordingState.Error;
             _soundEffects.PlayError();
             StartAutoDismissTimer();
         }
+        finally
+        {
+            _isTransitioning = false;
+        }
     }
 
     private async Task StopAndTranscribeAsync()
     {
+        _isTransitioning = true;
         StopRecordingTimer();
         _logger.LogInformation("State: Recording -> Transcribing");
         if (MuteWhileDictating)
@@ -402,6 +422,10 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             State = RecordingState.Error;
             _soundEffects.PlayError();
             StartAutoDismissTimer();
+        }
+        finally
+        {
+            _isTransitioning = false;
         }
     }
 
@@ -640,5 +664,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _recordingTimer?.Dispose();
         _recordingTimer = null;
         _optionsChangeRegistration?.Dispose();
+
+        // Ensure other apps are unmuted if we're disposed during recording
+        try { _mutingService.UnmuteAll(); } catch { /* best-effort */ }
     }
 }
