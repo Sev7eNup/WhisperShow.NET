@@ -1021,6 +1021,52 @@ public class OverlayViewModelTests : IDisposable
         vm.TranscribedText.Should().Be("Hello universe");
     }
 
+    // --- Error Recovery Tests ---
+
+    [Fact]
+    public async Task OnRecordingError_ThenStartRecording_CanRecordAgain()
+    {
+        var vm = CreateViewModel();
+        await vm.HotkeyStartRecordingAsync();
+        vm.State.Should().Be(RecordingState.Recording);
+
+        // Simulate device error during recording
+        _audioService.RecordingError += Raise.Event<EventHandler<Exception>>(
+            _audioService, new IOException("Device lost"));
+
+        vm.State.Should().Be(RecordingState.Error);
+
+        // Dismiss error → Idle
+        vm.ToggleRecordingCommand.Execute(null);
+        vm.State.Should().Be(RecordingState.Idle);
+
+        // Start recording again — must not throw
+        await vm.HotkeyStartRecordingAsync();
+        vm.State.Should().Be(RecordingState.Recording);
+    }
+
+    [Fact]
+    public async Task StopRecording_AudioTooShort_ThenStartRecording_CanRecordAgain()
+    {
+        _audioService.StopRecordingAsync().Returns(new byte[100]); // < 1000 bytes
+        var vm = CreateViewModel();
+
+        await vm.HotkeyStartRecordingAsync();
+        vm.State.Should().Be(RecordingState.Recording);
+
+        await vm.HotkeyStopRecordingAsync();
+        vm.State.Should().Be(RecordingState.Error);
+        vm.ErrorMessage.Should().Contain("too short");
+
+        // Dismiss error → Idle
+        vm.ToggleRecordingCommand.Execute(null);
+        vm.State.Should().Be(RecordingState.Idle);
+
+        // Start recording again — must not throw
+        await vm.HotkeyStartRecordingAsync();
+        vm.State.Should().Be(RecordingState.Recording);
+    }
+
     // --- Helper methods for custom DI ---
 
     private OverlayViewModel CreateViewModelWithModeService(

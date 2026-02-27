@@ -54,7 +54,9 @@ public class ModelDownloadHelperTests : IDisposable
         await _helper.DownloadToFileAsync(sourceStream, targetPath, data.Length, progress);
 
         // Allow Progress<T> callbacks to flush (they run on thread pool)
-        await Task.Delay(50);
+        // Use a retry loop since the thread pool scheduling is non-deterministic
+        for (int i = 0; i < 20 && progressValues.Count == 0; i++)
+            await Task.Delay(50);
 
         progressValues.Should().NotBeEmpty();
         progressValues.Last().Should().BeApproximately(1.0f, 0.01f);

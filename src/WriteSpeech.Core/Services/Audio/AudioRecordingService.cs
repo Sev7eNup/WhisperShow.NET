@@ -48,7 +48,16 @@ public class AudioRecordingService : IAudioRecordingService
 
         _waveIn.DataAvailable += OnDataAvailable;
         _waveIn.RecordingStopped += OnRecordingStopped;
-        _waveIn.StartRecording();
+
+        try
+        {
+            _waveIn.StartRecording();
+        }
+        catch
+        {
+            CleanupRecordingResources();
+            throw;
+        }
 
         StartMaxDurationTimer(audioOptions.MaxRecordingSeconds);
 
@@ -65,19 +74,17 @@ public class AudioRecordingService : IAudioRecordingService
 
         StopMaxDurationTimer();
 
-        _waveIn!.StopRecording();
-        _waveIn.DataAvailable -= OnDataAvailable;
-        _waveIn.RecordingStopped -= OnRecordingStopped;
-        _waveIn.Dispose();
-        _waveIn = null;
-
-        _waveFileWriter!.Flush();
-        var audioData = _memoryStream!.ToArray();
-
-        _waveFileWriter.Dispose();
-        _waveFileWriter = null;
-        _memoryStream.Dispose();
-        _memoryStream = null;
+        byte[] audioData;
+        try
+        {
+            _waveIn!.StopRecording();
+            _waveFileWriter!.Flush();
+            audioData = _memoryStream!.ToArray();
+        }
+        finally
+        {
+            CleanupRecordingResources();
+        }
 
         _logger.LogInformation("Recording stopped ({Size} bytes)", audioData.Length);
 
@@ -107,8 +114,25 @@ public class AudioRecordingService : IAudioRecordingService
         if (e.Exception is not null)
         {
             _logger.LogError(e.Exception, "Recording error");
+            CleanupRecordingResources();
             RecordingError?.Invoke(this, e.Exception);
         }
+    }
+
+    private void CleanupRecordingResources()
+    {
+        if (_waveIn is null) return;
+
+        _waveIn.DataAvailable -= OnDataAvailable;
+        _waveIn.RecordingStopped -= OnRecordingStopped;
+
+        try { _waveIn.Dispose(); } catch { /* best-effort */ }
+        _waveIn = null;
+
+        try { _waveFileWriter?.Dispose(); } catch { }
+        _waveFileWriter = null;
+        try { _memoryStream?.Dispose(); } catch { }
+        _memoryStream = null;
     }
 
     private void StartMaxDurationTimer(int maxRecordingSeconds)
@@ -139,11 +163,8 @@ public class AudioRecordingService : IAudioRecordingService
         StopMaxDurationTimer();
 
         if (IsRecording)
-        {
-            _waveIn!.StopRecording();
-            _waveIn.Dispose();
-        }
-        _waveFileWriter?.Dispose();
-        _memoryStream?.Dispose();
+            try { _waveIn!.StopRecording(); } catch { }
+
+        CleanupRecordingResources();
     }
 }
