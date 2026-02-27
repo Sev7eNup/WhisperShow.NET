@@ -170,6 +170,7 @@ public partial class App : Application
                     _host.Services.GetRequiredService<ILogger<SetupWizardViewModel>>(),
                     _host.Services.GetRequiredService<IModelManager>(),
                     _host.Services.GetRequiredService<IParakeetModelManager>(),
+                    _host.Services.GetRequiredService<ICorrectionModelManager>(),
                     _host.Services.GetRequiredService<IModelPreloadService>(),
                     opts);
                 var wizard = new SetupWizardWindow(wizardVm);

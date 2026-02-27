@@ -23,6 +23,7 @@ public partial class SetupWizardViewModel : ObservableObject
     private readonly IDispatcherService _dispatcher;
     private readonly IModelManager _modelManager;
     private readonly IParakeetModelManager _parakeetModelManager;
+    private readonly ICorrectionModelManager _correctionModelManager;
     private readonly IModelPreloadService _preloadService;
 
     // --- Step navigation ---
@@ -70,6 +71,14 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty] private string _googleModel = "gemini-3-flash-preview";
     [ObservableProperty] private string _groqCorrectionApiKey = "";
     [ObservableProperty] private string _groqCorrectionModel = "qwen/qwen3-32b";
+    [ObservableProperty] private string _customCorrectionEndpoint = "";
+    [ObservableProperty] private string _customCorrectionApiKey = "";
+    [ObservableProperty] private string _customCorrectionModel = "";
+    [ObservableProperty] private bool _correctionGpuAcceleration = true;
+    [ObservableProperty] private string _correctionLocalModelName = "";
+
+    // --- Local correction model download ---
+    public ObservableCollection<CorrectionModelItemViewModel> CorrectionModels { get; } = [];
 
     public bool IsReusableOpenAiKey =>
         CorrectionProvider is TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud
@@ -93,6 +102,7 @@ public partial class SetupWizardViewModel : ObservableObject
         ILogger<SetupWizardViewModel> logger,
         IModelManager modelManager,
         IParakeetModelManager parakeetModelManager,
+        ICorrectionModelManager correctionModelManager,
         IModelPreloadService preloadService,
         WriteSpeechOptions? existingOptions = null)
     {
@@ -101,6 +111,7 @@ public partial class SetupWizardViewModel : ObservableObject
         _logger = logger;
         _modelManager = modelManager;
         _parakeetModelManager = parakeetModelManager;
+        _correctionModelManager = correctionModelManager;
         _preloadService = preloadService;
 
         if (existingOptions is not null)
@@ -126,6 +137,11 @@ public partial class SetupWizardViewModel : ObservableObject
             _googleModel = existingOptions.TextCorrection.Google.Model ?? "gemini-3-flash-preview";
             _groqCorrectionApiKey = existingOptions.TextCorrection.Groq.ApiKey ?? "";
             _groqCorrectionModel = existingOptions.TextCorrection.Groq.Model ?? "qwen/qwen3-32b";
+            _customCorrectionEndpoint = existingOptions.TextCorrection.Custom.Endpoint ?? "";
+            _customCorrectionApiKey = existingOptions.TextCorrection.Custom.ApiKey ?? "";
+            _customCorrectionModel = existingOptions.TextCorrection.Custom.Model;
+            _correctionGpuAcceleration = existingOptions.TextCorrection.LocalGpuAcceleration;
+            _correctionLocalModelName = existingOptions.TextCorrection.LocalModelName;
 
             // Language & Mic
             _selectedLanguageCode = existingOptions.Language;
@@ -136,6 +152,7 @@ public partial class SetupWizardViewModel : ObservableObject
         LoadMicrophones();
         LoadWhisperModels();
         LoadParakeetModels();
+        LoadCorrectionModels();
     }
 
     // --- Navigation ---
@@ -294,6 +311,23 @@ public partial class SetupWizardViewModel : ObservableObject
         UpdateCanGoNext();
     }
 
+    internal void SetCustomCorrectionEndpoint(string endpoint)
+    {
+        CustomCorrectionEndpoint = endpoint.Trim();
+        UpdateCanGoNext();
+    }
+
+    internal void SetCustomCorrectionApiKey(string key)
+    {
+        CustomCorrectionApiKey = key.Trim();
+        UpdateCanGoNext();
+    }
+
+    internal void SetCustomCorrectionModel(string model)
+    {
+        CustomCorrectionModel = model.Trim();
+    }
+
     // --- Mic test ---
 
     internal void StartMicTest()
@@ -371,7 +405,10 @@ public partial class SetupWizardViewModel : ObservableObject
                 TextCorrectionProvider.Anthropic => !string.IsNullOrWhiteSpace(AnthropicApiKey),
                 TextCorrectionProvider.Google => !string.IsNullOrWhiteSpace(GoogleApiKey),
                 TextCorrectionProvider.Groq => !string.IsNullOrWhiteSpace(GroqCorrectionApiKey),
-                _ => true // Off, Local
+                TextCorrectionProvider.Custom => !string.IsNullOrWhiteSpace(CustomCorrectionEndpoint)
+                                                 && !string.IsNullOrWhiteSpace(CustomCorrectionApiKey),
+                TextCorrectionProvider.Local => CorrectionModels.Any(m => m.IsActive),
+                _ => true // Off
             },
             _ => true
         };
@@ -452,6 +489,21 @@ public partial class SetupWizardViewModel : ObservableObject
                 if (!string.IsNullOrWhiteSpace(GroqCorrectionApiKey))
                     groq["ApiKey"] = GroqCorrectionApiKey;
                 groq["Model"] = GroqCorrectionModel;
+            }
+            else if (CorrectionProvider == TextCorrectionProvider.Custom)
+            {
+                var custom = SettingsViewModel.EnsureObject(correction, "Custom");
+                if (!string.IsNullOrWhiteSpace(CustomCorrectionEndpoint))
+                    custom["Endpoint"] = CustomCorrectionEndpoint;
+                if (!string.IsNullOrWhiteSpace(CustomCorrectionApiKey))
+                    custom["ApiKey"] = CustomCorrectionApiKey;
+                if (!string.IsNullOrWhiteSpace(CustomCorrectionModel))
+                    custom["Model"] = CustomCorrectionModel;
+            }
+            else if (CorrectionProvider == TextCorrectionProvider.Local)
+            {
+                correction["LocalModelName"] = CorrectionLocalModelName;
+                correction["LocalGpuAcceleration"] = CorrectionGpuAcceleration;
             }
 
             // Microphone
@@ -593,6 +645,81 @@ public partial class SetupWizardViewModel : ObservableObject
         _preloadService.UnloadTranscriptionModel();
         _preloadService.PreloadParakeetModel();
         UpdateCanGoNext();
+    }
+
+    [RelayCommand]
+    internal async Task DownloadCorrectionModel(CorrectionModelItemViewModel item)
+    {
+        if (item.IsDownloading) return;
+
+        item.IsDownloading = true;
+        item.StatusText = "Downloading...";
+        item.DownloadProgress = 0;
+
+        try
+        {
+            var progress = new Progress<float>(p =>
+            {
+                _dispatcher.Invoke(() =>
+                {
+                    item.DownloadProgress = p;
+                    item.StatusText = $"Downloading... {p * 100:F0}%";
+                });
+            });
+
+            await _correctionModelManager.DownloadModelAsync(item.FileName, progress);
+
+            item.IsDownloaded = true;
+            item.StatusText = "Downloaded";
+            _logger.LogInformation("Correction model {Name} downloaded in wizard", item.Name);
+
+            if (!CorrectionModels.Any(m => m.IsActive))
+                SelectCorrectionLocalModel(item);
+        }
+        catch (Exception ex)
+        {
+            item.StatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to download correction model {Name}", item.Name);
+        }
+        finally
+        {
+            item.IsDownloading = false;
+        }
+    }
+
+    [RelayCommand]
+    internal void SelectCorrectionLocalModel(CorrectionModelItemViewModel item)
+    {
+        if (!item.IsDownloaded) return;
+
+        foreach (var m in CorrectionModels)
+        {
+            m.IsActive = false;
+            if (m.IsDownloaded) m.StatusText = "Downloaded";
+        }
+
+        item.IsActive = true;
+        item.StatusText = "Active";
+        CorrectionLocalModelName = item.FileName;
+        _preloadService.PreloadCorrectionModel(item.FileName);
+        UpdateCanGoNext();
+    }
+
+    private void LoadCorrectionModels()
+    {
+        CorrectionModels.Clear();
+        foreach (var model in _correctionModelManager.GetAllModels())
+        {
+            var item = new CorrectionModelItemViewModel(model);
+            if (CorrectionProvider == TextCorrectionProvider.Local
+                && model.FileName == CorrectionLocalModelName
+                && model.IsDownloaded)
+            {
+                item.IsActive = true;
+                item.StatusText = "Active";
+            }
+            CorrectionModels.Add(item);
+        }
     }
 
     private void LoadWhisperModels()

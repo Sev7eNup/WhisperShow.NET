@@ -20,6 +20,7 @@ public class SetupWizardViewModelTests
     private readonly ILogger<SetupWizardViewModel> _logger = Substitute.For<ILogger<SetupWizardViewModel>>();
     private readonly IModelManager _modelManager = Substitute.For<IModelManager>();
     private readonly IParakeetModelManager _parakeetModelManager = Substitute.For<IParakeetModelManager>();
+    private readonly ICorrectionModelManager _correctionModelManager = Substitute.For<ICorrectionModelManager>();
     private readonly IModelPreloadService _preloadService = Substitute.For<IModelPreloadService>();
 
     public SetupWizardViewModelTests()
@@ -38,6 +39,10 @@ public class SetupWizardViewModelTests
                 DownloadUrl = "https://example.com"
             },
         ]);
+        _correctionModelManager.GetAllModels().Returns([
+            new CorrectionModelInfo { Name = "Gemma 3 1B IT", FileName = "google_gemma-3-1b-it-Q4_K_M.gguf", SizeBytes = 806_000_000, DownloadUrl = "https://example.com/gemma3" },
+            new CorrectionModelInfo { Name = "Qwen 2.5 3B", FileName = "qwen2.5-3b-instruct-q4_k_m.gguf", SizeBytes = 2_000_000_000, DownloadUrl = "https://example.com/qwen" },
+        ]);
     }
 
     private SetupWizardViewModel CreateViewModel(WriteSpeechOptions? options = null)
@@ -48,6 +53,7 @@ public class SetupWizardViewModelTests
             _logger,
             _modelManager,
             _parakeetModelManager,
+            _correctionModelManager,
             _preloadService,
             options);
     }
@@ -1319,5 +1325,381 @@ public class SetupWizardViewModelTests
         var vm = CreateViewModel(options);
 
         vm.ParakeetModelName.Should().Be("custom-model");
+    }
+
+    // --- Custom correction provider ---
+
+    [Fact]
+    public void Constructor_SetsCustomCorrectionDefaults()
+    {
+        var vm = CreateViewModel();
+
+        vm.CustomCorrectionEndpoint.Should().BeEmpty();
+        vm.CustomCorrectionApiKey.Should().BeEmpty();
+        vm.CustomCorrectionModel.Should().BeEmpty();
+        vm.CorrectionGpuAcceleration.Should().BeTrue();
+        vm.CorrectionLocalModelName.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesCustomCorrectionFields()
+    {
+        var options = new WriteSpeechOptions
+        {
+            TextCorrection = new TextCorrectionOptions
+            {
+                Custom = new OpenAiCompatibleCorrectionOptions
+                {
+                    Endpoint = "https://my-api.com/v1",
+                    ApiKey = "custom-key",
+                    Model = "my-model"
+                }
+            }
+        };
+
+        var vm = CreateViewModel(options);
+
+        vm.CustomCorrectionEndpoint.Should().Be("https://my-api.com/v1");
+        vm.CustomCorrectionApiKey.Should().Be("custom-key");
+        vm.CustomCorrectionModel.Should().Be("my-model");
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesLocalCorrectionFields()
+    {
+        var options = new WriteSpeechOptions
+        {
+            TextCorrection = new TextCorrectionOptions
+            {
+                LocalGpuAcceleration = false,
+                LocalModelName = "google_gemma-3-1b-it-Q4_K_M.gguf"
+            }
+        };
+
+        var vm = CreateViewModel(options);
+
+        vm.CorrectionGpuAcceleration.Should().BeFalse();
+        vm.CorrectionLocalModelName.Should().Be("google_gemma-3-1b-it-Q4_K_M.gguf");
+    }
+
+    [Fact]
+    public void Constructor_LoadsCorrectionModels()
+    {
+        var vm = CreateViewModel();
+
+        vm.CorrectionModels.Should().HaveCount(2);
+        vm.CorrectionModels[0].Name.Should().Be("Gemma 3 1B IT");
+        vm.CorrectionModels[1].Name.Should().Be("Qwen 2.5 3B");
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesActiveCorrectionModel_WhenDownloaded()
+    {
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            _correctionModelManager.GetAllModels().Returns([
+                new CorrectionModelInfo { Name = "Gemma 3 1B IT", FileName = "google_gemma-3-1b-it-Q4_K_M.gguf",
+                    SizeBytes = 806_000_000, DownloadUrl = "https://example.com", FilePath = tempFile },
+            ]);
+
+            var options = new WriteSpeechOptions
+            {
+                TextCorrection = new TextCorrectionOptions
+                {
+                    Provider = TextCorrectionProvider.Local,
+                    LocalModelName = "google_gemma-3-1b-it-Q4_K_M.gguf"
+                }
+            };
+
+            var vm = CreateViewModel(options);
+
+            vm.CorrectionModels[0].IsActive.Should().BeTrue();
+            vm.CorrectionModels[0].StatusText.Should().Be("Active");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void SetCustomCorrectionEndpoint_TrimsAndSets()
+    {
+        var vm = CreateViewModel();
+        vm.SetCustomCorrectionEndpoint("  https://api.example.com/v1  ");
+        vm.CustomCorrectionEndpoint.Should().Be("https://api.example.com/v1");
+    }
+
+    [Fact]
+    public void SetCustomCorrectionApiKey_TrimsAndSets()
+    {
+        var vm = CreateViewModel();
+        vm.SetCustomCorrectionApiKey("  custom-key  ");
+        vm.CustomCorrectionApiKey.Should().Be("custom-key");
+    }
+
+    [Fact]
+    public void SetCustomCorrectionModel_TrimsAndSets()
+    {
+        var vm = CreateViewModel();
+        vm.SetCustomCorrectionModel("  my-model  ");
+        vm.CustomCorrectionModel.Should().Be("my-model");
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_CustomProvider_WithoutEndpoint_IsFalse()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Custom");
+        vm.SetCustomCorrectionApiKey("key");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_CustomProvider_WithoutApiKey_IsFalse()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Custom");
+        vm.SetCustomCorrectionEndpoint("https://api.example.com/v1");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_CustomProvider_WithEndpointAndApiKey_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SetCustomCorrectionEndpoint("https://api.example.com/v1");
+        vm.SetCustomCorrectionApiKey("key");
+        vm.SelectCorrectionProvider("Custom");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SetCustomCorrectionEndpoint_UpdatesCanGoNext()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Custom");
+        vm.SetCustomCorrectionApiKey("key");
+        vm.CanGoNext.Should().BeFalse();
+
+        vm.SetCustomCorrectionEndpoint("https://api.example.com/v1");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_LocalProvider_NoActiveModel_IsFalse()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Local");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_LocalProvider_WithActiveModel_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Local");
+        vm.CorrectionModels[0].IsDownloaded = true;
+        vm.SelectCorrectionLocalModel(vm.CorrectionModels[0]);
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_Custom_SetsProvider()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCorrectionProvider("Custom");
+        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Custom);
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_Local_SetsProvider()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCorrectionProvider("Local");
+        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Local);
+    }
+
+    // --- Local correction model management ---
+
+    [Fact]
+    public void SelectCorrectionLocalModel_ActivatesModel()
+    {
+        var vm = CreateViewModel();
+        vm.CorrectionModels[0].IsDownloaded = true;
+        vm.CorrectionModels[1].IsDownloaded = true;
+
+        vm.SelectCorrectionLocalModel(vm.CorrectionModels[1]);
+
+        vm.CorrectionModels[1].IsActive.Should().BeTrue();
+        vm.CorrectionModels[1].StatusText.Should().Be("Active");
+        vm.CorrectionModels[0].IsActive.Should().BeFalse();
+        vm.CorrectionLocalModelName.Should().Be("qwen2.5-3b-instruct-q4_k_m.gguf");
+    }
+
+    [Fact]
+    public void SelectCorrectionLocalModel_DeactivatesOtherModels()
+    {
+        var vm = CreateViewModel();
+        vm.CorrectionModels[0].IsDownloaded = true;
+        vm.CorrectionModels[0].IsActive = true;
+        vm.CorrectionModels[1].IsDownloaded = true;
+
+        vm.SelectCorrectionLocalModel(vm.CorrectionModels[1]);
+
+        vm.CorrectionModels[0].IsActive.Should().BeFalse();
+        vm.CorrectionModels[0].StatusText.Should().Be("Downloaded");
+        vm.CorrectionModels[1].IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectCorrectionLocalModel_NotDownloaded_DoesNotActivate()
+    {
+        var vm = CreateViewModel();
+
+        vm.SelectCorrectionLocalModel(vm.CorrectionModels[0]);
+
+        vm.CorrectionModels[0].IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SelectCorrectionLocalModel_CallsPreloadService()
+    {
+        var vm = CreateViewModel();
+        vm.CorrectionModels[0].IsDownloaded = true;
+
+        vm.SelectCorrectionLocalModel(vm.CorrectionModels[0]);
+
+        _preloadService.Received(1).PreloadCorrectionModel("google_gemma-3-1b-it-Q4_K_M.gguf");
+    }
+
+    [Fact]
+    public async Task DownloadCorrectionModel_AutoActivatesFirstDownload()
+    {
+        _correctionModelManager.DownloadModelAsync(Arg.Any<string>(), Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var vm = CreateViewModel();
+        await vm.DownloadCorrectionModel(vm.CorrectionModels[0]);
+
+        vm.CorrectionModels[0].IsDownloaded.Should().BeTrue();
+        vm.CorrectionModels[0].IsActive.Should().BeTrue();
+        vm.CorrectionLocalModelName.Should().Be("google_gemma-3-1b-it-Q4_K_M.gguf");
+    }
+
+    [Fact]
+    public async Task DownloadCorrectionModel_SetsErrorOnFailure()
+    {
+        _correctionModelManager.DownloadModelAsync(Arg.Any<string>(), Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new Exception("Network error")));
+
+        var vm = CreateViewModel();
+        await vm.DownloadCorrectionModel(vm.CorrectionModels[0]);
+
+        vm.CorrectionModels[0].StatusText.Should().Contain("Error");
+        vm.CorrectionModels[0].IsDownloaded.Should().BeFalse();
+        vm.CorrectionModels[0].IsDownloading.Should().BeFalse();
+    }
+
+    // --- Custom/Local FinishSetup persistence ---
+
+    [Fact]
+    public void FinishSetup_WritesCustomCorrectionEndpointApiKeyAndModel()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.SelectCorrectionProvider("Custom");
+        vm.SetCustomCorrectionEndpoint("https://my-api.com/v1");
+        vm.SetCustomCorrectionApiKey("custom-key-123");
+        vm.SetCustomCorrectionModel("my-model");
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["TextCorrection"]!["Provider"]!.GetValue<string>().Should().Be("Custom");
+        capturedSection!["TextCorrection"]!["Custom"]!["Endpoint"]!.GetValue<string>().Should().Be("https://my-api.com/v1");
+        capturedSection!["TextCorrection"]!["Custom"]!["ApiKey"]!.GetValue<string>().Should().Be("custom-key-123");
+        capturedSection!["TextCorrection"]!["Custom"]!["Model"]!.GetValue<string>().Should().Be("my-model");
+    }
+
+    [Fact]
+    public void FinishSetup_WritesLocalCorrectionGpuAndModelName()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.SelectCorrectionProvider("Local");
+        vm.CorrectionGpuAcceleration = false;
+        vm.CorrectionLocalModelName = "google_gemma-3-1b-it-Q4_K_M.gguf";
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["TextCorrection"]!["Provider"]!.GetValue<string>().Should().Be("Local");
+        capturedSection!["TextCorrection"]!["LocalModelName"]!.GetValue<string>().Should().Be("google_gemma-3-1b-it-Q4_K_M.gguf");
+        capturedSection!["TextCorrection"]!["LocalGpuAcceleration"]!.GetValue<bool>().Should().BeFalse();
+    }
+
+    [Fact]
+    public void FinishSetup_CustomProvider_OmitsModelWhenEmpty()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.SelectCorrectionProvider("Custom");
+        vm.SetCustomCorrectionEndpoint("https://my-api.com/v1");
+        vm.SetCustomCorrectionApiKey("key");
+        // Model left empty
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["TextCorrection"]!["Custom"]!["Endpoint"]!.GetValue<string>().Should().Be("https://my-api.com/v1");
+        capturedSection!["TextCorrection"]!["Custom"]!["ApiKey"]!.GetValue<string>().Should().Be("key");
+        capturedSection!["TextCorrection"]!["Custom"]!["Model"].Should().BeNull();
     }
 }

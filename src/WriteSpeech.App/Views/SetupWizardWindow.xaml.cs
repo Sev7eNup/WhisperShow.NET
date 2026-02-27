@@ -239,6 +239,21 @@ public partial class SetupWizardWindow : Window
         if (sender is TextBox tb) _viewModel.SetGroqCorrectionApiKey(tb.Text);
     }
 
+    private void CustomCorrectionEndpointBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetCustomCorrectionEndpoint(tb.Text);
+    }
+
+    private void CustomCorrectionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetCustomCorrectionApiKey(tb.Text);
+    }
+
+    private void CustomCorrectionModelBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetCustomCorrectionModel(tb.Text);
+    }
+
     // --- Cloud sub-provider tabs ---
 
     private void CloudSubProviderTab_Click(object sender, MouseButtonEventArgs e)
@@ -271,6 +286,11 @@ public partial class SetupWizardWindow : Window
     private void ToggleParakeetGpu_Click(object sender, MouseButtonEventArgs e)
     {
         _viewModel.ParakeetGpuAcceleration = !_viewModel.ParakeetGpuAcceleration;
+    }
+
+    private void ToggleCorrectionGpu_Click(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.CorrectionGpuAcceleration = !_viewModel.CorrectionGpuAcceleration;
     }
 
     // --- Per-provider correction API keys ---
@@ -315,6 +335,36 @@ public partial class SetupWizardWindow : Window
         }
     }
 
+    private void CustomCorrectionEndpointBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetCustomCorrectionEndpoint(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
+    private void CustomCorrectionApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetCustomCorrectionApiKey(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
+    private void CustomCorrectionModelBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetCustomCorrectionModel(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
     // --- Model card highlighting ---
 
     private void UpdateTranscriptionModelHighlight()
@@ -340,7 +390,7 @@ public partial class SetupWizardWindow : Window
     }
 
     private static readonly HashSet<string> s_nonModelTags =
-        ["OpenAI", "Local", "Parakeet", "Off", "Anthropic", "Google", "Groq", "Cloud", "unused"];
+        ["OpenAI", "Local", "Parakeet", "Off", "Anthropic", "Google", "Groq", "Custom", "Cloud", "unused"];
 
     private void HighlightModelCards(string _, string selectedModelId)
     {
