@@ -9,79 +9,108 @@
                    FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap" Margin="0,0,0,16"/>
 
-        <!-- Provider picker cards -->
-        <Grid Margin="0,0,0,4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Cloud card -->
-            <Border Grid.Column="0" Tag="OpenAI" MouseLeftButtonDown="ProviderCard_Click"
-                    Cursor="Hand" BorderThickness="2"
-                    Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="20,16">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="BorderBrush" Value="Transparent"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Provider}" Value="OpenAI">
-                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
-                    <StackPanel>
-                        <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="22"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+        <!-- Provider picker: segmented toggle -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="4" Margin="0,0,0,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <!-- Cloud segment -->
+                <Border Grid.Column="0" Tag="OpenAI" MouseLeftButtonDown="ProviderCard_Click"
+                        Cursor="Hand" CornerRadius="10" Padding="12,10">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Provider}" Value="OpenAI">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   VerticalAlignment="Center" Margin="0,0,8,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Provider}" Value="OpenAI">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="Cloud" FontSize="12.5" FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="OpenAI Whisper API" FontSize="11.5"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Margin="0,2,0,0"/>
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Provider}" Value="OpenAI">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
-                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12.5"
-                               Foreground="{DynamicResource SelectedBorderBrush}"
-                               HorizontalAlignment="Right" VerticalAlignment="Top"
-                               Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=OpenAI}"/>
-                </Grid>
-            </Border>
-
-            <!-- Local card (selected for both Local and Parakeet providers) -->
-            <Border Grid.Column="2" Tag="Local" MouseLeftButtonDown="ProviderCard_Click"
-                    Cursor="Hand" BorderThickness="2"
-                    Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="20,16">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="BorderBrush" Value="Transparent"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Provider}" Value="Local">
-                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
-                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
-                    <StackPanel>
-                        <TextBlock Text="&#xE770;" FontFamily="Segoe MDL2 Assets" FontSize="22"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                </Border>
+                <!-- Local segment -->
+                <Border Grid.Column="1" Tag="Local" MouseLeftButtonDown="ProviderCard_Click"
+                        Cursor="Hand" CornerRadius="10" Padding="12,10">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Provider}" Value="Local">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE770;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   VerticalAlignment="Center" Margin="0,0,8,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Provider}" Value="Local">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="Local" FontSize="12.5" FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="Whisper.net &amp; Parakeet" FontSize="11.5"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Margin="0,2,0,0"/>
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Provider}" Value="Local">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
-                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12.5"
-                               Foreground="{DynamicResource SelectedBorderBrush}"
-                               HorizontalAlignment="Right" VerticalAlignment="Top"
-                               Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Local|Parakeet}"/>
-                </Grid>
-            </Border>
-        </Grid>
+                </Border>
+            </Grid>
+        </Border>
 
         <!-- ===== Cloud settings (visible when Provider=OpenAI) ===== -->
         <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=OpenAI}">
@@ -413,25 +442,85 @@
         <!-- ===== Local settings (visible when Provider=Local or Parakeet) ===== -->
         <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Local|Parakeet}">
             <TextBlock Text="Local settings" Style="{StaticResource GroupHeaderStyle}"/>
-            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
-                <StackPanel>
-                    <!-- GPU acceleration (shared for Whisper + Parakeet) -->
-                    <Grid Margin="20,10,20,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
-                                      IsChecked="{Binding GpuAcceleration}"
-                                      Command="{Binding ToggleGpuAccelerationCommand}" VerticalAlignment="Center"/>
-                    </Grid>
+
+            <!-- Sub-provider pills: Whisper | Parakeet -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="20" Padding="4" Margin="0,0,0,12"
+                    HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <!-- Whisper tab -->
+                    <Border Tag="Local" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
+                            CornerRadius="16" Padding="16,6" Margin="0,0,2,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Provider}" Value="Local">
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="OpenAI Whisper" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Provider}" Value="Local">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <!-- Parakeet tab -->
+                    <Border Tag="Parakeet" MouseLeftButtonDown="ProviderCard_Click" Cursor="Hand"
+                            CornerRadius="16" Padding="16,6">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="NVIDIA Parakeet" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Provider}" Value="Parakeet">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
                 </StackPanel>
             </Border>
 
-            <!-- Whisper models -->
-            <TextBlock Text="Whisper models" Style="{StaticResource GroupHeaderStyle}"/>
+            <!-- GPU acceleration (shared for Whisper + Parakeet) -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,8">
+                <Grid Margin="20,10,20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
+                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding GpuAcceleration}"
+                                  Command="{Binding ToggleGpuAccelerationCommand}" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== Whisper models (visible when Provider=Local) ===== -->
+            <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Local}">
             <ItemsControl ItemsSource="{Binding Models.ModelItems}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -598,9 +687,10 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            </StackPanel>
 
-            <!-- Parakeet models (English only) -->
-            <TextBlock Text="Parakeet models (English only)" Style="{StaticResource GroupHeaderStyle}"/>
+            <!-- ===== Parakeet models (visible when Provider=Parakeet) ===== -->
+            <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=Parakeet}">
             <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,8" Padding="16,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -780,6 +870,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            </StackPanel>
         </StackPanel>
 
         <!-- ===== Combined Audio Model section (only for Cloud provider + OpenAI sub-provider) ===== -->
