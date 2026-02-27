@@ -4,11 +4,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using NAudio.Wave;
+using Whisper.net.Ggml;
 using WriteSpeech.App.ViewModels.Settings;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Configuration;
+using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels;
 
@@ -19,6 +21,9 @@ public partial class SetupWizardViewModel : ObservableObject
     private readonly ISettingsPersistenceService _persistenceService;
     private readonly ILogger<SetupWizardViewModel> _logger;
     private readonly IDispatcherService _dispatcher;
+    private readonly IModelManager _modelManager;
+    private readonly IParakeetModelManager _parakeetModelManager;
+    private readonly IModelPreloadService _preloadService;
 
     // --- Step navigation ---
     [ObservableProperty]
@@ -49,6 +54,12 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty] private string _groqTranscriptionModel = "whisper-large-v3-turbo";
     [ObservableProperty] private bool _localGpuAcceleration = true;
     [ObservableProperty] private bool _parakeetGpuAcceleration = true;
+    [ObservableProperty] private string _localModelName = "ggml-small.bin";
+    [ObservableProperty] private string _parakeetModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
+
+    // --- Local model download ---
+    public ObservableCollection<ModelItemViewModel> WhisperModels { get; } = [];
+    public ObservableCollection<ParakeetModelItemViewModel> ParakeetModels { get; } = [];
 
     // --- Step 3: Text Correction ---
     [ObservableProperty] private TextCorrectionProvider _correctionProvider = TextCorrectionProvider.Off;
@@ -80,11 +91,17 @@ public partial class SetupWizardViewModel : ObservableObject
         ISettingsPersistenceService persistenceService,
         IDispatcherService dispatcher,
         ILogger<SetupWizardViewModel> logger,
+        IModelManager modelManager,
+        IParakeetModelManager parakeetModelManager,
+        IModelPreloadService preloadService,
         WriteSpeechOptions? existingOptions = null)
     {
         _persistenceService = persistenceService;
         _dispatcher = dispatcher;
         _logger = logger;
+        _modelManager = modelManager;
+        _parakeetModelManager = parakeetModelManager;
+        _preloadService = preloadService;
 
         if (existingOptions is not null)
         {
@@ -97,6 +114,8 @@ public partial class SetupWizardViewModel : ObservableObject
             _groqTranscriptionModel = existingOptions.GroqTranscription.Model ?? "whisper-large-v3-turbo";
             _localGpuAcceleration = existingOptions.Local.GpuAcceleration;
             _parakeetGpuAcceleration = existingOptions.Parakeet.GpuAcceleration;
+            _localModelName = existingOptions.Local.ModelName ?? "ggml-small.bin";
+            _parakeetModelName = existingOptions.Parakeet.ModelName ?? "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
 
             // Correction
             _correctionProvider = existingOptions.TextCorrection.Provider;
@@ -115,6 +134,8 @@ public partial class SetupWizardViewModel : ObservableObject
         }
 
         LoadMicrophones();
+        LoadWhisperModels();
+        LoadParakeetModels();
     }
 
     // --- Navigation ---
@@ -318,12 +339,17 @@ public partial class SetupWizardViewModel : ObservableObject
     {
         CanGoNext = CurrentStep switch
         {
-            SetupStep.Transcription => Provider != TranscriptionProvider.OpenAI
-                || CloudTranscriptionProvider switch
+            SetupStep.Transcription => Provider switch
+            {
+                TranscriptionProvider.OpenAI => CloudTranscriptionProvider switch
                 {
                     "Groq" => !string.IsNullOrWhiteSpace(GroqTranscriptionApiKey),
                     _ => !string.IsNullOrWhiteSpace(OpenAiApiKey)
                 },
+                TranscriptionProvider.Local => WhisperModels.Any(m => m.IsActive),
+                TranscriptionProvider.Parakeet => ParakeetModels.Any(m => m.IsActive),
+                _ => true
+            },
             _ => true
         };
     }
@@ -362,11 +388,15 @@ public partial class SetupWizardViewModel : ObservableObject
             }
             else if (Provider == TranscriptionProvider.Local)
             {
-                SettingsViewModel.EnsureObject(section, "Local")["GpuAcceleration"] = LocalGpuAcceleration;
+                var local = SettingsViewModel.EnsureObject(section, "Local");
+                local["GpuAcceleration"] = LocalGpuAcceleration;
+                local["ModelName"] = LocalModelName;
             }
             else if (Provider == TranscriptionProvider.Parakeet)
             {
-                SettingsViewModel.EnsureObject(section, "Parakeet")["GpuAcceleration"] = ParakeetGpuAcceleration;
+                var parakeet = SettingsViewModel.EnsureObject(section, "Parakeet");
+                parakeet["GpuAcceleration"] = ParakeetGpuAcceleration;
+                parakeet["ModelName"] = ParakeetModelName;
             }
 
             // Text correction
@@ -411,6 +441,178 @@ public partial class SetupWizardViewModel : ObservableObject
         IsCompleted = true;
         OnPropertyChanged(nameof(IsCompleted));
     }
+
+    // --- Local model download ---
+
+    [RelayCommand]
+    internal async Task DownloadWhisperModel(ModelItemViewModel item)
+    {
+        if (item.IsDownloading) return;
+
+        item.IsDownloading = true;
+        item.StatusText = "Downloading...";
+        item.DownloadProgress = 0;
+
+        try
+        {
+            var progress = new Progress<float>(p =>
+            {
+                _dispatcher.Invoke(() =>
+                {
+                    item.DownloadProgress = p;
+                    item.StatusText = $"Downloading... {p * 100:F0}%";
+                });
+            });
+
+            await _modelManager.DownloadModelAsync(item.GgmlType, progress);
+
+            item.IsDownloaded = true;
+            item.StatusText = "Downloaded";
+            _logger.LogInformation("Whisper model {Name} downloaded in wizard", item.Name);
+
+            if (!WhisperModels.Any(m => m.IsActive))
+                SelectWhisperModel(item);
+        }
+        catch (Exception ex)
+        {
+            item.StatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to download Whisper model {Name}", item.Name);
+        }
+        finally
+        {
+            item.IsDownloading = false;
+        }
+    }
+
+    [RelayCommand]
+    internal void SelectWhisperModel(ModelItemViewModel item)
+    {
+        if (!item.IsDownloaded) return;
+
+        foreach (var m in WhisperModels)
+        {
+            m.IsActive = false;
+            if (m.IsDownloaded) m.StatusText = "Downloaded";
+        }
+        foreach (var m in ParakeetModels)
+        {
+            m.IsActive = false;
+            if (m.IsDownloaded) m.StatusText = "Downloaded";
+        }
+
+        item.IsActive = true;
+        item.StatusText = "Active";
+        LocalModelName = item.FileName;
+        _preloadService.UnloadParakeetModel();
+        _preloadService.PreloadTranscriptionModel(item.FileName);
+        UpdateCanGoNext();
+    }
+
+    [RelayCommand]
+    internal async Task DownloadParakeetModel(ParakeetModelItemViewModel item)
+    {
+        if (item.IsDownloading) return;
+
+        item.IsDownloading = true;
+        item.StatusText = "Downloading...";
+        item.DownloadProgress = 0;
+
+        try
+        {
+            var progress = new Progress<float>(p =>
+            {
+                _dispatcher.Invoke(() =>
+                {
+                    item.DownloadProgress = p;
+                    item.StatusText = $"Downloading... {p * 100:F0}%";
+                });
+            });
+
+            await _parakeetModelManager.DownloadModelAsync(item.DirectoryName, progress);
+
+            item.IsDownloaded = true;
+            item.StatusText = "Downloaded";
+            _logger.LogInformation("Parakeet model {Name} downloaded in wizard", item.Name);
+
+            if (!ParakeetModels.Any(m => m.IsActive))
+                SelectParakeetModel(item);
+        }
+        catch (Exception ex)
+        {
+            item.StatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to download Parakeet model {Name}", item.Name);
+        }
+        finally
+        {
+            item.IsDownloading = false;
+        }
+    }
+
+    [RelayCommand]
+    internal void SelectParakeetModel(ParakeetModelItemViewModel item)
+    {
+        if (!item.IsDownloaded) return;
+
+        foreach (var m in ParakeetModels)
+        {
+            m.IsActive = false;
+            if (m.IsDownloaded) m.StatusText = "Downloaded";
+        }
+        foreach (var m in WhisperModels)
+        {
+            m.IsActive = false;
+            if (m.IsDownloaded) m.StatusText = "Downloaded";
+        }
+
+        item.IsActive = true;
+        item.StatusText = "Active";
+        ParakeetModelName = item.DirectoryName;
+        _preloadService.UnloadTranscriptionModel();
+        _preloadService.PreloadParakeetModel();
+        UpdateCanGoNext();
+    }
+
+    private void LoadWhisperModels()
+    {
+        WhisperModels.Clear();
+        foreach (var model in _modelManager.GetAllModels())
+        {
+            var ggmlType = FileNameToGgmlType(model.FileName);
+            var item = new ModelItemViewModel(model, ggmlType);
+            if (Provider == TranscriptionProvider.Local && model.FileName == LocalModelName && model.IsDownloaded)
+            {
+                item.IsActive = true;
+                item.StatusText = "Active";
+            }
+            WhisperModels.Add(item);
+        }
+    }
+
+    private void LoadParakeetModels()
+    {
+        ParakeetModels.Clear();
+        foreach (var model in _parakeetModelManager.GetAllModels())
+        {
+            var item = new ParakeetModelItemViewModel(model);
+            if (Provider == TranscriptionProvider.Parakeet && model.DirectoryName == ParakeetModelName && model.IsDirectoryComplete)
+            {
+                item.IsActive = true;
+                item.StatusText = "Active";
+            }
+            ParakeetModels.Add(item);
+        }
+    }
+
+    internal static GgmlType FileNameToGgmlType(string fileName) => fileName switch
+    {
+        "ggml-tiny.bin" => GgmlType.Tiny,
+        "ggml-base.bin" => GgmlType.Base,
+        "ggml-small.bin" => GgmlType.Small,
+        "ggml-medium.bin" => GgmlType.Medium,
+        "ggml-large-v3.bin" => GgmlType.LargeV3,
+        "ggml-large-v3-turbo.bin" => GgmlType.LargeV3Turbo,
+        _ => throw new ArgumentException($"Unknown model: {fileName}")
+    };
 
     // --- Microphone loading ---
 

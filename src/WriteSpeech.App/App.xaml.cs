@@ -165,6 +165,9 @@ public partial class App : Application
                     _host.Services.GetRequiredService<ISettingsPersistenceService>(),
                     _host.Services.GetRequiredService<IDispatcherService>(),
                     _host.Services.GetRequiredService<ILogger<SetupWizardViewModel>>(),
+                    _host.Services.GetRequiredService<IModelManager>(),
+                    _host.Services.GetRequiredService<IParakeetModelManager>(),
+                    _host.Services.GetRequiredService<IModelPreloadService>(),
                     opts);
                 var wizard = new SetupWizardWindow(wizardVm);
                 if (wizard.ShowDialog() != true)

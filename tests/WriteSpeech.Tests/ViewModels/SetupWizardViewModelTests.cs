@@ -1,11 +1,14 @@
+using System.IO;
 using System.Text.Json.Nodes;
 using FluentAssertions;
 using NSubstitute;
+using Whisper.net.Ggml;
 using WriteSpeech.App.ViewModels;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Configuration;
+using WriteSpeech.Core.Services.ModelManagement;
 using WriteSpeech.Tests.TestHelpers;
 using Microsoft.Extensions.Logging;
 
@@ -15,6 +18,27 @@ public class SetupWizardViewModelTests
 {
     private readonly ISettingsPersistenceService _persistenceService = Substitute.For<ISettingsPersistenceService>();
     private readonly ILogger<SetupWizardViewModel> _logger = Substitute.For<ILogger<SetupWizardViewModel>>();
+    private readonly IModelManager _modelManager = Substitute.For<IModelManager>();
+    private readonly IParakeetModelManager _parakeetModelManager = Substitute.For<IParakeetModelManager>();
+    private readonly IModelPreloadService _preloadService = Substitute.For<IModelPreloadService>();
+
+    public SetupWizardViewModelTests()
+    {
+        _modelManager.GetAllModels().Returns([
+            new WhisperModel { Name = "Tiny", FileName = "ggml-tiny.bin", SizeBytes = 75_000_000 },
+            new WhisperModel { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000 },
+        ]);
+        _parakeetModelManager.GetAllModels().Returns([
+            new ParakeetModelInfo
+            {
+                Name = "Parakeet TDT 0.6B v2 (int8)",
+                FileName = "model",
+                SizeBytes = 631_000_000,
+                DirectoryName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8",
+                DownloadUrl = "https://example.com"
+            },
+        ]);
+    }
 
     private SetupWizardViewModel CreateViewModel(WriteSpeechOptions? options = null)
     {
@@ -22,6 +46,9 @@ public class SetupWizardViewModelTests
             _persistenceService,
             new SynchronousDispatcherService(),
             _logger,
+            _modelManager,
+            _parakeetModelManager,
+            _preloadService,
             options);
     }
 
@@ -245,21 +272,45 @@ public class SetupWizardViewModelTests
     }
 
     [Fact]
-    public void CanGoNext_LocalProvider_NoApiKeyNeeded_IsTrue()
+    public void CanGoNext_LocalProvider_NoActiveModel_IsFalse()
     {
         var vm = CreateViewModel();
         vm.NavigateNext();
         vm.SelectProvider("Local");
 
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_LocalProvider_WithActiveModel_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.NavigateNext();
+        vm.SelectProvider("Local");
+        vm.WhisperModels[0].IsDownloaded = true;
+        vm.SelectWhisperModel(vm.WhisperModels[0]);
+
         vm.CanGoNext.Should().BeTrue();
     }
 
     [Fact]
-    public void CanGoNext_ParakeetProvider_NoApiKeyNeeded_IsTrue()
+    public void CanGoNext_ParakeetProvider_NoActiveModel_IsFalse()
     {
         var vm = CreateViewModel();
         vm.NavigateNext();
         vm.SelectProvider("Parakeet");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_ParakeetProvider_WithActiveModel_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.NavigateNext();
+        vm.SelectProvider("Parakeet");
+        vm.ParakeetModels[0].IsDownloaded = true;
+        vm.SelectParakeetModel(vm.ParakeetModels[0]);
 
         vm.CanGoNext.Should().BeTrue();
     }
@@ -858,5 +909,271 @@ public class SetupWizardViewModelTests
 
         vm.IsCompleted.Should().BeTrue();
         _persistenceService.Received(1).ScheduleUpdate(Arg.Any<Action<JsonNode>>());
+    }
+
+    // --- Local model download ---
+
+    [Fact]
+    public void Constructor_LoadsWhisperModels()
+    {
+        var vm = CreateViewModel();
+
+        vm.WhisperModels.Should().HaveCount(2);
+        vm.WhisperModels[0].Name.Should().Be("Tiny");
+        vm.WhisperModels[1].Name.Should().Be("Small");
+    }
+
+    [Fact]
+    public void Constructor_LoadsParakeetModels()
+    {
+        var vm = CreateViewModel();
+
+        vm.ParakeetModels.Should().HaveCount(1);
+        vm.ParakeetModels[0].Name.Should().Be("Parakeet TDT 0.6B v2 (int8)");
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesActiveWhisperModel_WhenDownloaded()
+    {
+        // WhisperModel.IsDownloaded checks File.Exists, so use a real file
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            _modelManager.GetAllModels().Returns([
+                new WhisperModel { Name = "Tiny", FileName = "ggml-tiny.bin", SizeBytes = 75_000_000 },
+                new WhisperModel { Name = "Small", FileName = "ggml-small.bin", SizeBytes = 466_000_000,
+                    FilePath = tempFile },
+            ]);
+
+            var options = new WriteSpeechOptions
+            {
+                Provider = TranscriptionProvider.Local,
+                Local = new LocalWhisperOptions { ModelName = "ggml-small.bin" }
+            };
+
+            var vm = CreateViewModel(options);
+
+            vm.WhisperModels[1].IsActive.Should().BeTrue();
+            vm.WhisperModels[1].StatusText.Should().Be("Active");
+            vm.WhisperModels[0].IsActive.Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void SelectWhisperModel_ActivatesModel()
+    {
+        var vm = CreateViewModel();
+        vm.WhisperModels[0].IsDownloaded = true;
+        vm.WhisperModels[1].IsDownloaded = true;
+
+        vm.SelectWhisperModel(vm.WhisperModels[1]);
+
+        vm.WhisperModels[1].IsActive.Should().BeTrue();
+        vm.WhisperModels[1].StatusText.Should().Be("Active");
+        vm.WhisperModels[0].IsActive.Should().BeFalse();
+        vm.LocalModelName.Should().Be("ggml-small.bin");
+    }
+
+    [Fact]
+    public void SelectWhisperModel_DeactivatesParakeetModels()
+    {
+        var vm = CreateViewModel();
+        vm.ParakeetModels[0].IsDownloaded = true;
+        vm.ParakeetModels[0].IsActive = true;
+        vm.WhisperModels[0].IsDownloaded = true;
+
+        vm.SelectWhisperModel(vm.WhisperModels[0]);
+
+        vm.ParakeetModels[0].IsActive.Should().BeFalse();
+        vm.WhisperModels[0].IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectWhisperModel_DoesNothing_WhenNotDownloaded()
+    {
+        var vm = CreateViewModel();
+
+        vm.SelectWhisperModel(vm.WhisperModels[0]);
+
+        vm.WhisperModels[0].IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SelectWhisperModel_CallsPreloadService()
+    {
+        var vm = CreateViewModel();
+        vm.WhisperModels[0].IsDownloaded = true;
+
+        vm.SelectWhisperModel(vm.WhisperModels[0]);
+
+        _preloadService.Received(1).PreloadTranscriptionModel("ggml-tiny.bin");
+        _preloadService.Received(1).UnloadParakeetModel();
+    }
+
+    [Fact]
+    public void SelectParakeetModel_ActivatesModel()
+    {
+        var vm = CreateViewModel();
+        vm.ParakeetModels[0].IsDownloaded = true;
+
+        vm.SelectParakeetModel(vm.ParakeetModels[0]);
+
+        vm.ParakeetModels[0].IsActive.Should().BeTrue();
+        vm.ParakeetModels[0].StatusText.Should().Be("Active");
+        vm.ParakeetModelName.Should().Be("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8");
+    }
+
+    [Fact]
+    public void SelectParakeetModel_DeactivatesWhisperModels()
+    {
+        var vm = CreateViewModel();
+        vm.WhisperModels[0].IsDownloaded = true;
+        vm.WhisperModels[0].IsActive = true;
+        vm.ParakeetModels[0].IsDownloaded = true;
+
+        vm.SelectParakeetModel(vm.ParakeetModels[0]);
+
+        vm.WhisperModels[0].IsActive.Should().BeFalse();
+        vm.ParakeetModels[0].IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectParakeetModel_CallsPreloadService()
+    {
+        var vm = CreateViewModel();
+        vm.ParakeetModels[0].IsDownloaded = true;
+
+        vm.SelectParakeetModel(vm.ParakeetModels[0]);
+
+        _preloadService.Received(1).PreloadParakeetModel();
+        _preloadService.Received(1).UnloadTranscriptionModel();
+    }
+
+    [Fact]
+    public async Task DownloadWhisperModel_AutoActivatesFirstDownload()
+    {
+        _modelManager.DownloadModelAsync(Arg.Any<GgmlType>(), Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var vm = CreateViewModel();
+        await vm.DownloadWhisperModel(vm.WhisperModels[0]);
+
+        vm.WhisperModels[0].IsDownloaded.Should().BeTrue();
+        vm.WhisperModels[0].IsActive.Should().BeTrue();
+        vm.LocalModelName.Should().Be("ggml-tiny.bin");
+    }
+
+    [Fact]
+    public async Task DownloadParakeetModel_AutoActivatesFirstDownload()
+    {
+        _parakeetModelManager.DownloadModelAsync(Arg.Any<string>(), Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var vm = CreateViewModel();
+        await vm.DownloadParakeetModel(vm.ParakeetModels[0]);
+
+        vm.ParakeetModels[0].IsDownloaded.Should().BeTrue();
+        vm.ParakeetModels[0].IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DownloadWhisperModel_SetsErrorOnFailure()
+    {
+        _modelManager.DownloadModelAsync(Arg.Any<GgmlType>(), Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new Exception("Network error")));
+
+        var vm = CreateViewModel();
+        await vm.DownloadWhisperModel(vm.WhisperModels[0]);
+
+        vm.WhisperModels[0].StatusText.Should().Contain("Error");
+        vm.WhisperModels[0].IsDownloaded.Should().BeFalse();
+        vm.WhisperModels[0].IsDownloading.Should().BeFalse();
+    }
+
+    [Fact]
+    public void FinishSetup_WritesLocalModelName()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.LocalModelName = "ggml-medium.bin";
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["Local"]!["ModelName"]!.GetValue<string>().Should().Be("ggml-medium.bin");
+    }
+
+    [Fact]
+    public void FinishSetup_WritesParakeetModelName()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Parakeet;
+
+        JsonNode? capturedSection = null;
+        _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
+            .Do(call =>
+            {
+                capturedSection = new JsonObject();
+                call.Arg<Action<JsonNode>>()(capturedSection);
+            });
+
+        vm.FinishSetup();
+
+        capturedSection!["Parakeet"]!["ModelName"]!.GetValue<string>().Should().Be("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8");
+    }
+
+    [Fact]
+    public void FileNameToGgmlType_MapsCorrectly()
+    {
+        SetupWizardViewModel.FileNameToGgmlType("ggml-tiny.bin").Should().Be(GgmlType.Tiny);
+        SetupWizardViewModel.FileNameToGgmlType("ggml-base.bin").Should().Be(GgmlType.Base);
+        SetupWizardViewModel.FileNameToGgmlType("ggml-small.bin").Should().Be(GgmlType.Small);
+        SetupWizardViewModel.FileNameToGgmlType("ggml-medium.bin").Should().Be(GgmlType.Medium);
+        SetupWizardViewModel.FileNameToGgmlType("ggml-large-v3.bin").Should().Be(GgmlType.LargeV3);
+        SetupWizardViewModel.FileNameToGgmlType("ggml-large-v3-turbo.bin").Should().Be(GgmlType.LargeV3Turbo);
+    }
+
+    [Fact]
+    public void FileNameToGgmlType_ThrowsForUnknown()
+    {
+        var act = () => SetupWizardViewModel.FileNameToGgmlType("unknown.bin");
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesLocalModelName()
+    {
+        var options = new WriteSpeechOptions
+        {
+            Local = new LocalWhisperOptions { ModelName = "ggml-medium.bin" }
+        };
+
+        var vm = CreateViewModel(options);
+
+        vm.LocalModelName.Should().Be("ggml-medium.bin");
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesParakeetModelName()
+    {
+        var options = new WriteSpeechOptions
+        {
+            Parakeet = new ParakeetOptions { ModelName = "custom-model" }
+        };
+
+        var vm = CreateViewModel(options);
+
+        vm.ParakeetModelName.Should().Be("custom-model");
     }
 }
