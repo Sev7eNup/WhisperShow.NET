@@ -19,7 +19,7 @@
         <SolidColorBrush x:Key="IdleBackground" Color="#C09B7DFF"/>
 
         <!-- Border brushes -->
-        <SolidColorBrush x:Key="IdleBorderBrush" Color="#25FFFFFF"/>
+        <SolidColorBrush x:Key="IdleBorderBrush" Color="#AAD0D0D0"/>
         <SolidColorBrush x:Key="RecordingBorderBrush" Color="#CCEF5350"/>
         <SolidColorBrush x:Key="CommandBorderBrush" Color="#CC5C6BC0"/>
 
@@ -97,13 +97,13 @@
         </Grid.LayoutTransform>
 
         <!-- Glass pill -->
-        <Grid RenderTransformOrigin="0.5,0.5">
+        <Grid RenderTransformOrigin="0.5,0.5" Margin="3">
             <Grid.RenderTransform>
                 <ScaleTransform x:Name="BubbleScale" ScaleX="1.0" ScaleY="1.0"/>
             </Grid.RenderTransform>
 
             <Border x:Name="GlassPill"
-                    CornerRadius="23"
+                    CornerRadius="25"
                     Background="{StaticResource GlassBackground}"
                     BorderBrush="{StaticResource IdleBorderBrush}"
                     BorderThickness="1">
