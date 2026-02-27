@@ -170,6 +170,7 @@ public class AppOptions
     public bool SoundEffects { get; set; } = true;
     public int MaxHistoryEntries { get; set; } = 20;
     public string Theme { get; set; } = "Dark";
+    public bool SetupCompleted { get; set; }
 }
 
 public class IntegrationOptions
@@ -207,15 +208,24 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
             && string.IsNullOrWhiteSpace(options.Local.ModelName))
             failures.Add("Local transcription provider requires a model name (Local.ModelName).");
 
-        if (options.Provider == TranscriptionProvider.OpenAI
-            && options.CloudTranscriptionProvider == "OpenAI"
-            && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
-            failures.Add("OpenAI transcription provider requires an API key (OpenAI.ApiKey).");
+        // Provider-specific validations only apply after initial setup is complete.
+        // Before setup, the app starts with defaults that may not have API keys configured yet.
+        if (options.App.SetupCompleted)
+        {
+            if (options.Provider == TranscriptionProvider.OpenAI
+                && options.CloudTranscriptionProvider == "OpenAI"
+                && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
+                failures.Add("OpenAI transcription provider requires an API key (OpenAI.ApiKey).");
 
-        if (options.Provider == TranscriptionProvider.OpenAI
-            && options.CloudTranscriptionProvider == "Custom"
-            && string.IsNullOrWhiteSpace(options.CustomTranscription.Endpoint))
-            failures.Add("Custom transcription provider requires an endpoint (CustomTranscription.Endpoint).");
+            if (options.Provider == TranscriptionProvider.OpenAI
+                && options.CloudTranscriptionProvider == "Custom"
+                && string.IsNullOrWhiteSpace(options.CustomTranscription.Endpoint))
+                failures.Add("Custom transcription provider requires an endpoint (CustomTranscription.Endpoint).");
+
+            if (options.TextCorrection.Provider is TextCorrectionProvider.Cloud or TextCorrectionProvider.OpenAI
+                && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
+                failures.Add("OpenAI text correction requires an API key (OpenAI.ApiKey).");
+        }
 
         if (options.Provider == TranscriptionProvider.Parakeet
             && string.IsNullOrWhiteSpace(options.Parakeet.ModelName))
@@ -223,10 +233,6 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
 
         if (options.Parakeet.NumThreads < 1)
             failures.Add($"Parakeet.NumThreads must be at least 1 (got {options.Parakeet.NumThreads}).");
-
-        if (options.TextCorrection.Provider is TextCorrectionProvider.Cloud or TextCorrectionProvider.OpenAI
-            && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
-            failures.Add("OpenAI text correction requires an API key (OpenAI.ApiKey).");
 
         // Note: Anthropic/Google/Groq API keys are NOT validated here — the user must be able
         // to start the app and configure keys in Settings. Services handle missing keys at usage time.

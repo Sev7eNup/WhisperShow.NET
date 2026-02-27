@@ -134,6 +134,7 @@ public partial class App : Application
                 services.AddSingleton<SettingsViewModel>();
                 services.AddSingleton<HistoryViewModel>();
                 services.AddSingleton<FileTranscriptionViewModel>();
+                services.AddTransient<SetupWizardViewModel>();
 
                 // Windows
                 services.AddSingleton<OverlayWindow>();
@@ -155,8 +156,20 @@ public partial class App : Application
 
         try
         {
-            // Sync autostart registry with config
+            // First-run setup wizard
             var opts = _host.Services.GetRequiredService<IOptions<WriteSpeechOptions>>().Value;
+            if (!opts.App.SetupCompleted && NeedsFirstRunSetup(opts))
+            {
+                var wizardVm = _host.Services.GetRequiredService<SetupWizardViewModel>();
+                var wizard = new SetupWizardWindow(wizardVm);
+                if (wizard.ShowDialog() != true)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+
+            // Sync autostart registry with config
             _host.Services.GetRequiredService<IAutoStartService>().SetAutoStart(opts.App.LaunchAtLogin);
 
             // Show overlay window
@@ -183,6 +196,18 @@ public partial class App : Application
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
         }
+    }
+
+    private static bool NeedsFirstRunSetup(WriteSpeechOptions opts)
+    {
+        // Existing users with a working config skip the wizard
+        if (opts.Provider is TranscriptionProvider.Local or TranscriptionProvider.Parakeet)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(opts.OpenAI.ApiKey))
+            return false;
+
+        return true;
     }
 
     private void PreloadLocalModels(WriteSpeechOptions opts)

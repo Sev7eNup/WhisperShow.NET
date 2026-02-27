@@ -14,7 +14,8 @@ public class WriteSpeechOptionsTests
     private static WriteSpeechOptions CreateValidOptions() => new()
     {
         Provider = TranscriptionProvider.Local,
-        Local = new LocalWhisperOptions { ModelName = "ggml-small.bin" }
+        Local = new LocalWhisperOptions { ModelName = "ggml-small.bin" },
+        App = new AppOptions { SetupCompleted = true }
     };
     [Fact]
     public void DefaultValues_AreCorrect()
@@ -41,6 +42,7 @@ public class WriteSpeechOptionsTests
 
         options.LaunchAtLogin.Should().BeFalse();
         options.SoundEffects.Should().BeTrue();
+        options.SetupCompleted.Should().BeFalse();
     }
 
     [Fact]
@@ -132,11 +134,21 @@ public class WriteSpeechOptionsTests
     // --- WriteSpeechOptionsValidator ---
 
     [Fact]
-    public void Validator_DefaultOptions_RequiresApiKey()
+    public void Validator_DefaultOptions_BeforeSetup_Succeeds()
     {
-        // Default Provider is OpenAI, which requires an API key
+        // Before setup wizard completes, API key checks are skipped
         var validator = new WriteSpeechOptionsValidator();
         var result = validator.Validate(null, new WriteSpeechOptions());
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validator_DefaultOptions_AfterSetup_RequiresApiKey()
+    {
+        // After setup completes, OpenAI provider requires an API key
+        var validator = new WriteSpeechOptionsValidator();
+        var options = new WriteSpeechOptions { App = new AppOptions { SetupCompleted = true } };
+        var result = validator.Validate(null, options);
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("ApiKey");
     }
@@ -395,7 +407,7 @@ public class WriteSpeechOptionsTests
     }
 
     [Fact]
-    public void Validator_OpenAIProvider_RequiresApiKey()
+    public void Validator_OpenAICorrectionProvider_AfterSetup_RequiresApiKey()
     {
         var validator = new WriteSpeechOptionsValidator();
         var options = CreateValidOptions();
@@ -406,6 +418,21 @@ public class WriteSpeechOptionsTests
 
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("ApiKey");
+    }
+
+    [Fact]
+    public void Validator_OpenAICorrectionProvider_BeforeSetup_Succeeds()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = new WriteSpeechOptions
+        {
+            TextCorrection = new TextCorrectionOptions { Provider = TextCorrectionProvider.OpenAI },
+            OpenAI = new OpenAiOptions { ApiKey = null }
+        };
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
     }
 
     // --- Parakeet ---
