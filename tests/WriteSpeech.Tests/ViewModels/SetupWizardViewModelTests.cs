@@ -417,6 +417,23 @@ public class SetupWizardViewModelTests
     }
 
     [Fact]
+    public void FinishSetup_FiresPropertyChangedForIsCompleted()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        string? changedProperty = null;
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SetupWizardViewModel.IsCompleted))
+                changedProperty = e.PropertyName;
+        };
+
+        vm.FinishSetup();
+
+        changedProperty.Should().Be(nameof(SetupWizardViewModel.IsCompleted));
+    }
+
+    [Fact]
     public void FinishSetup_CallsScheduleUpdate()
     {
         var vm = CreateViewModel();

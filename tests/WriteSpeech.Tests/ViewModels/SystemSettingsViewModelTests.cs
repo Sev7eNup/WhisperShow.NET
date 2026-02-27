@@ -12,17 +12,20 @@ public class SystemSettingsViewModelTests
     private readonly IAutoStartService _autoStartService = Substitute.For<IAutoStartService>();
     private readonly ISettingsPersistenceService _persistenceService = Substitute.For<ISettingsPersistenceService>();
     private bool _saveCalled;
+    private bool _restartCalled;
 
-    private SystemSettingsViewModel CreateViewModel(Action<WriteSpeechOptions>? configure = null)
+    private SystemSettingsViewModel CreateViewModel(Action<WriteSpeechOptions>? configure = null, Action? restartApp = null)
     {
         _saveCalled = false;
+        _restartCalled = false;
         var options = new WriteSpeechOptions();
         configure?.Invoke(options);
         return new SystemSettingsViewModel(
             _autoStartService,
             _persistenceService,
             () => _saveCalled = true,
-            options);
+            options,
+            restartApp);
     }
 
     // --- Initialization ---
@@ -240,17 +243,18 @@ public class SystemSettingsViewModelTests
     // --- Reset setup wizard ---
 
     [Fact]
-    public void ResetSetupWizard_CallsScheduleUpdate()
+    public async Task ResetSetupWizard_CallsScheduleUpdateAndFlush()
     {
         var vm = CreateViewModel();
 
-        vm.ResetSetupWizardCommand.Execute(null);
+        await vm.ResetSetupWizardCommand.ExecuteAsync(null);
 
         _persistenceService.Received(1).ScheduleUpdate(Arg.Any<Action<JsonNode>>());
+        await _persistenceService.Received(1).FlushAsync();
     }
 
     [Fact]
-    public void ResetSetupWizard_SetsSetupCompletedFalse()
+    public async Task ResetSetupWizard_SetsSetupCompletedFalse()
     {
         var vm = CreateViewModel();
 
@@ -262,8 +266,28 @@ public class SystemSettingsViewModelTests
                 call.Arg<Action<JsonNode>>()(capturedSection);
             });
 
-        vm.ResetSetupWizardCommand.Execute(null);
+        await vm.ResetSetupWizardCommand.ExecuteAsync(null);
 
         capturedSection!["App"]!["SetupCompleted"]!.GetValue<bool>().Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ResetSetupWizard_CallsRestartCallback()
+    {
+        var vm = CreateViewModel(restartApp: () => _restartCalled = true);
+
+        await vm.ResetSetupWizardCommand.ExecuteAsync(null);
+
+        _restartCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ResetSetupWizard_WithoutRestartCallback_DoesNotThrow()
+    {
+        var vm = CreateViewModel(restartApp: null);
+
+        var act = async () => await vm.ResetSetupWizardCommand.ExecuteAsync(null);
+
+        await act.Should().NotThrowAsync();
     }
 }

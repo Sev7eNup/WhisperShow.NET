@@ -11,6 +11,7 @@ public partial class SystemSettingsViewModel : ObservableObject
     private readonly IAutoStartService _autoStartService;
     private readonly ISettingsPersistenceService _persistenceService;
     private readonly Action _scheduleSave;
+    private readonly Action? _restartApp;
 
     // --- App settings ---
     [ObservableProperty] private bool _launchAtLogin;
@@ -41,11 +42,13 @@ public partial class SystemSettingsViewModel : ObservableObject
         IAutoStartService autoStartService,
         ISettingsPersistenceService persistenceService,
         Action scheduleSave,
-        WriteSpeechOptions options)
+        WriteSpeechOptions options,
+        Action? restartApp = null)
     {
         _autoStartService = autoStartService;
         _persistenceService = persistenceService;
         _scheduleSave = scheduleSave;
+        _restartApp = restartApp;
 
         _launchAtLogin = options.App.LaunchAtLogin;
         _overlayAlwaysVisible = options.Overlay.AlwaysVisible;
@@ -119,12 +122,14 @@ public partial class SystemSettingsViewModel : ObservableObject
     // --- Setup wizard ---
 
     [RelayCommand]
-    internal void ResetSetupWizard()
+    internal async Task ResetSetupWizard()
     {
         _persistenceService.ScheduleUpdate(section =>
         {
             SettingsViewModel.EnsureObject(section, "App")["SetupCompleted"] = false;
         });
+        await _persistenceService.FlushAsync();
+        _restartApp?.Invoke();
     }
 
     // --- Persistence ---

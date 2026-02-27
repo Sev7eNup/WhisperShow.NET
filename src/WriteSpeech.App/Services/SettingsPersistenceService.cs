@@ -27,7 +27,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
     {
         _logger = logger;
         _filePath = filePath;
-        _saveHelper = new DebouncedSaveHelper(FlushAsync, logger, debounceMs);
+        _saveHelper = new DebouncedSaveHelper(FlushCoreAsync, logger, debounceMs);
     }
 
     public void ScheduleUpdate(Action<JsonNode> mutator)
@@ -42,7 +42,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
         _saveHelper.Schedule();
     }
 
-    private async Task FlushAsync()
+    private async Task FlushCoreAsync()
     {
         await _flushSemaphore.WaitAsync();
         try
@@ -88,6 +88,8 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
             _flushSemaphore.Release();
         }
     }
+
+    public Task FlushAsync() => _saveHelper.FlushAsync();
 
     public void Dispose()
     {

@@ -338,6 +338,7 @@ public partial class SetupWizardViewModel : ObservableObject
         });
 
         IsCompleted = true;
+        OnPropertyChanged(nameof(IsCompleted));
     }
 
     // --- Microphone loading ---
