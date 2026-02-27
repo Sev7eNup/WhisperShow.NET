@@ -61,7 +61,7 @@ public class ParakeetTranscriptionService : ITranscriptionService, IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var stream = _recognizer!.CreateStream();
+            using var stream = _recognizer!.CreateStream();
             stream.AcceptWaveform(16000, samples);
 
             _recognizer.Decode(stream);
