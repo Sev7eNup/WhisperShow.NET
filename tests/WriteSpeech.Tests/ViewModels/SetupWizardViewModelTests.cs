@@ -316,7 +316,44 @@ public class SetupWizardViewModelTests
     }
 
     [Fact]
-    public void CanGoNext_CorrectionStep_AlwaysTrue()
+    public void CanGoNext_CorrectionStep_OffProvider_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Off");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_OpenAIProvider_WithoutApiKey_IsFalse()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("OpenAI");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_OpenAIProvider_WithApiKey_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SetOpenAiApiKey("sk-test");
+        vm.SelectCorrectionProvider("OpenAI");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_AnthropicProvider_WithoutApiKey_IsFalse()
     {
         var vm = CreateViewModel();
         vm.Provider = TranscriptionProvider.Local;
@@ -324,7 +361,114 @@ public class SetupWizardViewModelTests
         vm.NavigateNext(); // At Correction
         vm.SelectCorrectionProvider("Anthropic");
 
-        // Correction is optional, so even without API key we can proceed
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_AnthropicProvider_WithApiKey_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SetAnthropicApiKey("ant-key");
+        vm.SelectCorrectionProvider("Anthropic");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_GoogleProvider_WithoutApiKey_IsFalse()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Google");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_GoogleProvider_WithApiKey_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SetGoogleApiKey("goog-key");
+        vm.SelectCorrectionProvider("Google");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_GroqProvider_WithoutApiKey_IsFalse()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Groq");
+
+        vm.CanGoNext.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanGoNext_CorrectionStep_GroqProvider_WithApiKey_IsTrue()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SetGroqCorrectionApiKey("groq-key");
+        vm.SelectCorrectionProvider("Groq");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SetAnthropicApiKey_UpdatesCanGoNext()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Anthropic");
+        vm.CanGoNext.Should().BeFalse();
+
+        vm.SetAnthropicApiKey("ant-key");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SetGoogleApiKey_UpdatesCanGoNext()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Google");
+        vm.CanGoNext.Should().BeFalse();
+
+        vm.SetGoogleApiKey("goog-key");
+
+        vm.CanGoNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SetGroqCorrectionApiKey_UpdatesCanGoNext()
+    {
+        var vm = CreateViewModel();
+        vm.Provider = TranscriptionProvider.Local;
+        vm.NavigateNext();
+        vm.NavigateNext(); // At Correction
+        vm.SelectCorrectionProvider("Groq");
+        vm.CanGoNext.Should().BeFalse();
+
+        vm.SetGroqCorrectionApiKey("groq-key");
+
         vm.CanGoNext.Should().BeTrue();
     }
 

@@ -214,6 +214,31 @@ public partial class SetupWizardWindow : Window
         }
     }
 
+    private void OpenAiApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetOpenAiApiKey(tb.Text);
+    }
+
+    private void GroqTranscriptionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetGroqTranscriptionApiKey(tb.Text);
+    }
+
+    private void AnthropicApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetAnthropicApiKey(tb.Text);
+    }
+
+    private void GoogleApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetGoogleApiKey(tb.Text);
+    }
+
+    private void GroqCorrectionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetGroqCorrectionApiKey(tb.Text);
+    }
+
     // --- Cloud sub-provider tabs ---
 
     private void CloudSubProviderTab_Click(object sender, MouseButtonEventArgs e)

@@ -276,9 +276,23 @@ public partial class SetupWizardViewModel : ObservableObject
         UpdateCanGoNext();
     }
 
-    internal void SetAnthropicApiKey(string key) => AnthropicApiKey = key.Trim();
-    internal void SetGoogleApiKey(string key) => GoogleApiKey = key.Trim();
-    internal void SetGroqCorrectionApiKey(string key) => GroqCorrectionApiKey = key.Trim();
+    internal void SetAnthropicApiKey(string key)
+    {
+        AnthropicApiKey = key.Trim();
+        UpdateCanGoNext();
+    }
+
+    internal void SetGoogleApiKey(string key)
+    {
+        GoogleApiKey = key.Trim();
+        UpdateCanGoNext();
+    }
+
+    internal void SetGroqCorrectionApiKey(string key)
+    {
+        GroqCorrectionApiKey = key.Trim();
+        UpdateCanGoNext();
+    }
 
     // --- Mic test ---
 
@@ -349,6 +363,15 @@ public partial class SetupWizardViewModel : ObservableObject
                 TranscriptionProvider.Local => WhisperModels.Any(m => m.IsActive),
                 TranscriptionProvider.Parakeet => ParakeetModels.Any(m => m.IsActive),
                 _ => true
+            },
+            SetupStep.Correction => CorrectionProvider switch
+            {
+                TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud
+                    => !string.IsNullOrWhiteSpace(OpenAiApiKey),
+                TextCorrectionProvider.Anthropic => !string.IsNullOrWhiteSpace(AnthropicApiKey),
+                TextCorrectionProvider.Google => !string.IsNullOrWhiteSpace(GoogleApiKey),
+                TextCorrectionProvider.Groq => !string.IsNullOrWhiteSpace(GroqCorrectionApiKey),
+                _ => true // Off, Local
             },
             _ => true
         };
