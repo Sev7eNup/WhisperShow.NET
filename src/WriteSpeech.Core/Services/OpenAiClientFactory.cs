@@ -11,9 +11,7 @@ public class OpenAiClientFactory
 {
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly Lock _lock = new();
-    private OpenAIClient? _client;
-    private string? _lastApiKey;
-    private string? _lastEndpoint;
+    private readonly Dictionary<string, OpenAIClient> _clients = new();
 
     public OpenAiClientFactory(IOptionsMonitor<WriteSpeechOptions> optionsMonitor)
     {
@@ -22,31 +20,45 @@ public class OpenAiClientFactory
 
     public OpenAIClient GetClient()
     {
+        var opts = _optionsMonitor.CurrentValue.OpenAI;
+
+        if (string.IsNullOrWhiteSpace(opts.ApiKey))
+            throw new InvalidOperationException("OpenAI API key is not configured.");
+
+        return GetClient(opts.ApiKey, opts.Endpoint);
+    }
+
+    public OpenAIClient GetClient(string apiKey, string? endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("API key is not configured.");
+
+        var cacheKey = $"{apiKey}|{endpoint ?? ""}";
+
         lock (_lock)
         {
-            var opts = _optionsMonitor.CurrentValue.OpenAI;
+            if (_clients.TryGetValue(cacheKey, out var existing))
+                return existing;
 
-            if (string.IsNullOrWhiteSpace(opts.ApiKey))
-                throw new InvalidOperationException("OpenAI API key is not configured.");
+            var clientOptions = new OpenAIClientOptions();
+            if (!string.IsNullOrEmpty(endpoint))
+                clientOptions.Endpoint = new Uri(endpoint);
 
-            if (_client is null || _lastApiKey != opts.ApiKey || _lastEndpoint != opts.Endpoint)
-            {
-                var clientOptions = new OpenAIClientOptions();
-                if (!string.IsNullOrEmpty(opts.Endpoint))
-                    clientOptions.Endpoint = new Uri(opts.Endpoint);
-
-                _client = new OpenAIClient(
-                    credential: new ApiKeyCredential(opts.ApiKey),
-                    options: clientOptions);
-                _lastApiKey = opts.ApiKey;
-                _lastEndpoint = opts.Endpoint;
-            }
-
-            return _client;
+            var client = new OpenAIClient(
+                credential: new ApiKeyCredential(apiKey),
+                options: clientOptions);
+            _clients[cacheKey] = client;
+            return client;
         }
     }
 
     public AudioClient GetAudioClient(string model) => GetClient().GetAudioClient(model);
 
+    public AudioClient GetAudioClient(string model, string apiKey, string? endpoint) =>
+        GetClient(apiKey, endpoint).GetAudioClient(model);
+
     public ChatClient GetChatClient(string model) => GetClient().GetChatClient(model);
+
+    public ChatClient GetChatClient(string model, string apiKey, string? endpoint) =>
+        GetClient(apiKey, endpoint).GetChatClient(model);
 }

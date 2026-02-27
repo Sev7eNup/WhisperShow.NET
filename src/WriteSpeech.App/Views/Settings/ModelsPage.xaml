@@ -86,147 +86,365 @@
         <!-- ===== Cloud settings (visible when Provider=OpenAI) ===== -->
         <StackPanel Visibility="{Binding Provider, Converter={StaticResource ProviderToVisibility}, ConverterParameter=OpenAI}">
             <TextBlock Text="Cloud settings" Style="{StaticResource GroupHeaderStyle}"/>
-            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
-                <StackPanel>
-                    <!-- API Key -->
-                    <Grid Margin="20,10,20,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Visibility="{Binding IsEditingApiKey, Converter={StaticResource InverseBoolToVisibility}}">
-                            <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
-                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{Binding OpenAiApiKeyDisplay}" FontSize="11.5"
-                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Margin="0,3,0,0"/>
-                        </StackPanel>
-                        <TextBox Visibility="{Binding IsEditingApiKey, Converter={StaticResource BoolToVisibility}}"
-                                 Text="{Binding OpenAiApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
-                                 KeyDown="ApiKeyTextBox_KeyDown" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
-                                Command="{Binding StartEditingApiKeyCommand}" VerticalAlignment="Center"
-                                Visibility="{Binding IsEditingApiKey, Converter={StaticResource InverseBoolToVisibility}}"/>
-                    </Grid>
-                    <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
-                    <!-- Endpoint -->
-                    <Grid Margin="20,10,20,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Visibility="{Binding IsEditingEndpoint, Converter={StaticResource InverseBoolToVisibility}}">
-                            <TextBlock Text="API Endpoint" FontSize="12.5" FontWeight="SemiBold"
-                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
-                                <TextBlock.Text>
-                                    <Binding Path="OpenAiEndpoint" FallbackValue="Default (api.openai.com)">
-                                        <Binding.TargetNullValue>Default (api.openai.com)</Binding.TargetNullValue>
-                                    </Binding>
-                                </TextBlock.Text>
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding OpenAiEndpoint}" Value="">
-                                                <Setter Property="Text" Value="Default (api.openai.com)"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
-                        <TextBox Visibility="{Binding IsEditingEndpoint, Converter={StaticResource BoolToVisibility}}"
-                                 Text="{Binding OpenAiEndpoint}" Style="{StaticResource SettingsTextBoxStyle}"
-                                 KeyDown="EndpointTextBox_KeyDown" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
-                                Command="{Binding StartEditingEndpointCommand}" VerticalAlignment="Center"
-                                Visibility="{Binding IsEditingEndpoint, Converter={StaticResource InverseBoolToVisibility}}"/>
-                    </Grid>
-                    <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
-                    <!-- Model picker -->
-                    <StackPanel Margin="20,10,20,10">
-                        <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Margin="0,0,0,8"/>
-                        <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.CloudTranscriptionModels}"
-                                      Visibility="{Binding HasCustomEndpoint, Converter={StaticResource InverseBoolToVisibility}}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
-                                            Background="{DynamicResource CardBgBrush}" CornerRadius="8"
-                                            BorderThickness="2"
-                                            MouseLeftButtonDown="CloudModelCard_Click" Tag="{Binding Id}">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="BorderBrush" Value="Transparent"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Value="True">
-                                                        <DataTrigger.Binding>
-                                                            <MultiBinding Converter="{StaticResource EqualityConverter}">
-                                                                <Binding Path="Id"/>
-                                                                <Binding Path="DataContext.TranscriptionModel"
-                                                                         RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
-                                                            </MultiBinding>
-                                                        </DataTrigger.Binding>
-                                                        <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
-                                                       FontFamily="Segoe UI Variable, Segoe UI"
-                                                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Description}" FontSize="10.5"
-                                                       FontFamily="Segoe UI Variable, Segoe UI"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <!-- Custom model option -->
-                        <Border Margin="0,0,0,0" Padding="12,8" Cursor="Hand"
-                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
-                                BorderThickness="2"
-                                MouseLeftButtonDown="CustomCloudModelCard_Click">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
+
+            <!-- Pill navigation: OpenAI | Groq | Custom -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="20" Padding="4" Margin="0,0,0,12"
+                    HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <!-- OpenAI tab -->
+                    <Border Tag="OpenAI" MouseLeftButtonDown="CloudSubProviderTab_Click" Cursor="Hand"
+                            CornerRadius="16" Padding="16,6" Margin="0,0,2,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="OpenAI">
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="OpenAI" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCustomCloudModel}" Value="True">
-                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="OpenAI">
+                                            <Setter Property="Foreground" Value="White"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </Border.Style>
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal"
-                                            Visibility="{Binding IsEditingCustomCloudModel, Converter={StaticResource InverseBoolToVisibility}}">
-                                    <TextBlock Text="Custom" FontSize="11.5" FontWeight="SemiBold"
-                                               FontFamily="Segoe UI Variable, Segoe UI"
-                                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               VerticalAlignment="Center" Margin="8,0,0,0"
-                                               Text="{Binding TranscriptionModel}"
-                                               Visibility="{Binding IsCustomCloudModel, Converter={StaticResource BoolToVisibility}}"/>
-                                    <TextBlock Text="Use a custom model name" FontSize="10.5"
-                                               FontFamily="Segoe UI Variable, Segoe UI"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               VerticalAlignment="Center" Margin="8,0,0,0"
-                                               Visibility="{Binding IsCustomCloudModel, Converter={StaticResource InverseBoolToVisibility}}"/>
-                                </StackPanel>
-                                <TextBox Visibility="{Binding IsEditingCustomCloudModel, Converter={StaticResource BoolToVisibility}}"
-                                         Text="{Binding TranscriptionModel}" Style="{StaticResource SettingsTextBoxStyle}"
-                                         KeyDown="CustomCloudModelTextBox_KeyDown"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <!-- Groq tab -->
+                    <Border Tag="Groq" MouseLeftButtonDown="CloudSubProviderTab_Click" Cursor="Hand"
+                            CornerRadius="16" Padding="16,6" Margin="0,0,2,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="Groq">
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="Groq" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="Groq">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <!-- Custom tab -->
+                    <Border Tag="Custom" MouseLeftButtonDown="CloudSubProviderTab_Click" Cursor="Hand"
+                            CornerRadius="16" Padding="16,6">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="Custom">
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="Custom" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CloudTranscriptionProvider}" Value="Custom">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
                 </StackPanel>
             </Border>
+
+            <!-- ===== OpenAI sub-provider ===== -->
+            <StackPanel Visibility="{Binding CloudTranscriptionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=OpenAI}">
+                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+                    <StackPanel>
+                        <!-- API Key -->
+                        <Grid Margin="20,10,20,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{Binding OpenAiApiKeyDisplay}" FontSize="11.5"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <TextBox Visibility="{Binding IsEditingApiKey, Converter={StaticResource BoolToVisibility}}"
+                                     Text="{Binding OpenAiApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                     KeyDown="ApiKeyTextBox_KeyDown" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Command="{Binding StartEditingApiKeyCommand}" VerticalAlignment="Center"
+                                    Visibility="{Binding IsEditingApiKey, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                        <!-- Model picker -->
+                        <StackPanel Margin="20,10,20,10">
+                            <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,8"/>
+                            <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.CloudTranscriptionModels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
+                                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                                BorderThickness="2"
+                                                MouseLeftButtonDown="CloudModelCard_Click" Tag="{Binding Id}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True">
+                                                            <DataTrigger.Binding>
+                                                                <MultiBinding Converter="{StaticResource EqualityConverter}">
+                                                                    <Binding Path="Id"/>
+                                                                    <Binding Path="DataContext.TranscriptionModel"
+                                                                             RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                                </MultiBinding>
+                                                            </DataTrigger.Binding>
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="10.5"
+                                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- Custom model option -->
+                            <Border Margin="0,0,0,0" Padding="12,8" Cursor="Hand"
+                                    Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                    BorderThickness="2"
+                                    MouseLeftButtonDown="CustomCloudModelCard_Click">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCustomCloudModel}" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal"
+                                                Visibility="{Binding IsEditingCustomCloudModel, Converter={StaticResource InverseBoolToVisibility}}">
+                                        <TextBlock Text="Custom" FontSize="11.5" FontWeight="SemiBold"
+                                                   FontFamily="Segoe UI Variable, Segoe UI"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   VerticalAlignment="Center" Margin="8,0,0,0"
+                                                   Text="{Binding TranscriptionModel}"
+                                                   Visibility="{Binding IsCustomCloudModel, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="Use a custom model name" FontSize="10.5"
+                                                   FontFamily="Segoe UI Variable, Segoe UI"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   VerticalAlignment="Center" Margin="8,0,0,0"
+                                                   Visibility="{Binding IsCustomCloudModel, Converter={StaticResource InverseBoolToVisibility}}"/>
+                                    </StackPanel>
+                                    <TextBox Visibility="{Binding IsEditingCustomCloudModel, Converter={StaticResource BoolToVisibility}}"
+                                             Text="{Binding TranscriptionModel}" Style="{StaticResource SettingsTextBoxStyle}"
+                                             KeyDown="CustomCloudModelTextBox_KeyDown"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ===== Groq sub-provider ===== -->
+            <StackPanel Visibility="{Binding CloudTranscriptionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Groq}">
+                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+                    <StackPanel>
+                        <!-- API Key -->
+                        <Grid Margin="20,10,20,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingGroqTranscriptionApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{Binding GroqTranscriptionApiKeyDisplay}" FontSize="11.5"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <TextBox Visibility="{Binding IsEditingGroqTranscriptionApiKey, Converter={StaticResource BoolToVisibility}}"
+                                     Text="{Binding GroqTranscriptionApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                     KeyDown="GroqTranscriptionApiKeyTextBox_KeyDown" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Cursor="Hand" VerticalAlignment="Center" Click="StartEditGroqTranscriptionApiKey_Click"
+                                    Visibility="{Binding IsEditingGroqTranscriptionApiKey, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                        <!-- Model picker -->
+                        <StackPanel Margin="20,10,20,10">
+                            <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,8"/>
+                            <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.GroqTranscriptionModels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
+                                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                                BorderThickness="2"
+                                                MouseLeftButtonDown="GroqTranscriptionModelCard_Click" Tag="{Binding Id}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True">
+                                                            <DataTrigger.Binding>
+                                                                <MultiBinding Converter="{StaticResource EqualityConverter}">
+                                                                    <Binding Path="Id"/>
+                                                                    <Binding Path="DataContext.GroqTranscriptionModel"
+                                                                             RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                                </MultiBinding>
+                                                            </DataTrigger.Binding>
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="10.5"
+                                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ===== Custom sub-provider ===== -->
+            <StackPanel Visibility="{Binding CloudTranscriptionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Custom}">
+                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+                    <StackPanel>
+                        <!-- API Endpoint -->
+                        <Grid Margin="20,10,20,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingCustomTranscriptionEndpoint, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="API Endpoint" FontSize="12.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding CustomTranscriptionEndpoint}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CustomTranscriptionEndpoint}" Value="">
+                                                    <Setter Property="Text" Value="Not configured"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBox Visibility="{Binding IsEditingCustomTranscriptionEndpoint, Converter={StaticResource BoolToVisibility}}"
+                                     Text="{Binding CustomTranscriptionEndpoint}" Style="{StaticResource SettingsTextBoxStyle}"
+                                     KeyDown="CustomTranscriptionEndpointTextBox_KeyDown" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Cursor="Hand" VerticalAlignment="Center" Click="StartEditCustomTranscriptionEndpoint_Click"
+                                    Visibility="{Binding IsEditingCustomTranscriptionEndpoint, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                        <!-- API Key -->
+                        <Grid Margin="20,10,20,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingCustomTranscriptionApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{Binding CustomTranscriptionApiKeyDisplay}" FontSize="11.5"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <TextBox Visibility="{Binding IsEditingCustomTranscriptionApiKey, Converter={StaticResource BoolToVisibility}}"
+                                     Text="{Binding CustomTranscriptionApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                     KeyDown="CustomTranscriptionApiKeyTextBox_KeyDown" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Cursor="Hand" VerticalAlignment="Center" Click="StartEditCustomTranscriptionApiKey_Click"
+                                    Visibility="{Binding IsEditingCustomTranscriptionApiKey, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                        <!-- Model name -->
+                        <Grid Margin="20,10,20,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Visibility="{Binding IsEditingCustomTranscriptionModel, Converter={StaticResource InverseBoolToVisibility}}">
+                                <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding CustomTranscriptionModel}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CustomTranscriptionModel}" Value="">
+                                                    <Setter Property="Text" Value="Not configured"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBox Visibility="{Binding IsEditingCustomTranscriptionModel, Converter={StaticResource BoolToVisibility}}"
+                                     Text="{Binding CustomTranscriptionModel}" Style="{StaticResource SettingsTextBoxStyle}"
+                                     KeyDown="CustomTranscriptionModelTextBox_KeyDown" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Change" Style="{StaticResource PillButtonStyle}"
+                                    Cursor="Hand" VerticalAlignment="Center" Click="StartEditCustomTranscriptionModel_Click"
+                                    Visibility="{Binding IsEditingCustomTranscriptionModel, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </StackPanel>
 
         <!-- ===== Local settings (visible when Provider=Local or Parakeet) ===== -->

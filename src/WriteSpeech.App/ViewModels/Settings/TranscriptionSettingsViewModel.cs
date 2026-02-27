@@ -20,6 +20,13 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         new("whisper-1", "Whisper", "Original Whisper model"),
     ];
 
+    public static IReadOnlyList<CloudModelOption> GroqTranscriptionModels { get; } =
+    [
+        new("whisper-large-v3-turbo", "Whisper Large V3 Turbo", "Fast, recommended"),
+        new("whisper-large-v3", "Whisper Large V3", "Most accurate"),
+        new("distil-whisper-large-v3-en", "Distil Whisper V3", "English only, fastest"),
+    ];
+
     public static IReadOnlyList<CloudModelOption> CloudCorrectionModels { get; } =
     [
         new("gpt-5.2", "GPT-5.2", "Latest flagship reasoning model"),
@@ -97,6 +104,24 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     // --- Parakeet ---
     [ObservableProperty] private int _parakeetNumThreads = 4;
 
+    // --- Cloud sub-provider ---
+    [ObservableProperty] private string _cloudTranscriptionProvider = "OpenAI";
+
+    // --- Groq Transcription ---
+    [ObservableProperty] private string _groqTranscriptionApiKey = "";
+    [ObservableProperty] private string _groqTranscriptionApiKeyDisplay = "";
+    [ObservableProperty] private bool _isEditingGroqTranscriptionApiKey;
+    [ObservableProperty] private string _groqTranscriptionModel = "whisper-large-v3-turbo";
+
+    // --- Custom Transcription ---
+    [ObservableProperty] private string _customTranscriptionEndpoint = "";
+    [ObservableProperty] private bool _isEditingCustomTranscriptionEndpoint;
+    [ObservableProperty] private string _customTranscriptionApiKey = "";
+    [ObservableProperty] private string _customTranscriptionApiKeyDisplay = "";
+    [ObservableProperty] private bool _isEditingCustomTranscriptionApiKey;
+    [ObservableProperty] private string _customTranscriptionModel = "";
+    [ObservableProperty] private bool _isEditingCustomTranscriptionModel;
+
     // --- Text Correction ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowCloudUsageHint))]
@@ -148,7 +173,8 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     // --- Custom cloud model ---
     public bool IsCustomCloudModel =>
         Provider == TranscriptionProvider.OpenAI &&
-        (HasCustomEndpoint || CloudTranscriptionModels.All(m => m.Id != TranscriptionModel));
+        CloudTranscriptionProvider == "OpenAI" &&
+        CloudTranscriptionModels.All(m => m.Id != TranscriptionModel);
 
     // --- Custom correction model ---
     public bool IsCustomCorrectionModel =>
@@ -174,9 +200,15 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave = scheduleSave;
 
         _provider = options.Provider;
+        _cloudTranscriptionProvider = options.CloudTranscriptionProvider;
         _openAiEndpoint = options.OpenAI.Endpoint ?? "";
         _openAiApiKey = options.OpenAI.ApiKey ?? "";
         _openAiModelName = options.OpenAI.Model;
+        _groqTranscriptionApiKey = options.GroqTranscription.ApiKey ?? "";
+        _groqTranscriptionModel = options.GroqTranscription.Model;
+        _customTranscriptionEndpoint = options.CustomTranscription.Endpoint ?? "";
+        _customTranscriptionApiKey = options.CustomTranscription.ApiKey ?? "";
+        _customTranscriptionModel = options.CustomTranscription.Model;
         _localModelName = options.Local.ModelName;
         _parakeetModelName = options.Parakeet.ModelName;
         _parakeetNumThreads = options.Parakeet.NumThreads;
@@ -204,6 +236,8 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _combinedAudioModel = options.TextCorrection.CombinedAudioModel;
 
         UpdateApiKeyDisplay();
+        UpdateProviderApiKeyDisplay(GroqTranscriptionApiKey, v => GroqTranscriptionApiKeyDisplay = v);
+        UpdateProviderApiKeyDisplay(CustomTranscriptionApiKey, v => CustomTranscriptionApiKeyDisplay = v);
         UpdateProviderApiKeyDisplay(AnthropicApiKey, v => AnthropicApiKeyDisplay = v);
         UpdateProviderApiKeyDisplay(GoogleApiKey, v => GoogleApiKeyDisplay = v);
         UpdateProviderApiKeyDisplay(GroqApiKey, v => GroqApiKeyDisplay = v);
@@ -325,6 +359,57 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     private void ToggleGpuAcceleration()
     {
         GpuAcceleration = !GpuAcceleration;
+        _scheduleSave();
+    }
+
+    // --- Cloud sub-provider ---
+
+    [RelayCommand]
+    private void SelectCloudTranscriptionProvider(string provider)
+    {
+        CloudTranscriptionProvider = provider;
+        _logger.LogInformation("Cloud transcription sub-provider changed to: {Provider}", provider);
+        _scheduleSave();
+    }
+
+    // --- Groq Transcription ---
+
+    public void ApplyGroqTranscriptionApiKey(string key)
+    {
+        GroqTranscriptionApiKey = key;
+        IsEditingGroqTranscriptionApiKey = false;
+        UpdateProviderApiKeyDisplay(key, v => GroqTranscriptionApiKeyDisplay = v);
+        _scheduleSave();
+    }
+
+    [RelayCommand]
+    private void SelectGroqTranscriptionModel(string modelId)
+    {
+        GroqTranscriptionModel = modelId;
+        _scheduleSave();
+    }
+
+    // --- Custom Transcription ---
+
+    public void ApplyCustomTranscriptionEndpoint(string endpoint)
+    {
+        CustomTranscriptionEndpoint = endpoint;
+        IsEditingCustomTranscriptionEndpoint = false;
+        _scheduleSave();
+    }
+
+    public void ApplyCustomTranscriptionApiKey(string key)
+    {
+        CustomTranscriptionApiKey = key;
+        IsEditingCustomTranscriptionApiKey = false;
+        UpdateProviderApiKeyDisplay(key, v => CustomTranscriptionApiKeyDisplay = v);
+        _scheduleSave();
+    }
+
+    public void ApplyCustomTranscriptionModel(string model)
+    {
+        CustomTranscriptionModel = model;
+        IsEditingCustomTranscriptionModel = false;
         _scheduleSave();
     }
 
@@ -458,11 +543,21 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     public void WriteSettings(JsonNode section)
     {
         section["Provider"] = Provider.ToString();
+        section["CloudTranscriptionProvider"] = CloudTranscriptionProvider;
 
         var openAi = SettingsViewModel.EnsureObject(section, "OpenAI");
         openAi["ApiKey"] = OpenAiApiKey;
         openAi["Model"] = _openAiModelName;
         openAi["Endpoint"] = string.IsNullOrWhiteSpace(OpenAiEndpoint) ? null : OpenAiEndpoint;
+
+        var groqTx = SettingsViewModel.EnsureObject(section, "GroqTranscription");
+        groqTx["ApiKey"] = GroqTranscriptionApiKey;
+        groqTx["Model"] = GroqTranscriptionModel;
+
+        var customTx = SettingsViewModel.EnsureObject(section, "CustomTranscription");
+        customTx["ApiKey"] = CustomTranscriptionApiKey;
+        customTx["Model"] = CustomTranscriptionModel;
+        customTx["Endpoint"] = string.IsNullOrWhiteSpace(CustomTranscriptionEndpoint) ? null : CustomTranscriptionEndpoint;
 
         var local = SettingsViewModel.EnsureObject(section, "Local");
         local["ModelName"] = _localModelName;
