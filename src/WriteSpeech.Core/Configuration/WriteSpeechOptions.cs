@@ -93,7 +93,7 @@ public class AudioOptions
     public int DeviceIndex { get; set; }
     public int SampleRate { get; set; } = 16000;
     public int MaxRecordingSeconds { get; set; } = 300;
-    public bool CompressBeforeUpload { get; set; } = true;
+    public bool CompressBeforeUpload { get; set; }
     public bool MuteWhileDictating { get; set; } = true;
 }
 
@@ -104,7 +104,7 @@ public class OverlayOptions
     public int AutoDismissSeconds { get; set; } = 10;
     public bool AlwaysVisible { get; set; } = true;
     public bool ShowInTaskbar { get; set; }
-    public bool ShowResultOverlay { get; set; } = true;
+    public bool ShowResultOverlay { get; set; }
     public double Scale { get; set; } = 1.0;
 }
 
@@ -167,7 +167,7 @@ public class OpenAiCompatibleCorrectionOptions
 public class AppOptions
 {
     public bool LaunchAtLogin { get; set; }
-    public bool SoundEffects { get; set; } = true;
+    public bool SoundEffects { get; set; }
     public int MaxHistoryEntries { get; set; } = 20;
     public string Theme { get; set; } = "Dark";
     public bool SetupCompleted { get; set; }

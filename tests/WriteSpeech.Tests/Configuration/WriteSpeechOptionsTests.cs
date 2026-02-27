@@ -41,7 +41,7 @@ public class WriteSpeechOptionsTests
         var options = new AppOptions();
 
         options.LaunchAtLogin.Should().BeFalse();
-        options.SoundEffects.Should().BeTrue();
+        options.SoundEffects.Should().BeFalse();
         options.SetupCompleted.Should().BeFalse();
     }
 
@@ -51,6 +51,7 @@ public class WriteSpeechOptionsTests
         var options = new OverlayOptions();
 
         options.AlwaysVisible.Should().BeTrue();
+        options.ShowResultOverlay.Should().BeFalse();
         options.ShowInTaskbar.Should().BeFalse();
         options.AutoDismissSeconds.Should().Be(10);
     }
@@ -61,7 +62,7 @@ public class WriteSpeechOptionsTests
         var options = new AudioOptions();
 
         options.MuteWhileDictating.Should().BeTrue();
-        options.CompressBeforeUpload.Should().BeTrue();
+        options.CompressBeforeUpload.Should().BeFalse();
         options.SampleRate.Should().Be(16000);
     }
 

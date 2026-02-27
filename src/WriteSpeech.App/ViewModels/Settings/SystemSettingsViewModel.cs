@@ -18,16 +18,16 @@ public partial class SystemSettingsViewModel : ObservableObject
     // --- App settings ---
     [ObservableProperty] private bool _launchAtLogin;
     [ObservableProperty] private bool _overlayAlwaysVisible = true;
-    [ObservableProperty] private bool _showResultOverlay = true;
+    [ObservableProperty] private bool _showResultOverlay;
     [ObservableProperty] private bool _showInTaskbar;
     [ObservableProperty] private bool _isDarkMode;
 
     // --- Sound ---
-    [ObservableProperty] private bool _soundEffectsEnabled = true;
+    [ObservableProperty] private bool _soundEffectsEnabled;
     [ObservableProperty] private bool _muteWhileDictating = true;
 
     // --- Audio Compression ---
-    [ObservableProperty] private bool _audioCompressionEnabled = true;
+    [ObservableProperty] private bool _audioCompressionEnabled;
 
     // --- Overlay scale ---
     [ObservableProperty] private double _overlayScale = 1.0;

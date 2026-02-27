@@ -89,7 +89,7 @@ public class SettingsViewModelTests
         vm.General.SelectedLanguageCode.Should().Be("de");
         vm.Transcription.Provider.Should().Be(TranscriptionProvider.OpenAI);
         vm.Transcription.CorrectionProvider.Should().Be(TextCorrectionProvider.Cloud);
-        vm.System.AudioCompressionEnabled.Should().BeTrue();
+        vm.System.AudioCompressionEnabled.Should().BeFalse();
         vm.Transcription.UseCombinedAudioModel.Should().BeFalse();
         vm.System.AutoDismissSeconds.Should().Be(10);
         vm.System.MaxRecordingSeconds.Should().Be(300);
