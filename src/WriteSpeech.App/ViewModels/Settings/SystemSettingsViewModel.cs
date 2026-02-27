@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WriteSpeech.App.Views;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Services.Configuration;
 
@@ -122,16 +123,32 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     // --- Setup wizard ---
 
+    internal Func<bool>? ConfirmResetOverride { get; set; }
+
     [RelayCommand]
     internal async Task ResetSetupWizard()
     {
-        var result = MessageBox.Show(
-            "Are you sure you want to reset settings and re-run the setup wizard? The app will restart.",
-            "Reset Settings",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+        bool confirmed;
+        if (ConfirmResetOverride is not null)
+        {
+            confirmed = ConfirmResetOverride();
+        }
+        else
+        {
+            var owner = Application.Current.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive);
 
-        if (result != MessageBoxResult.Yes)
+            var dialog = new ConfirmationDialog(
+                "Reset Settings",
+                "Are you sure you want to reset settings and re-run the setup wizard? The app will restart.",
+                "Reset",
+                owner);
+
+            confirmed = dialog.ShowDialog() == true;
+        }
+
+        if (!confirmed)
             return;
 
         _persistenceService.ScheduleUpdate(section =>

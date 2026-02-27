@@ -35,6 +35,8 @@ public partial class App : Application
     private IHost? _host;
     private TrayIconManager? _trayIconManager;
 
+    public IServiceProvider? Services => _host?.Services;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);

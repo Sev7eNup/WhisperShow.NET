@@ -243,9 +243,10 @@ public class SystemSettingsViewModelTests
     // --- Reset setup wizard ---
 
     [Fact]
-    public async Task ResetSetupWizard_CallsScheduleUpdateAndFlush()
+    public async Task ResetSetupWizard_WhenConfirmed_CallsScheduleUpdateAndFlush()
     {
         var vm = CreateViewModel();
+        vm.ConfirmResetOverride = () => true;
 
         await vm.ResetSetupWizardCommand.ExecuteAsync(null);
 
@@ -254,9 +255,10 @@ public class SystemSettingsViewModelTests
     }
 
     [Fact]
-    public async Task ResetSetupWizard_SetsSetupCompletedFalse()
+    public async Task ResetSetupWizard_WhenConfirmed_SetsSetupCompletedFalse()
     {
         var vm = CreateViewModel();
+        vm.ConfirmResetOverride = () => true;
 
         JsonNode? capturedSection = null;
         _persistenceService.When(x => x.ScheduleUpdate(Arg.Any<Action<JsonNode>>()))
@@ -272,9 +274,10 @@ public class SystemSettingsViewModelTests
     }
 
     [Fact]
-    public async Task ResetSetupWizard_CallsRestartCallback()
+    public async Task ResetSetupWizard_WhenConfirmed_CallsRestartCallback()
     {
         var vm = CreateViewModel(restartApp: () => _restartCalled = true);
+        vm.ConfirmResetOverride = () => true;
 
         await vm.ResetSetupWizardCommand.ExecuteAsync(null);
 
@@ -282,12 +285,35 @@ public class SystemSettingsViewModelTests
     }
 
     [Fact]
-    public async Task ResetSetupWizard_WithoutRestartCallback_DoesNotThrow()
+    public async Task ResetSetupWizard_WhenConfirmed_WithoutRestartCallback_DoesNotThrow()
     {
         var vm = CreateViewModel(restartApp: null);
+        vm.ConfirmResetOverride = () => true;
 
         var act = async () => await vm.ResetSetupWizardCommand.ExecuteAsync(null);
 
         await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ResetSetupWizard_WhenCancelled_DoesNotCallScheduleUpdate()
+    {
+        var vm = CreateViewModel();
+        vm.ConfirmResetOverride = () => false;
+
+        await vm.ResetSetupWizardCommand.ExecuteAsync(null);
+
+        _persistenceService.DidNotReceive().ScheduleUpdate(Arg.Any<Action<JsonNode>>());
+    }
+
+    [Fact]
+    public async Task ResetSetupWizard_WhenCancelled_DoesNotCallRestart()
+    {
+        var vm = CreateViewModel(restartApp: () => _restartCalled = true);
+        vm.ConfirmResetOverride = () => false;
+
+        await vm.ResetSetupWizardCommand.ExecuteAsync(null);
+
+        _restartCalled.Should().BeFalse();
     }
 }
