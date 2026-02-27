@@ -417,8 +417,7 @@ public partial class OverlayWindow : Window
                 GlassPill.Background = _glassBackground;
                 StartBorderGlow(
                     Color.FromArgb(0xCC, 0x5C, 0x6B, 0xC0),
-                    Color.FromArgb(0x80, 0x5C, 0x6B, 0xC0),
-                    Color.FromArgb(0x40, 0x5C, 0x6B, 0xC0));
+                    Color.FromArgb(0x80, 0x5C, 0x6B, 0xC0));
                 WaveformLine.Stroke = _commandWaveStroke;
                 WaveFillTopStop.Color = Color.FromArgb(0x40, 0x5C, 0x6B, 0xC0);
                 break;
@@ -426,30 +425,24 @@ public partial class OverlayWindow : Window
                 GlassPill.Background = _glassBackground;
                 StartBorderGlow(
                     Color.FromArgb(0xCC, 0xEF, 0x53, 0x50),
-                    Color.FromArgb(0x80, 0xEF, 0x53, 0x50),
-                    Color.FromArgb(0x40, 0xEF, 0x53, 0x50));
+                    Color.FromArgb(0x80, 0xEF, 0x53, 0x50));
                 WaveformLine.Stroke = _recordingWaveStroke;
                 WaveFillTopStop.Color = Color.FromArgb(0x40, 0xEF, 0x53, 0x50);
                 break;
             case RecordingState.Idle:
                 GlassPill.Background = _idleBackground;
                 GlassPill.BorderBrush = _idleBorderBrush;
-                GlassPill.BorderThickness = new Thickness(1);
-                // Fade out shadow completely — DropShadowEffect renders in rectangular bitmap
-                // which creates a visible gray box on light backgrounds
-                PillShadow.BeginAnimation(DropShadowEffect.OpacityProperty,
-                    new DoubleAnimation(0, TimeSpan.FromMilliseconds(200)));
+                GlassPill.BorderThickness = new Thickness(1.5);
                 break;
             default: // Transcribing, Result, Error
                 GlassPill.Background = _glassBackground;
                 GlassPill.BorderBrush = _idleBorderBrush;
                 GlassPill.BorderThickness = new Thickness(1);
-                ResetShadowToDefault();
                 break;
         }
     }
 
-    private void StartBorderGlow(Color borderFrom, Color borderTo, Color glowColor)
+    private void StartBorderGlow(Color borderFrom, Color borderTo)
     {
         _animatedBorderBrush = new SolidColorBrush(borderFrom);
         GlassPill.BorderBrush = _animatedBorderBrush;
@@ -463,28 +456,6 @@ public partial class OverlayWindow : Window
             EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
         };
         _animatedBorderBrush.BeginAnimation(SolidColorBrush.ColorProperty, pulse);
-
-        // Glow shadow
-        PillShadow.BeginAnimation(DropShadowEffect.ColorProperty,
-            new ColorAnimation(glowColor, TimeSpan.FromMilliseconds(300)));
-        PillShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
-            new DoubleAnimation(20, TimeSpan.FromMilliseconds(300)));
-        PillShadow.BeginAnimation(DropShadowEffect.OpacityProperty,
-            new DoubleAnimation(0.6, TimeSpan.FromMilliseconds(300)));
-        PillShadow.BeginAnimation(DropShadowEffect.ShadowDepthProperty,
-            new DoubleAnimation(0, TimeSpan.FromMilliseconds(300)));
-    }
-
-    private void ResetShadowToDefault()
-    {
-        PillShadow.BeginAnimation(DropShadowEffect.ColorProperty,
-            new ColorAnimation(Colors.Black, TimeSpan.FromMilliseconds(200)));
-        PillShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
-            new DoubleAnimation(16, TimeSpan.FromMilliseconds(200)));
-        PillShadow.BeginAnimation(DropShadowEffect.OpacityProperty,
-            new DoubleAnimation(0.35, TimeSpan.FromMilliseconds(200)));
-        PillShadow.BeginAnimation(DropShadowEffect.ShadowDepthProperty,
-            new DoubleAnimation(4, TimeSpan.FromMilliseconds(200)));
     }
 
     private void AnimateStateTransition()
