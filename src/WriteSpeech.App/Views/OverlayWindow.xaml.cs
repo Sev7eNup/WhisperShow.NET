@@ -94,6 +94,18 @@ public partial class OverlayWindow : Window
         _logger.LogInformation("OverlayWindow loaded, configuring WS_EX_NOACTIVATE");
 
         var handle = new WindowInteropHelper(this).Handle;
+
+        // DWM-based transparency (replaces AllowsTransparency="True")
+        // Avoids WS_EX_LAYERED software rendering that causes mouse stuttering
+        var hwndSource = HwndSource.FromHwnd(handle);
+        if (hwndSource?.CompositionTarget != null)
+            hwndSource.CompositionTarget.BackgroundColor = Colors.Transparent;
+
+        var margins = new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+        var hr = NativeMethods.DwmExtendFrameIntoClientArea(handle, in margins);
+        if (hr != 0)
+            _logger.LogWarning("DwmExtendFrameIntoClientArea failed: 0x{HR:X8}", hr);
+
         ApplyTaskbarVisibility(handle, _options.Overlay.ShowInTaskbar);
 
         _hotkeyService.Register(handle);

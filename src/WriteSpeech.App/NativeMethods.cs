@@ -207,4 +207,18 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "PostThreadMessageW")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool PostThreadMessage(uint idThread, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    // --- DWM transparency (replaces AllowsTransparency for hardware-accelerated rendering) ---
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MARGINS
+    {
+        internal int Left;
+        internal int Right;
+        internal int Top;
+        internal int Bottom;
+    }
+
+    [LibraryImport("dwmapi.dll")]
+    internal static partial int DwmExtendFrameIntoClientArea(IntPtr hWnd, in MARGINS pMarInset);
 }

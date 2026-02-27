@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using FluentAssertions;
+using WriteSpeech.App;
 using WriteSpeech.App.Views;
 using WriteSpeech.Tests.TestHelpers;
 
@@ -263,6 +265,26 @@ public class OverlayWindowTests
         OverlayWindow.InterpolateWaveformLevels(levels, fromVoid);
 
         fromVoid.Should().BeEquivalentTo(fromReturning);
+    }
+
+    // --- DWM MARGINS struct validation ---
+
+    [Fact]
+    public void DwmMargins_StructLayout_CorrectSize()
+    {
+        // MARGINS is 4 x int32 = 16 bytes, must match native layout for P/Invoke
+        Marshal.SizeOf<NativeMethods.MARGINS>().Should().Be(16);
+    }
+
+    [Fact]
+    public void DwmMargins_AllNegativeOne_FieldsCorrect()
+    {
+        var margins = new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+
+        margins.Left.Should().Be(-1);
+        margins.Right.Should().Be(-1);
+        margins.Top.Should().Be(-1);
+        margins.Bottom.Should().Be(-1);
     }
 
     // --- Scale Clamping (Theory-based) ---
