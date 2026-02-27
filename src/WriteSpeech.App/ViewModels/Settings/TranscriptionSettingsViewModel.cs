@@ -72,14 +72,12 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     // --- Transcription: Provider ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowCloudUsageHint))]
-    [NotifyPropertyChangedFor(nameof(IsCustomCloudModel))]
     private TranscriptionProvider _provider = TranscriptionProvider.OpenAI;
     [ObservableProperty] private bool _isEditingProvider;
 
     // --- Transcription: Endpoint ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasCustomEndpoint))]
-    [NotifyPropertyChangedFor(nameof(IsCustomCloudModel))]
     private string _openAiEndpoint = "";
     [ObservableProperty] private bool _isEditingEndpoint;
 
@@ -90,10 +88,8 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     // --- Transcription: Model ---
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsCustomCloudModel))]
     private string _transcriptionModel = "whisper-1";
     [ObservableProperty] private bool _isEditingModel;
-    [ObservableProperty] private bool _isEditingCustomCloudModel;
     private string _openAiModelName = "whisper-1";
     private string _localModelName = "ggml-small.bin";
     private string _parakeetModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
@@ -169,12 +165,6 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     // --- Custom endpoint ---
     public bool HasCustomEndpoint => !string.IsNullOrWhiteSpace(OpenAiEndpoint);
-
-    // --- Custom cloud model ---
-    public bool IsCustomCloudModel =>
-        Provider == TranscriptionProvider.OpenAI &&
-        CloudTranscriptionProvider == "OpenAI" &&
-        CloudTranscriptionModels.All(m => m.Id != TranscriptionModel);
 
     // --- Custom correction model ---
     public bool IsCustomCorrectionModel =>
