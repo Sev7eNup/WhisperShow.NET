@@ -107,13 +107,6 @@
                     Background="{StaticResource GlassBackground}"
                     BorderBrush="{StaticResource IdleBorderBrush}"
                     BorderThickness="1">
-                <Border.Effect>
-                    <DropShadowEffect x:Name="PillShadow"
-                        BlurRadius="16" ShadowDepth="4"
-                        Opacity="0.35" Direction="270"
-                        Color="#000000"/>
-                </Border.Effect>
-
                 <Grid>
                     <!-- Idle State -->
                     <Grid x:Name="IdlePanel" Visibility="Visible">
