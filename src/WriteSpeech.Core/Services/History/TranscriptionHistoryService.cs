@@ -111,7 +111,7 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
 
     public void Dispose()
     {
-        _saveHelper.FlushAsync().GetAwaiter().GetResult();
+        _saveHelper.FlushSync();
         _saveHelper.Dispose();
     }
 

@@ -76,7 +76,11 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 
             mutator(section);
 
-            await File.WriteAllTextAsync(_filePath, doc.ToJsonString(s_jsonOptions));
+            // Write to temp file first, then rename atomically to avoid
+            // FileSystemWatcher seeing a truncated/empty file during the write
+            var tempPath = _filePath + ".tmp";
+            await File.WriteAllTextAsync(tempPath, doc.ToJsonString(s_jsonOptions));
+            File.Move(tempPath, _filePath, overwrite: true);
             _logger.LogInformation("Settings saved to appsettings.json");
         }
         finally
@@ -87,7 +91,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 
     public void Dispose()
     {
-        _saveHelper.FlushAsync().GetAwaiter().GetResult();
+        _saveHelper.FlushSync();
         _saveHelper.Dispose();
         _flushSemaphore.Dispose();
     }

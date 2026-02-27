@@ -12,6 +12,6 @@ public class WpfDispatcherService : IDispatcherService
     {
         var dispatcher = Application.Current?.Dispatcher;
         if (dispatcher is null) return;
-        await dispatcher.InvokeAsync(async () => await asyncAction());
+        await dispatcher.InvokeAsync(asyncAction).Task.Unwrap();
     }
 }

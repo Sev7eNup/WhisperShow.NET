@@ -1,7 +1,5 @@
-using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenAI;
 using OpenAI.Chat;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
@@ -11,15 +9,18 @@ namespace WriteSpeech.Core.Services.TextCorrection;
 
 public class GoogleTextCorrectionService : CloudTextCorrectionServiceBase
 {
+    private readonly OpenAiClientFactory _clientFactory;
     public override TextCorrectionProvider ProviderType => TextCorrectionProvider.Google;
 
     public GoogleTextCorrectionService(
         ILogger<GoogleTextCorrectionService> logger,
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
         IDictionaryService dictionaryService,
-        IIDEContextService ideContextService)
+        IIDEContextService ideContextService,
+        OpenAiClientFactory clientFactory)
         : base(logger, optionsMonitor, dictionaryService, ideContextService)
     {
+        _clientFactory = clientFactory;
     }
 
     protected override async Task<string?> SendCorrectionRequestAsync(
@@ -33,15 +34,7 @@ public class GoogleTextCorrectionService : CloudTextCorrectionServiceBase
             return null;
         }
 
-        var clientOptions = new OpenAIClientOptions();
-        if (!string.IsNullOrEmpty(google.Endpoint))
-            clientOptions.Endpoint = new Uri(google.Endpoint);
-
-        var client = new OpenAIClient(
-            credential: new ApiKeyCredential(google.ApiKey),
-            options: clientOptions);
-
-        var chatClient = client.GetChatClient(google.Model);
+        var chatClient = _clientFactory.GetChatClient(google.Model, google.ApiKey, google.Endpoint);
 
         var result = await chatClient.CompleteChatAsync(
             [

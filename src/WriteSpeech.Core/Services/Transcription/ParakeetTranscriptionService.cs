@@ -90,27 +90,61 @@ public class ParakeetTranscriptionService : ITranscriptionService, IDisposable
 
     /// <summary>
     /// Converts 16-bit PCM WAV audio data to float samples normalized to [-1.0, 1.0].
-    /// Expects a standard WAV file with a 44-byte header.
+    /// Parses the WAV header to find the actual data chunk offset.
     /// </summary>
     internal static float[] ConvertWavToFloatSamples(byte[] wavData)
     {
-        // Skip WAV header (standard 44 bytes)
-        const int headerSize = 44;
-        if (wavData.Length <= headerSize)
+        var dataOffset = FindDataChunkOffset(wavData);
+        if (dataOffset < 0 || dataOffset >= wavData.Length)
             return [];
 
-        var dataLength = wavData.Length - headerSize;
+        var dataLength = wavData.Length - dataOffset;
         var sampleCount = dataLength / 2; // 16-bit = 2 bytes per sample
         var samples = new float[sampleCount];
 
         for (var i = 0; i < sampleCount; i++)
         {
-            var offset = headerSize + i * 2;
+            var offset = dataOffset + i * 2;
             var sample = BitConverter.ToInt16(wavData, offset);
             samples[i] = sample / 32768f;
         }
 
         return samples;
+    }
+
+    /// <summary>
+    /// Scans for the "data" chunk in a WAV file and returns the offset of the audio data.
+    /// Falls back to 44 bytes if the header cannot be parsed.
+    /// </summary>
+    internal static int FindDataChunkOffset(byte[] wavData)
+    {
+        const int fallbackHeaderSize = 44;
+
+        // Minimum valid WAV: RIFF(4) + size(4) + WAVE(4) + fmt (8+16) + data(8) = 44
+        if (wavData.Length < 44)
+            return -1;
+
+        // Verify RIFF header
+        if (wavData[0] != 'R' || wavData[1] != 'I' || wavData[2] != 'F' || wavData[3] != 'F')
+            return fallbackHeaderSize;
+
+        // Scan chunks starting after "RIFF" + size + "WAVE" (12 bytes)
+        int pos = 12;
+        while (pos + 8 <= wavData.Length)
+        {
+            var chunkId = System.Text.Encoding.ASCII.GetString(wavData, pos, 4);
+            var chunkSize = BitConverter.ToInt32(wavData, pos + 4);
+
+            if (chunkId == "data")
+                return pos + 8; // Audio data starts after chunk ID (4) + size (4)
+
+            // Advance to next chunk (chunks are word-aligned)
+            pos += 8 + chunkSize;
+            if (chunkSize % 2 != 0) pos++; // Padding byte for odd-sized chunks
+        }
+
+        // "data" chunk not found, fall back to standard offset
+        return fallbackHeaderSize;
     }
 
     private static string? GetModelDir(ParakeetOptions opts)

@@ -64,6 +64,29 @@ public sealed class DebouncedSaveHelper : IDisposable
         }
     }
 
+    /// <summary>
+    /// Synchronous flush safe for use in Dispose(). Runs the save action on a thread pool thread
+    /// to avoid deadlocking on the UI SynchronizationContext.
+    /// </summary>
+    public void FlushSync()
+    {
+        lock (_lock)
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+        }
+
+        try
+        {
+            Task.Run(() => _saveAction()).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Final flush save failed");
+        }
+    }
+
     public void Dispose()
     {
         lock (_lock)

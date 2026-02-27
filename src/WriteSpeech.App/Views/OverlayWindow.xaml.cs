@@ -524,22 +524,43 @@ public partial class OverlayWindow : Window
 
     // --- Hotkey Handlers ---
 
-    private void OnToggleHotkeyPressed(object? sender, EventArgs e)
+    private async void OnToggleHotkeyPressed(object? sender, EventArgs e)
     {
         _logger.LogDebug("Toggle hotkey event received in OverlayWindow");
-        Dispatcher.Invoke(async () => await _viewModel.ToggleRecordingCommand.ExecuteAsync(null));
+        try
+        {
+            await Dispatcher.InvokeAsync(() => _viewModel.ToggleRecordingCommand.ExecuteAsync(null)).Task.Unwrap();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Toggle hotkey handler failed");
+        }
     }
 
-    private void OnPushToTalkHotkeyPressed(object? sender, EventArgs e)
+    private async void OnPushToTalkHotkeyPressed(object? sender, EventArgs e)
     {
         _logger.LogDebug("Push-to-Talk pressed event received in OverlayWindow");
-        Dispatcher.Invoke(async () => await _viewModel.HotkeyStartRecordingAsync());
+        try
+        {
+            await Dispatcher.InvokeAsync(() => _viewModel.HotkeyStartRecordingAsync()).Task.Unwrap();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Push-to-Talk start handler failed");
+        }
     }
 
-    private void OnPushToTalkHotkeyReleased(object? sender, EventArgs e)
+    private async void OnPushToTalkHotkeyReleased(object? sender, EventArgs e)
     {
         _logger.LogDebug("Push-to-Talk released event received in OverlayWindow");
-        Dispatcher.Invoke(async () => await _viewModel.HotkeyStopRecordingAsync());
+        try
+        {
+            await Dispatcher.InvokeAsync(() => _viewModel.HotkeyStopRecordingAsync()).Task.Unwrap();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Push-to-Talk stop handler failed");
+        }
     }
 
     private void OnEscapePressed(object? sender, EventArgs e)

@@ -120,7 +120,7 @@ public class DictionaryService : IDictionaryService
 
     public void Dispose()
     {
-        _saveHelper.FlushAsync().GetAwaiter().GetResult();
+        _saveHelper.FlushSync();
         _saveHelper.Dispose();
     }
 

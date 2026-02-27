@@ -1,7 +1,5 @@
-using System.ClientModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenAI;
 using OpenAI.Chat;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
@@ -11,15 +9,18 @@ namespace WriteSpeech.Core.Services.TextCorrection;
 
 public class CustomTextCorrectionService : CloudTextCorrectionServiceBase
 {
+    private readonly OpenAiClientFactory _clientFactory;
     public override TextCorrectionProvider ProviderType => TextCorrectionProvider.Custom;
 
     public CustomTextCorrectionService(
         ILogger<CustomTextCorrectionService> logger,
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
         IDictionaryService dictionaryService,
-        IIDEContextService ideContextService)
+        IIDEContextService ideContextService,
+        OpenAiClientFactory clientFactory)
         : base(logger, optionsMonitor, dictionaryService, ideContextService)
     {
+        _clientFactory = clientFactory;
     }
 
     protected override async Task<string?> SendCorrectionRequestAsync(
@@ -39,16 +40,7 @@ public class CustomTextCorrectionService : CloudTextCorrectionServiceBase
             return null;
         }
 
-        var clientOptions = new OpenAIClientOptions
-        {
-            Endpoint = new Uri(custom.Endpoint)
-        };
-
-        var client = new OpenAIClient(
-            credential: new ApiKeyCredential(custom.ApiKey),
-            options: clientOptions);
-
-        var chatClient = client.GetChatClient(custom.Model);
+        var chatClient = _clientFactory.GetChatClient(custom.Model, custom.ApiKey, custom.Endpoint);
 
         var result = await chatClient.CompleteChatAsync(
             [
