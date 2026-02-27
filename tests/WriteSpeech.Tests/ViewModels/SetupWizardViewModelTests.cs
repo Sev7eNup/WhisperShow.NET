@@ -16,12 +16,13 @@ public class SetupWizardViewModelTests
     private readonly ISettingsPersistenceService _persistenceService = Substitute.For<ISettingsPersistenceService>();
     private readonly ILogger<SetupWizardViewModel> _logger = Substitute.For<ILogger<SetupWizardViewModel>>();
 
-    private SetupWizardViewModel CreateViewModel()
+    private SetupWizardViewModel CreateViewModel(WriteSpeechOptions? options = null)
     {
         return new SetupWizardViewModel(
             _persistenceService,
             new SynchronousDispatcherService(),
-            _logger);
+            _logger,
+            options);
     }
 
     // --- Initialization ---
@@ -54,6 +55,54 @@ public class SetupWizardViewModelTests
         vm.AvailableLanguages.Should().HaveCount(SupportedLanguages.All.Count);
         vm.AvailableLanguages.Should().Contain(l => l.Code == "en");
         vm.AvailableLanguages.Should().Contain(l => l.Code == "de");
+    }
+
+    [Fact]
+    public void Constructor_PrePopulatesFromExistingOptions()
+    {
+        var options = new WriteSpeechOptions
+        {
+            Provider = TranscriptionProvider.Local,
+            Language = "de",
+            OpenAI = new OpenAiOptions { ApiKey = "sk-existing" },
+            Audio = new AudioOptions { DeviceIndex = 2 },
+            TextCorrection = new TextCorrectionOptions
+            {
+                Provider = TextCorrectionProvider.Anthropic,
+                Anthropic = new AnthropicCorrectionOptions { ApiKey = "ant-key" }
+            }
+        };
+
+        var vm = CreateViewModel(options);
+
+        vm.Provider.Should().Be(TranscriptionProvider.Local);
+        vm.OpenAiApiKey.Should().Be("sk-existing");
+        vm.SelectedLanguageCode.Should().Be("de");
+        vm.IsAutoDetectLanguage.Should().BeFalse();
+        vm.SelectedMicrophoneIndex.Should().Be(2);
+        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Anthropic);
+        vm.CorrectionApiKey.Should().Be("ant-key");
+    }
+
+    [Fact]
+    public void Constructor_WithNullLanguage_SetsAutoDetect()
+    {
+        var options = new WriteSpeechOptions { Language = null };
+
+        var vm = CreateViewModel(options);
+
+        vm.IsAutoDetectLanguage.Should().BeTrue();
+        vm.SelectedLanguageCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void Constructor_WithoutOptions_UsesDefaults()
+    {
+        var vm = CreateViewModel();
+
+        vm.Provider.Should().Be(TranscriptionProvider.OpenAI);
+        vm.OpenAiApiKey.Should().BeEmpty();
+        vm.CorrectionProvider.Should().Be(TextCorrectionProvider.Off);
     }
 
     // --- Navigation ---

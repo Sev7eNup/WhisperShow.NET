@@ -134,7 +134,7 @@ public partial class App : Application
                 services.AddSingleton<SettingsViewModel>();
                 services.AddSingleton<HistoryViewModel>();
                 services.AddSingleton<FileTranscriptionViewModel>();
-                services.AddTransient<SetupWizardViewModel>();
+
 
                 // Windows
                 services.AddSingleton<OverlayWindow>();
@@ -158,9 +158,13 @@ public partial class App : Application
         {
             // First-run setup wizard
             var opts = _host.Services.GetRequiredService<IOptions<WriteSpeechOptions>>().Value;
-            if (!opts.App.SetupCompleted && NeedsFirstRunSetup(opts))
+            if (!opts.App.SetupCompleted)
             {
-                var wizardVm = _host.Services.GetRequiredService<SetupWizardViewModel>();
+                var wizardVm = new SetupWizardViewModel(
+                    _host.Services.GetRequiredService<ISettingsPersistenceService>(),
+                    _host.Services.GetRequiredService<IDispatcherService>(),
+                    _host.Services.GetRequiredService<ILogger<SetupWizardViewModel>>(),
+                    opts);
                 var wizard = new SetupWizardWindow(wizardVm);
                 if (wizard.ShowDialog() != true)
                 {
@@ -196,18 +200,6 @@ public partial class App : Application
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
         }
-    }
-
-    private static bool NeedsFirstRunSetup(WriteSpeechOptions opts)
-    {
-        // Existing users with a working config skip the wizard
-        if (opts.Provider is TranscriptionProvider.Local or TranscriptionProvider.Parakeet)
-            return false;
-
-        if (!string.IsNullOrWhiteSpace(opts.OpenAI.ApiKey))
-            return false;
-
-        return true;
     }
 
     private void PreloadLocalModels(WriteSpeechOptions opts)

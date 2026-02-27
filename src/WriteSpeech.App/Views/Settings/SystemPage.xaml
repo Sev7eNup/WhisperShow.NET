@@ -192,5 +192,25 @@
             </StackPanel>
         </Border>
 
+        <!-- ===== Setup group ===== -->
+        <TextBlock Text="Setup" Style="{StaticResource GroupHeaderStyle}"/>
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+            <Grid Margin="20,10,20,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Re-run setup wizard" FontSize="12.5" FontWeight="SemiBold"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="Show the first-run wizard on next app start" FontSize="11.5"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="Reset" Style="{StaticResource PillButtonStyle}"
+                        Command="{Binding ResetSetupWizardCommand}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
     </StackPanel>
 </UserControl>
