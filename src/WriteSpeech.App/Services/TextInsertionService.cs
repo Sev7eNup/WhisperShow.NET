@@ -27,7 +27,7 @@ public class TextInsertionService : ITextInsertionService
                 // Save and restore clipboard on the STA thread
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    try { previousClipboard = Clipboard.GetDataObject(); } catch { /* clipboard may be locked */ }
+                    try { previousClipboard = Clipboard.GetDataObject(); } catch (Exception ex) { _logger.LogDebug(ex, "Clipboard read failed before text insertion"); }
                     Clipboard.SetText(text);
                 });
             }

@@ -9,6 +9,7 @@ public class TranscriptionProviderFactory
 
     public TranscriptionProviderFactory(IEnumerable<ITranscriptionService> providers)
     {
+        ArgumentNullException.ThrowIfNull(providers);
         _providers = providers;
         _providerMap = providers.ToDictionary(p => p.ProviderType);
     }

@@ -285,7 +285,7 @@ public class TrayIconManager : IDisposable
                     });
                 parent.Items.Add(item);
             }
-            catch
+            catch (Exception)
             {
                 // Device may have been disconnected mid-enumeration — skip it
             }

@@ -17,6 +17,7 @@ public class OpenAiClientFactory
 
     public OpenAiClientFactory(IOptionsMonitor<WriteSpeechOptions> optionsMonitor)
     {
+        ArgumentNullException.ThrowIfNull(optionsMonitor);
         _optionsMonitor = optionsMonitor;
     }
 

@@ -8,6 +8,7 @@ public class TextCorrectionProviderFactory
 
     public TextCorrectionProviderFactory(IEnumerable<ITextCorrectionService> providers)
     {
+        ArgumentNullException.ThrowIfNull(providers);
         _providerMap = providers.ToDictionary(p => p.ProviderType);
     }
 

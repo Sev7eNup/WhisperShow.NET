@@ -12,6 +12,8 @@ public sealed class DebouncedSaveHelper : IDisposable
 
     public DebouncedSaveHelper(Func<Task> saveAction, ILogger logger, int delayMs = 500)
     {
+        ArgumentNullException.ThrowIfNull(saveAction);
+        ArgumentNullException.ThrowIfNull(logger);
         _saveAction = saveAction;
         _logger = logger;
         _delayMs = delayMs;

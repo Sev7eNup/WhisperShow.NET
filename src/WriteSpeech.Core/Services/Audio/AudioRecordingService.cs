@@ -9,6 +9,8 @@ public class AudioRecordingService : IAudioRecordingService
 {
     private readonly ILogger<AudioRecordingService> _logger;
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
+    private const int AudioBufferMilliseconds = 50;
+
     private readonly Lock _recordingLock = new();
     private WaveInEvent? _waveIn;
     private MemoryStream? _memoryStream;
@@ -43,7 +45,7 @@ public class AudioRecordingService : IAudioRecordingService
         _waveIn = new WaveInEvent
         {
             WaveFormat = waveFormat,
-            BufferMilliseconds = 50,
+            BufferMilliseconds = AudioBufferMilliseconds,
             DeviceNumber = audioOptions.DeviceIndex
         };
 
@@ -137,12 +139,12 @@ public class AudioRecordingService : IAudioRecordingService
             _waveIn.DataAvailable -= OnDataAvailable;
             _waveIn.RecordingStopped -= OnRecordingStopped;
 
-            try { _waveIn.Dispose(); } catch { /* best-effort */ }
+            try { _waveIn.Dispose(); } catch (Exception ex) { _logger.LogDebug(ex, "Best-effort WaveIn disposal"); }
             _waveIn = null;
 
-            try { _waveFileWriter?.Dispose(); } catch { }
+            try { _waveFileWriter?.Dispose(); } catch (Exception ex) { _logger.LogDebug(ex, "Best-effort WaveFileWriter disposal"); }
             _waveFileWriter = null;
-            try { _memoryStream?.Dispose(); } catch { }
+            try { _memoryStream?.Dispose(); } catch (Exception ex) { _logger.LogDebug(ex, "Best-effort MemoryStream disposal"); }
             _memoryStream = null;
         }
     }
@@ -175,7 +177,7 @@ public class AudioRecordingService : IAudioRecordingService
         StopMaxDurationTimer();
 
         if (IsRecording)
-            try { _waveIn!.StopRecording(); } catch { }
+            try { _waveIn!.StopRecording(); } catch (Exception ex) { _logger.LogDebug(ex, "Best-effort StopRecording during disposal"); }
 
         CleanupRecordingResources();
     }

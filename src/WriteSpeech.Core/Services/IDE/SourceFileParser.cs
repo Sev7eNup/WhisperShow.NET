@@ -55,6 +55,8 @@ public static partial class SourceFileParser
             "TODO", "FIXME", "HACK", "NOTE", "XXX"
         };
 
+    private const long MaxFileSizeBytes = 512_000;
+
     [GeneratedRegex(@"\b[A-Za-z_]\w{2,}\b", RegexOptions.Compiled)]
     private static partial Regex IdentifierRegex();
 
@@ -66,9 +68,8 @@ public static partial class SourceFileParser
         {
             try
             {
-                // Skip very large files (>500KB)
                 var info = new FileInfo(file);
-                if (info.Length > 512_000) continue;
+                if (info.Length > MaxFileSizeBytes) continue;
 
                 var content = File.ReadAllText(file);
                 foreach (var id in ExtractIdentifiersFromContent(content))

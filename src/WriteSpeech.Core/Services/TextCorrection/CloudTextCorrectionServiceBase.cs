@@ -26,6 +26,10 @@ public abstract class CloudTextCorrectionServiceBase : ITextCorrectionService
         IDictionaryService dictionaryService,
         IIDEContextService ideContextService)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(optionsMonitor);
+        ArgumentNullException.ThrowIfNull(dictionaryService);
+        ArgumentNullException.ThrowIfNull(ideContextService);
         Logger = logger;
         OptionsMonitor = optionsMonitor;
         DictionaryService = dictionaryService;

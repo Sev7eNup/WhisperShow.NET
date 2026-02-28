@@ -31,7 +31,7 @@ public class SelectedTextService : ISelectedTextService
                     Clipboard.Clear();
                     clipboardCleared = !Clipboard.ContainsText();
                 }
-                catch { /* clipboard may be locked */ }
+                catch (Exception ex) { _logger.LogDebug(ex, "Clipboard access failed during selected text capture"); }
             });
 
             if (!clipboardCleared)

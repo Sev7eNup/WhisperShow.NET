@@ -91,7 +91,7 @@ public partial class SetupWizardViewModel : ObservableObject
     // --- Mic test ---
     [ObservableProperty] private bool _isMicTesting;
     [ObservableProperty] private float _micTestLevel;
-    private WaveInEvent? _micTestWaveIn;
+    private MicTestHelper? _micTestHelper;
 
     // --- Result ---
     public bool IsCompleted { get; private set; }
@@ -332,53 +332,20 @@ public partial class SetupWizardViewModel : ObservableObject
 
     internal void StartMicTest()
     {
-        try
+        _micTestHelper ??= new MicTestHelper(_dispatcher, _logger, level =>
         {
-            _micTestWaveIn = new WaveInEvent
-            {
-                DeviceNumber = SelectedMicrophoneIndex,
-                WaveFormat = new WaveFormat(16000, 16, 1),
-                BufferMilliseconds = 50
-            };
-            _micTestWaveIn.DataAvailable += OnMicTestDataAvailable;
-            _micTestWaveIn.StartRecording();
-            IsMicTesting = true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to start mic test");
-            StopMicTest();
-        }
+            MicTestLevel = level;
+            IsMicTesting = _micTestHelper?.IsTesting ?? false;
+        });
+        _micTestHelper.Start(SelectedMicrophoneIndex);
+        IsMicTesting = _micTestHelper.IsTesting;
     }
 
     internal void StopMicTest()
     {
-        if (_micTestWaveIn is not null)
-        {
-            _micTestWaveIn.DataAvailable -= OnMicTestDataAvailable;
-            try { _micTestWaveIn.StopRecording(); } catch { /* device may already be gone */ }
-            _micTestWaveIn.Dispose();
-            _micTestWaveIn = null;
-        }
+        _micTestHelper?.Stop();
         IsMicTesting = false;
         MicTestLevel = 0;
-    }
-
-    private void OnMicTestDataAvailable(object? sender, WaveInEventArgs e)
-    {
-        double sumOfSquares = 0;
-        int sampleCount = e.BytesRecorded / 2;
-        for (int i = 0; i < e.BytesRecorded; i += 2)
-        {
-            short sample = BitConverter.ToInt16(e.Buffer, i);
-            double normalized = sample / 32768.0;
-            sumOfSquares += normalized * normalized;
-        }
-
-        float rms = sampleCount > 0 ? (float)Math.Sqrt(sumOfSquares / sampleCount) : 0;
-        float level = Math.Min(rms * 3.5f, 1.0f);
-
-        _dispatcher.Invoke(() => MicTestLevel = level);
     }
 
     // --- Validation ---

@@ -16,6 +16,9 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly IDictionaryService _dictionaryService;
     private readonly IIDEContextService _ideContextService;
+    private const uint DefaultContextSize = 2048;
+    private const int MinInferenceTokens = 256;
+
     private readonly Lock _loadLock = new();
     private LLamaWeights? _model;
     private string? _loadedModelPath;
@@ -82,7 +85,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
 
             var modelParams = new ModelParams(_loadedModelPath!)
             {
-                ContextSize = 2048,
+                ContextSize = DefaultContextSize,
                 GpuLayerCount = correctionOpts.LocalGpuAcceleration ? -1 : 0,
                 Threads = Math.Max(1, Environment.ProcessorCount / 2),
             };
@@ -95,7 +98,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
 
             var inferenceParams = new InferenceParams
             {
-                MaxTokens = Math.Max(256, rawText.Length * 2),
+                MaxTokens = Math.Max(MinInferenceTokens, rawText.Length * 2),
                 AntiPrompts = ["User:", "\nUser", "<|end|>", "<|im_end|>"],
                 SamplingPipeline = new DefaultSamplingPipeline { Temperature = 0f },
             };

@@ -667,7 +667,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _optionsChangeRegistration?.Dispose();
 
         // Ensure other apps are unmuted if we're disposed during recording
-        try { _mutingService.UnmuteAll(); } catch { /* best-effort */ }
+        try { _mutingService.UnmuteAll(); } catch (Exception ex) { _logger.LogDebug(ex, "Best-effort UnmuteAll during disposal"); }
     }
 
     internal static string SanitizeErrorMessage(Exception ex) => ex switch

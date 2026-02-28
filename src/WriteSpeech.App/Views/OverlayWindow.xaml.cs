@@ -26,6 +26,7 @@ public partial class OverlayWindow : Window
     private readonly WriteSpeechOptions _options;
     private readonly IDisposable? _optionsChangeRegistration;
     private const int ViewModelWaveformCount = 20;
+    private const double DragThresholdPixels = 5.0;
 
     // Storyboards
     private Storyboard? _sweepStoryboard;
@@ -525,41 +526,24 @@ public partial class OverlayWindow : Window
     // --- Hotkey Handlers ---
 
     private async void OnToggleHotkeyPressed(object? sender, EventArgs e)
-    {
-        _logger.LogDebug("Toggle hotkey event received in OverlayWindow");
-        try
-        {
-            await Dispatcher.InvokeAsync(() => _viewModel.ToggleRecordingCommand.ExecuteAsync(null)).Task.Unwrap();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Toggle hotkey handler failed");
-        }
-    }
+        => await SafeDispatchAsync(() => _viewModel.ToggleRecordingCommand.ExecuteAsync(null), "Toggle hotkey");
 
     private async void OnPushToTalkHotkeyPressed(object? sender, EventArgs e)
-    {
-        _logger.LogDebug("Push-to-Talk pressed event received in OverlayWindow");
-        try
-        {
-            await Dispatcher.InvokeAsync(() => _viewModel.HotkeyStartRecordingAsync()).Task.Unwrap();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Push-to-Talk start handler failed");
-        }
-    }
+        => await SafeDispatchAsync(() => _viewModel.HotkeyStartRecordingAsync(), "Push-to-Talk start");
 
     private async void OnPushToTalkHotkeyReleased(object? sender, EventArgs e)
+        => await SafeDispatchAsync(() => _viewModel.HotkeyStopRecordingAsync(), "Push-to-Talk stop");
+
+    private async Task SafeDispatchAsync(Func<Task> action, string handlerName)
     {
-        _logger.LogDebug("Push-to-Talk released event received in OverlayWindow");
+        _logger.LogDebug("{Handler} event received in OverlayWindow", handlerName);
         try
         {
-            await Dispatcher.InvokeAsync(() => _viewModel.HotkeyStopRecordingAsync()).Task.Unwrap();
+            await Dispatcher.InvokeAsync(action).Task.Unwrap();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Push-to-Talk stop handler failed");
+            _logger.LogError(ex, "{Handler} handler failed", handlerName);
         }
     }
 
@@ -613,7 +597,7 @@ public partial class OverlayWindow : Window
         var pos = e.GetPosition(this);
         var diff = pos - _dragStart.Value;
 
-        if (Math.Abs(diff.X) > 5 || Math.Abs(diff.Y) > 5)
+        if (Math.Abs(diff.X) > DragThresholdPixels || Math.Abs(diff.Y) > DragThresholdPixels)
         {
             _dragStart = null;
             if (Mouse.Captured is UIElement captured)

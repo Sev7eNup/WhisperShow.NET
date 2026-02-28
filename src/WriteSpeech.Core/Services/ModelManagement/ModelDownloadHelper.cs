@@ -12,6 +12,8 @@ public class ModelDownloadHelper
 
     public ModelDownloadHelper(IHttpClientFactory httpClientFactory, ILogger<ModelDownloadHelper> logger)
     {
+        ArgumentNullException.ThrowIfNull(httpClientFactory);
+        ArgumentNullException.ThrowIfNull(logger);
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
@@ -57,7 +59,7 @@ public class ModelDownloadHelper
                 {
                     _logger.LogError("Hash mismatch for {Path}: expected {Expected}, got {Actual}",
                         targetPath, expectedSha256, actualHash);
-                    try { File.Delete(tempPath); } catch { /* best-effort */ }
+                    try { File.Delete(tempPath); } catch (Exception deleteEx) { _logger.LogDebug(deleteEx, "Failed to delete temp file after hash mismatch: {TempPath}", tempPath); }
                     throw new InvalidOperationException(
                         $"Downloaded file hash mismatch. Expected: {expectedSha256}, actual: {actualHash}");
                 }
@@ -71,7 +73,7 @@ public class ModelDownloadHelper
         catch
         {
             // Clean up partial temp file on failure or cancellation
-            try { File.Delete(tempPath); } catch { /* best-effort */ }
+            try { File.Delete(tempPath); } catch (Exception deleteEx) { _logger.LogDebug(deleteEx, "Failed to delete partial temp file: {TempPath}", tempPath); }
             throw;
         }
     }
