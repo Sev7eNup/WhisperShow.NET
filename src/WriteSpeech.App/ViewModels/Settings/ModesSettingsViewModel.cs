@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services.Modes;
 
@@ -12,6 +13,7 @@ public partial class ModesSettingsViewModel : ObservableObject
     private readonly IModeService _modeService;
     private readonly Action _scheduleSave;
 
+    [ObservableProperty] private bool _isCorrectionOff;
     [ObservableProperty] private bool _autoSwitchEnabled;
     [ObservableProperty] private ObservableCollection<ModeItem> _modes = [];
     [ObservableProperty] private string _newModeName = "";
@@ -21,10 +23,11 @@ public partial class ModesSettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private string? _editingOriginalName;
 
-    public ModesSettingsViewModel(IModeService modeService, Action scheduleSave)
+    public ModesSettingsViewModel(IModeService modeService, Action scheduleSave, WriteSpeechOptions options)
     {
         _modeService = modeService;
         _scheduleSave = scheduleSave;
+        _isCorrectionOff = options.TextCorrection.Provider == TextCorrectionProvider.Off;
         _autoSwitchEnabled = modeService.AutoSwitchEnabled;
         RefreshModes();
     }

@@ -2,6 +2,8 @@ using System.IO;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using WriteSpeech.App.ViewModels.Settings;
+using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services.Modes;
 using WriteSpeech.Tests.TestHelpers;
 
@@ -36,8 +38,12 @@ public class ModesSettingsViewModelTests : IDisposable
         try { Directory.Delete(_tempDir, recursive: true); } catch { }
     }
 
-    private ModesSettingsViewModel CreateViewModel() =>
-        new(_modeService, () => { });
+    private ModesSettingsViewModel CreateViewModel(Action<WriteSpeechOptions>? configure = null)
+    {
+        var options = new WriteSpeechOptions();
+        configure?.Invoke(options);
+        return new(_modeService, () => { }, options);
+    }
 
     [Fact]
     public void Constructor_LoadsBuiltInModes()
@@ -214,6 +220,33 @@ public class ModesSettingsViewModelTests : IDisposable
         vm.CancelEditCommand.Execute(null);
 
         vm.NewModeTargetLanguage.Should().BeEmpty();
+    }
+
+    // --- IsCorrectionOff ---
+
+    [Fact]
+    public void Constructor_CorrectionOff_SetsIsCorrectionOffTrue()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+        vm.IsCorrectionOff.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_CorrectionEnabled_SetsIsCorrectionOffFalse()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Anthropic);
+        vm.IsCorrectionOff.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsCorrectionOff_RaisesPropertyChanged()
+    {
+        var vm = CreateViewModel();
+        using var monitor = vm.Monitor();
+
+        vm.IsCorrectionOff = false;
+
+        monitor.Should().RaisePropertyChangeFor(x => x.IsCorrectionOff);
     }
 
     // --- Validation Edge Cases ---

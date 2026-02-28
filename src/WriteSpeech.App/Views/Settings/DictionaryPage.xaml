@@ -7,6 +7,23 @@
                    FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
                    TextWrapping="Wrap" Margin="0,0,0,16"/>
 
+        <!-- Correction disabled hint -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,12"
+                Visibility="{Binding IsCorrectionOff, Converter={StaticResource BoolToVisibility}}">
+            <Grid Margin="16,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Top" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="11.5"
+                           FontFamily="Segoe UI Variable, Segoe UI"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="Dictionary entries and auto-add require a text correction provider. Configure one on the Intelligence page."/>
+            </Grid>
+        </Border>
+
         <!-- ===== Auto-add settings ===== -->
         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,12">
             <StackPanel>

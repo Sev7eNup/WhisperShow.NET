@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services.Snippets;
 using WriteSpeech.Core.Services.TextCorrection;
 
@@ -15,6 +16,7 @@ public partial class DictionarySnippetsViewModel : ObservableObject
     private readonly Action _scheduleSave;
 
     // --- Dictionary settings ---
+    [ObservableProperty] private bool _isCorrectionOff;
     [ObservableProperty] private bool _autoAddToDictionary = true;
 
     public ObservableCollection<string> DictionaryEntries { get; } = [];
@@ -36,6 +38,7 @@ public partial class DictionarySnippetsViewModel : ObservableObject
         _snippetService = snippetService;
         _scheduleSave = scheduleSave;
 
+        _isCorrectionOff = options.TextCorrection.Provider == TextCorrectionProvider.Off;
         _autoAddToDictionary = options.TextCorrection.AutoAddToDictionary;
 
         RefreshEntries();

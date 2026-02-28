@@ -773,6 +773,50 @@ public class SettingsViewModelTests
         _preloadService.Received(1).PreloadCorrectionModel("gemma-2b.gguf");
     }
 
+    // --- IsCorrectionOff propagation ---
+
+    [Fact]
+    public void Constructor_CorrectionOff_PropagatesIsCorrectionOff()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeTrue();
+        vm.Modes.IsCorrectionOff.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_CorrectionEnabled_PropagatesIsCorrectionOffFalse()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Cloud);
+
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeFalse();
+        vm.Modes.IsCorrectionOff.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_ToOff_UpdatesSubVMs()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Cloud);
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeFalse();
+
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("Off");
+
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeTrue();
+        vm.Modes.IsCorrectionOff.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectCorrectionProvider_FromOff_ClearsIsCorrectionOff()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeTrue();
+
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("OpenAI");
+
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeFalse();
+        vm.Modes.IsCorrectionOff.Should().BeFalse();
+    }
+
     // --- EnsureObject helper ---
 
     [Fact]
