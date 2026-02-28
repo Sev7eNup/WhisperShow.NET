@@ -1273,4 +1273,13 @@ public class OverlayViewModelTests : IDisposable
         result.Should().NotContain("org-abc123");
         result.Should().NotContain("rate limit");
     }
+
+    [Fact]
+    public void SanitizeErrorMessage_VadModelException_ReturnsFriendlyMessage()
+    {
+        var ex = new InvalidOperationException("Silero VAD model not found at C:\\path\\silero_vad.onnx. Please download the model first.");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("VAD model not downloaded");
+        result.Should().NotContain("C:\\path");
+    }
 }

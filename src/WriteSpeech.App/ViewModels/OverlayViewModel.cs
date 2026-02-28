@@ -850,6 +850,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             => "Downloaded file is corrupted. Please try again.",
         InvalidOperationException e when e.Message.Contains("maximum size", StringComparison.OrdinalIgnoreCase)
             => "File is too large to process.",
+        InvalidOperationException e when e.Message.Contains("VAD model", StringComparison.OrdinalIgnoreCase)
+            => "VAD model not downloaded. Enable hands-free mode in Settings to download it.",
         _ => "An unexpected error occurred. Check the log for details."
     };
 }

@@ -73,7 +73,7 @@ public partial class SettingsViewModel : ObservableObject
         var opts = options.Value;
 
         General = new GeneralSettingsViewModel(
-            hotkeyService, logger, dispatcher, ScheduleSave, opts);
+            hotkeyService, logger, dispatcher, ScheduleSave, opts, vadModelManager);
 
         System = new SystemSettingsViewModel(
             autoStartService, persistenceService, ScheduleSave, opts, App.RestartApp);

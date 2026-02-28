@@ -8,6 +8,7 @@ using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Hotkey;
+using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
@@ -23,6 +24,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     private readonly ILogger _logger;
     private readonly IDispatcherService _dispatcher;
     private readonly Action _scheduleSave;
+    private readonly IVadModelManager _vadModelManager;
 
     // --- Dialog system ---
     [ObservableProperty] private bool _isDialogOpen;
@@ -70,6 +72,8 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty] private bool _vadEnabled;
     [ObservableProperty] private float _vadSilenceDuration = 1.5f;
     [ObservableProperty] private float _vadSensitivity = 0.5f;
+    [ObservableProperty] private bool _isVadModelDownloading;
+    [ObservableProperty] private string _vadDownloadStatus = "";
 
     public ObservableCollection<LanguageInfo> AvailableLanguages { get; } =
         new(SupportedLanguages.All.Select(l => new LanguageInfo(l.Code, l.Name, l.Flag)));
@@ -79,12 +83,14 @@ public partial class GeneralSettingsViewModel : ObservableObject
         ILogger logger,
         IDispatcherService dispatcher,
         Action scheduleSave,
-        WriteSpeechOptions options)
+        WriteSpeechOptions options,
+        IVadModelManager vadModelManager)
     {
         _hotkeyService = hotkeyService;
         _logger = logger;
         _dispatcher = dispatcher;
         _scheduleSave = scheduleSave;
+        _vadModelManager = vadModelManager;
 
         _hotkeyMethod = options.Hotkey.Method;
         _isLowLevelHookMode = options.Hotkey.Method == "LowLevelHook";
@@ -351,7 +357,39 @@ public partial class GeneralSettingsViewModel : ObservableObject
 
     // --- Voice Activity Detection ---
 
-    partial void OnVadEnabledChanged(bool value) => _scheduleSave();
+    partial void OnVadEnabledChanged(bool value)
+    {
+        _scheduleSave();
+        if (value && !_vadModelManager.IsModelDownloaded)
+            _ = DownloadVadModelAsync();
+    }
+
+    private async Task DownloadVadModelAsync()
+    {
+        IsVadModelDownloading = true;
+        VadDownloadStatus = "Downloading VAD model...";
+        try
+        {
+            var progress = new Progress<float>(p =>
+            {
+                _dispatcher.Invoke(() =>
+                    VadDownloadStatus = $"Downloading VAD model... {p * 100:F0}%");
+            });
+            await _vadModelManager.DownloadModelAsync(progress);
+            VadDownloadStatus = "";
+            _logger.LogInformation("VAD model auto-downloaded on enable");
+        }
+        catch (Exception ex)
+        {
+            VadDownloadStatus = $"Download failed: {ex.Message}";
+            _logger.LogError(ex, "Failed to auto-download VAD model");
+        }
+        finally
+        {
+            IsVadModelDownloading = false;
+        }
+    }
+
     partial void OnVadSilenceDurationChanged(float value) => _scheduleSave();
     partial void OnVadSensitivityChanged(float value) => _scheduleSave();
 

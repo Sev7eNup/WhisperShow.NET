@@ -5,6 +5,7 @@ using NSubstitute;
 using WriteSpeech.App.ViewModels.Settings;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Services.Hotkey;
+using WriteSpeech.Core.Services.ModelManagement;
 using WriteSpeech.Tests.TestHelpers;
 
 namespace WriteSpeech.Tests.ViewModels;
@@ -12,6 +13,7 @@ namespace WriteSpeech.Tests.ViewModels;
 public class GeneralSettingsViewModelTests
 {
     private readonly IGlobalHotkeyService _hotkeyService = Substitute.For<IGlobalHotkeyService>();
+    private readonly IVadModelManager _vadModelManager = Substitute.For<IVadModelManager>();
     private bool _saveCalled;
 
     private GeneralSettingsViewModel CreateViewModel(Action<WriteSpeechOptions>? configure = null)
@@ -24,7 +26,8 @@ public class GeneralSettingsViewModelTests
             NullLogger<GeneralSettingsViewModel>.Instance,
             new SynchronousDispatcherService(),
             () => _saveCalled = true,
-            options);
+            options,
+            _vadModelManager);
     }
 
     // --- WriteSettings ---
@@ -539,6 +542,41 @@ public class GeneralSettingsViewModelTests
         vm.WriteSettings(json);
 
         json["Audio"]!["VoiceActivity"]!["Enabled"]!.GetValue<bool>().Should().BeFalse();
+    }
+
+    // --- VAD Auto-Download ---
+
+    [Fact]
+    public void VadEnabled_WhenModelNotDownloaded_TriggersDownload()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(false);
+        var vm = CreateViewModel();
+
+        vm.VadEnabled = true;
+
+        _vadModelManager.Received(1).DownloadModelAsync(Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void VadEnabled_WhenModelAlreadyDownloaded_SkipsDownload()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(true);
+        var vm = CreateViewModel();
+
+        vm.VadEnabled = true;
+
+        _vadModelManager.DidNotReceive().DownloadModelAsync(Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void VadDisabled_DoesNotTriggerDownload()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(false);
+        var vm = CreateViewModel(o => o.Audio.VoiceActivity.Enabled = true);
+
+        vm.VadEnabled = false;
+
+        _vadModelManager.DidNotReceive().DownloadModelAsync(Arg.Any<IProgress<float>>(), Arg.Any<CancellationToken>());
     }
 }
 

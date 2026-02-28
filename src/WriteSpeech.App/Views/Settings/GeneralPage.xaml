@@ -195,13 +195,13 @@
                                Text="{Binding VadSensitivity, StringFormat={}{0:F1}}"/>
                 </Grid>
 
-                <!-- Model download hint -->
+                <!-- VAD model download status -->
                 <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"
-                        Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}"/>
+                        Visibility="{Binding IsVadModelDownloading, Converter={StaticResource BoolToVisibility}}"/>
                 <TextBlock Margin="20,8,20,12" FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
-                           Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                           Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}"
-                           Text="Requires Silero VAD model (~629 KB). Download it on the Models page."/>
+                           Foreground="{DynamicResource AccentBrush}" TextWrapping="Wrap"
+                           Visibility="{Binding IsVadModelDownloading, Converter={StaticResource BoolToVisibility}}"
+                           Text="{Binding VadDownloadStatus}"/>
             </StackPanel>
         </Border>
     </StackPanel>
