@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteSpeech.App.ViewModels.Settings;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services;
 using WriteSpeech.Core.Services.Configuration;
 using WriteSpeech.Core.Services.Hotkey;
@@ -83,7 +85,19 @@ public partial class SettingsViewModel : ObservableObject
 
         Statistics = new StatisticsViewModel(statsService);
         DictionarySnippets = new DictionarySnippetsViewModel(dictionaryService, snippetService, ScheduleSave, opts);
-        Modes = new ModesSettingsViewModel(modeService, ScheduleSave);
+        Modes = new ModesSettingsViewModel(modeService, ScheduleSave, opts);
+
+        Transcription.PropertyChanged += OnTranscriptionPropertyChanged;
+    }
+
+    private void OnTranscriptionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TranscriptionSettingsViewModel.CorrectionProvider))
+        {
+            var isOff = Transcription.CorrectionProvider == TextCorrectionProvider.Off;
+            DictionarySnippets.IsCorrectionOff = isOff;
+            Modes.IsCorrectionOff = isOff;
+        }
     }
 
     // --- Navigation ---

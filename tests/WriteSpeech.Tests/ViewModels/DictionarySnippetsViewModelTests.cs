@@ -3,6 +3,7 @@ using FluentAssertions;
 using NSubstitute;
 using WriteSpeech.App.ViewModels.Settings;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Models;
 using WriteSpeech.Core.Services.Snippets;
 using WriteSpeech.Core.Services.TextCorrection;
 
@@ -243,6 +244,33 @@ public class DictionarySnippetsViewModelTests
         vm.IsEditingSnippet.Should().BeFalse();
         vm.NewSnippetTrigger.Should().BeEmpty();
         vm.SnippetItems.Should().BeEmpty();
+    }
+
+    // --- IsCorrectionOff ---
+
+    [Fact]
+    public void Constructor_CorrectionOff_SetsIsCorrectionOffTrue()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Off);
+        vm.IsCorrectionOff.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_CorrectionEnabled_SetsIsCorrectionOffFalse()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.OpenAI);
+        vm.IsCorrectionOff.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsCorrectionOff_RaisesPropertyChanged()
+    {
+        var vm = CreateViewModel();
+        using var monitor = vm.Monitor();
+
+        vm.IsCorrectionOff = false;
+
+        monitor.Should().RaisePropertyChangeFor(x => x.IsCorrectionOff);
     }
 
     // --- AutoAddToDictionary ---
