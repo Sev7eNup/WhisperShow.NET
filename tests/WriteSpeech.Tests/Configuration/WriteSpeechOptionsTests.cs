@@ -199,6 +199,8 @@ public class WriteSpeechOptionsTests
     [InlineData(0)]
     [InlineData(5)]
     [InlineData(-1)]
+    [InlineData(7201)]
+    [InlineData(99999)]
     public void Validator_InvalidMaxRecordingSeconds_Fails(int seconds)
     {
         var validator = new WriteSpeechOptionsValidator();
@@ -208,6 +210,22 @@ public class WriteSpeechOptionsTests
 
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("MaxRecordingSeconds");
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(300)]
+    [InlineData(3600)]
+    [InlineData(7200)]
+    public void Validator_ValidMaxRecordingSeconds_Succeeds(int seconds)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.MaxRecordingSeconds = seconds;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
     }
 
     [Fact]

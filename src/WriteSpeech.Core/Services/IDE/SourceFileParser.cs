@@ -171,7 +171,14 @@ public static partial class SourceFileParser
             "authtoken", "auth_token", "bearertoken", "bearer_token",
             "clientsecret", "client_secret",
             "encryptionkey", "encryption_key", "signingkey", "signing_key",
-            "masterkey", "master_key"
+            "masterkey", "master_key",
+            "jwtsecret", "jwt_secret", "jwttoken", "jwt_token",
+            "oauthtoken", "oauth_token", "oauthsecret", "oauth_secret",
+            "github_token", "githubtoken", "gitlab_token", "gitlabtoken",
+            "aws_access_key", "aws_secret_key", "awsaccesskey", "awssecretkey",
+            "certificate_key", "certificatekey",
+            "database_password", "databasepassword", "dbpassword", "db_password",
+            "smtp_password", "smtppassword"
         };
 
     internal static bool IsSensitiveIdentifier(string value) => SensitiveIdentifiers.Contains(value);

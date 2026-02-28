@@ -1,4 +1,6 @@
 using System.ClientModel;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Audio;
@@ -33,7 +35,7 @@ public class OpenAiClientFactory
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("API key is not configured.");
 
-        var cacheKey = $"{apiKey}|{endpoint ?? ""}";
+        var cacheKey = CreateCacheKey(apiKey, endpoint);
 
         lock (_lock)
         {
@@ -61,4 +63,11 @@ public class OpenAiClientFactory
 
     public ChatClient GetChatClient(string model, string apiKey, string? endpoint) =>
         GetClient(apiKey, endpoint).GetChatClient(model);
+
+    internal static string CreateCacheKey(string apiKey, string? endpoint)
+    {
+        var input = $"{apiKey}|{endpoint ?? ""}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexStringLower(hash);
+    }
 }

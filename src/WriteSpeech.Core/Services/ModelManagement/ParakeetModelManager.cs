@@ -19,12 +19,12 @@ public class ParakeetModelManager : IParakeetModelManager
         ("Parakeet TDT 0.6B v2 (int8)", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8", 631_000_000),
     ];
 
-    private static readonly (string FileName, long SizeBytes)[] ModelFiles =
+    private static readonly (string FileName, long SizeBytes, string? Sha256)[] ModelFiles =
     [
-        ("encoder.int8.onnx", 622_000_000),
-        ("decoder.int8.onnx", 7_000_000),
-        ("joiner.int8.onnx", 2_000_000),
-        ("tokens.txt", 9_000),
+        ("encoder.int8.onnx", 622_000_000, "5c5b211a279e6cfc78b528e6cee6d05d1df3b0c5c26a889d3901c8d1d185d416"),
+        ("decoder.int8.onnx", 7_000_000, "a793c390f54bb5a0f3db9825b14b612ae81d8b3e3398fefe72a8ce98e5d05446"),
+        ("joiner.int8.onnx", 2_000_000, "574a3af8df9c2745aebc54f8485b1ec63a876d0f66bbb6244ff846c7ca1cdcd8"),
+        ("tokens.txt", 9_000, null), // not LFS-tracked, no hash available
     ];
 
     public string ModelDirectory => _optionsMonitor.CurrentValue.Parakeet.GetModelDirectory();
@@ -82,7 +82,7 @@ public class ParakeetModelManager : IParakeetModelManager
 
         using var httpClient = _downloadHelper.CreateClient(TimeSpan.FromMinutes(30));
 
-        foreach (var (fileName, fileSize) in ModelFiles)
+        foreach (var (fileName, fileSize, sha256) in ModelFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -106,7 +106,7 @@ public class ParakeetModelManager : IParakeetModelManager
             var fileProgress = new Progress<float>(p =>
                 progress?.Report((float)(captured + (long)(p * fileSize)) / totalSize));
 
-            await _downloadHelper.DownloadToFileAsync(stream, targetPath, fileSize, fileProgress, cancellationToken);
+            await _downloadHelper.DownloadToFileAsync(stream, targetPath, fileSize, fileProgress, cancellationToken, expectedSha256: sha256);
 
             downloadedSoFar += fileSize;
             progress?.Report((float)downloadedSoFar / totalSize);

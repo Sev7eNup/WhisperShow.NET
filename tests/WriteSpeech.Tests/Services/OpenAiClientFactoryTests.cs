@@ -175,4 +175,42 @@ public class OpenAiClientFactoryTests
 
         audioClient.Should().NotBeNull();
     }
+
+    // --- Security: Hashed cache key ---
+
+    [Fact]
+    public void CreateCacheKey_DoesNotContainRawApiKey()
+    {
+        var cacheKey = OpenAiClientFactory.CreateCacheKey(TestApiKey, null);
+
+        cacheKey.Should().NotContain("sk-test");
+        cacheKey.Should().NotContain(TestApiKey);
+    }
+
+    [Fact]
+    public void CreateCacheKey_DifferentKeys_ProduceDifferentHashes()
+    {
+        var key1 = OpenAiClientFactory.CreateCacheKey("key-A", null);
+        var key2 = OpenAiClientFactory.CreateCacheKey("key-B", null);
+
+        key1.Should().NotBe(key2);
+    }
+
+    [Fact]
+    public void CreateCacheKey_SameInputs_ProduceSameHash()
+    {
+        var key1 = OpenAiClientFactory.CreateCacheKey(TestApiKey, "https://api.example.com");
+        var key2 = OpenAiClientFactory.CreateCacheKey(TestApiKey, "https://api.example.com");
+
+        key1.Should().Be(key2);
+    }
+
+    [Fact]
+    public void CreateCacheKey_DifferentEndpoints_ProduceDifferentHashes()
+    {
+        var key1 = OpenAiClientFactory.CreateCacheKey(TestApiKey, "https://api.a.com");
+        var key2 = OpenAiClientFactory.CreateCacheKey(TestApiKey, "https://api.b.com");
+
+        key1.Should().NotBe(key2);
+    }
 }

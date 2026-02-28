@@ -208,7 +208,7 @@ public class OverlayViewModelTests : IDisposable
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
 
         vm.State.Should().Be(RecordingState.Error);
-        vm.ErrorMessage.Should().Contain("API error");
+        vm.ErrorMessage.Should().Contain("unexpected error");
     }
 
     // --- Text Correction ---
@@ -732,7 +732,7 @@ public class OverlayViewModelTests : IDisposable
         _transcriptionProvider.TranscribeAsync(Arg.Any<byte[]>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new TranscriptionResult { Text = "hello" });
 
-        var vm = CreateViewModel();
+        var vm = CreateViewModel(o => o.Overlay.ShowResultOverlay = true);
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
         await vm.ToggleRecordingCommand.ExecuteAsync(null);
 
@@ -936,7 +936,7 @@ public class OverlayViewModelTests : IDisposable
             _audioService, new IOException("Device lost"));
 
         vm.State.Should().Be(RecordingState.Error);
-        vm.ErrorMessage.Should().Contain("Device lost");
+        vm.ErrorMessage.Should().Contain("unexpected error");
     }
 
     [Fact]
@@ -1218,5 +1218,59 @@ public class OverlayViewModelTests : IDisposable
 
         public override ITextCorrectionService? GetProvider(TextCorrectionProvider provider) =>
             provider == TextCorrectionProvider.Off ? null : _provider;
+    }
+
+    // --- Security: Error message sanitization ---
+
+    [Fact]
+    public void SanitizeErrorMessage_HttpRequestException_ReturnsFriendlyMessage()
+    {
+        var ex = new System.Net.Http.HttpRequestException("Connection refused");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("Network error");
+        result.Should().NotContain("Connection refused");
+    }
+
+    [Fact]
+    public void SanitizeErrorMessage_TaskCanceledException_ReturnsFriendlyMessage()
+    {
+        var ex = new TaskCanceledException("The operation was canceled.");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("timed out");
+    }
+
+    [Fact]
+    public void SanitizeErrorMessage_ApiKeyException_ReturnsApiKeyMessage()
+    {
+        var ex = new InvalidOperationException("OpenAI API key is not configured.");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("API key");
+    }
+
+    [Fact]
+    public void SanitizeErrorMessage_HashMismatchException_ReturnsFriendlyMessage()
+    {
+        var ex = new InvalidOperationException("Downloaded file hash mismatch. Expected: abc, actual: def");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("corrupted");
+        result.Should().NotContain("abc");
+    }
+
+    [Fact]
+    public void SanitizeErrorMessage_MaxSizeException_ReturnsFriendlyMessage()
+    {
+        var ex = new InvalidOperationException("Audio file exceeds maximum size of 500 MB");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("too large");
+    }
+
+    [Fact]
+    public void SanitizeErrorMessage_UnknownException_ReturnsGenericMessage()
+    {
+        var ex = new ArgumentException("org-abc123 rate limit exceeded for /v1/audio/transcriptions");
+        var result = OverlayViewModel.SanitizeErrorMessage(ex);
+        result.Should().Contain("unexpected error");
+        result.Should().NotContain("org-abc123");
+        result.Should().NotContain("rate limit");
     }
 }

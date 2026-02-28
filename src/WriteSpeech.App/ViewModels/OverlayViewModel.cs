@@ -1,3 +1,4 @@
+using System.Net.Http;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -160,7 +161,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
                 _mutingService.UnmuteAll();
 
             _logger.LogError(ex, "Recording device error during active recording");
-            ErrorMessage = $"Recording device error: {ex.Message}";
+            ErrorMessage = $"Recording device error: {SanitizeErrorMessage(ex)}";
             State = RecordingState.Error;
             _soundEffects.PlayError();
             StartAutoDismissTimer();
@@ -278,7 +279,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             if (MuteWhileDictating)
                 _mutingService.UnmuteAll();
             _logger.LogError(ex, "Failed to start recording");
-            ErrorMessage = $"Recording failed: {ex.Message}";
+            ErrorMessage = $"Recording failed: {SanitizeErrorMessage(ex)}";
             State = RecordingState.Error;
             _soundEffects.PlayError();
             StartAutoDismissTimer();
@@ -418,7 +419,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         {
             _statsService.RecordError();
             _logger.LogError(ex, "Transcription failed");
-            ErrorMessage = $"Transcription failed: {ex.Message}";
+            ErrorMessage = $"Transcription failed: {SanitizeErrorMessage(ex)}";
             State = RecordingState.Error;
             _soundEffects.PlayError();
             StartAutoDismissTimer();
@@ -668,4 +669,17 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         // Ensure other apps are unmuted if we're disposed during recording
         try { _mutingService.UnmuteAll(); } catch { /* best-effort */ }
     }
+
+    internal static string SanitizeErrorMessage(Exception ex) => ex switch
+    {
+        HttpRequestException => "Network error — check your internet connection.",
+        TaskCanceledException => "Operation timed out.",
+        InvalidOperationException e when e.Message.Contains("API key", StringComparison.OrdinalIgnoreCase)
+            => "API key is not configured.",
+        InvalidOperationException e when e.Message.Contains("hash mismatch", StringComparison.OrdinalIgnoreCase)
+            => "Downloaded file is corrupted. Please try again.",
+        InvalidOperationException e when e.Message.Contains("maximum size", StringComparison.OrdinalIgnoreCase)
+            => "File is too large to process.",
+        _ => "An unexpected error occurred. Check the log for details."
+    };
 }

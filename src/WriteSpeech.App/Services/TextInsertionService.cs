@@ -69,8 +69,8 @@ public class TextInsertionService : ITextInsertionService
                     sent, inputs.Length);
             }
 
-            // Wait for the paste to complete before restoring
-            await Task.Delay(200);
+            // Wait for the paste to complete before restoring (shorter = less clipboard exposure)
+            await Task.Delay(100);
         }
         finally
         {

@@ -43,7 +43,7 @@ public partial class App : Application
         AddCudaLibraryPaths();
 
         // Single instance check
-        _mutex = new Mutex(true, "WriteSpeech-SingleInstance", out bool isNew);
+        _mutex = new Mutex(true, $@"Local\WriteSpeech-{Environment.UserName}", out bool isNew);
         if (!isNew)
         {
             MessageBox.Show("WriteSpeech is already running.", "WriteSpeech",
@@ -243,6 +243,30 @@ public partial class App : Application
             preloadService.PreloadCorrectionModel();
     }
 
+    private static readonly string[] TrustedCudaBasePaths =
+    [
+        @"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA",
+        @"C:\Program Files\NVIDIA Corporation",
+    ];
+
+    /// <summary>
+    /// Validates that a CUDA path is under a trusted NVIDIA installation directory.
+    /// Prevents DLL injection via user-controllable environment variables.
+    /// </summary>
+    internal static bool IsValidCudaPath(string path)
+    {
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+            return TrustedCudaBasePaths.Any(basePath =>
+                fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static void AddCudaLibraryPaths()
     {
         var candidates = new List<string>();
@@ -274,6 +298,12 @@ public partial class App : Application
 
         foreach (var candidate in candidates)
         {
+            if (!IsValidCudaPath(candidate))
+            {
+                Log.Warning("Skipping untrusted CUDA path: {Path}", candidate);
+                continue;
+            }
+
             var binX64 = Path.Combine(candidate, "bin", "x64");
             if (Directory.Exists(binX64) && !currentPath.Contains(binX64, StringComparison.OrdinalIgnoreCase))
                 additions.Add(binX64);

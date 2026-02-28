@@ -189,8 +189,8 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         if (options.Audio.SampleRate is < 8000 or > 48000)
             failures.Add($"Audio.SampleRate must be between 8000 and 48000 (got {options.Audio.SampleRate}).");
 
-        if (options.Audio.MaxRecordingSeconds < 10)
-            failures.Add($"Audio.MaxRecordingSeconds must be at least 10 (got {options.Audio.MaxRecordingSeconds}).");
+        if (options.Audio.MaxRecordingSeconds is < 10 or > 7200)
+            failures.Add($"Audio.MaxRecordingSeconds must be between 10 and 7200 (got {options.Audio.MaxRecordingSeconds}).");
 
         if (options.Overlay.AutoDismissSeconds < 1)
             failures.Add($"Overlay.AutoDismissSeconds must be at least 1 (got {options.Overlay.AutoDismissSeconds}).");

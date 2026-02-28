@@ -11,31 +11,35 @@ public class CorrectionModelManager : ICorrectionModelManager
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
     private readonly ModelDownloadHelper _downloadHelper;
 
-    private static readonly (string Name, string FileName, long SizeBytes, string DownloadUrl)[] KnownModels =
+    private static readonly (string Name, string FileName, long SizeBytes, string DownloadUrl, string? Sha256)[] KnownModels =
     [
         (
             "Gemma 3 1B IT",
             "google_gemma-3-1b-it-Q4_K_M.gguf",
             806_000_000L,
-            "https://huggingface.co/bartowski/google_gemma-3-1b-it-GGUF/resolve/main/google_gemma-3-1b-it-Q4_K_M.gguf"
+            "https://huggingface.co/bartowski/google_gemma-3-1b-it-GGUF/resolve/main/google_gemma-3-1b-it-Q4_K_M.gguf",
+            "fa976b45909413d8d418c841e6800bdb28bfc73a5cae99cfb30deb2c4c7da87d"
         ),
         (
             "Gemma 2 2B IT",
             "gemma-2-2b-it-Q4_K_M.gguf",
             1_600_000_000L,
-            "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
+            "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf",
+            "90f9c2316393fb452b47988ffa7a411f0891e2c1a7178ae868ac4f70f96f7c8d"
         ),
         (
             "Qwen 2.5 3B Instruct",
             "qwen2.5-3b-instruct-q4_k_m.gguf",
             2_000_000_000L,
-            "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
+            "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf",
+            "5ae0c201348e276d543a1e5c0e053370e32415774095c677319f62b302b1620a"
         ),
         (
             "Phi-3.5 Mini 3.8B",
             "Phi-3.5-mini-instruct-Q4_K_M.gguf",
             2_400_000_000L,
-            "https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf"
+            "https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf",
+            "216e0385d8d2da14827e44b4482f0d2885e041d99bb1103c60092eedd2da1284"
         ),
     ];
 
@@ -88,7 +92,7 @@ public class CorrectionModelManager : ICorrectionModelManager
         var contentLength = response.Content.Headers.ContentLength ?? modelInfo.SizeBytes;
         await using var downloadStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
-        await _downloadHelper.DownloadToFileAsync(downloadStream, targetPath, contentLength, progress, cancellationToken);
+        await _downloadHelper.DownloadToFileAsync(downloadStream, targetPath, contentLength, progress, cancellationToken, expectedSha256: modelInfo.Sha256);
 
         _logger.LogInformation("Correction model {Name} downloaded successfully", modelInfo.Name);
     }

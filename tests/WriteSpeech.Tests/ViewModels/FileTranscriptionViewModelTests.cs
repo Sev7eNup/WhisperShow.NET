@@ -200,7 +200,7 @@ public class FileTranscriptionViewModelTests
 
         await vm.TranscribeCommand.ExecuteAsync(null);
 
-        vm.ErrorMessage.Should().Contain("test error");
+        vm.ErrorMessage.Should().Contain("unexpected error");
         vm.IsTranscribing.Should().BeFalse();
     }
 

@@ -10,6 +10,8 @@ namespace WriteSpeech.App.Services;
 
 public class AudioFileReader : IAudioFileReader
 {
+    internal const long MaxAudioFileSize = 500 * 1024 * 1024; // 500 MB
+
     private readonly ILogger<AudioFileReader> _logger;
 
     public AudioFileReader(ILogger<AudioFileReader> logger)
@@ -20,6 +22,11 @@ public class AudioFileReader : IAudioFileReader
     public async Task<byte[]> ReadAsWavAsync(string filePath, CancellationToken ct = default)
     {
         _logger.LogInformation("Reading audio file as WAV: {FilePath}", filePath);
+
+        var fileInfo = new FileInfo(filePath);
+        if (fileInfo.Length > MaxAudioFileSize)
+            throw new InvalidOperationException(
+                $"Audio file exceeds maximum size of {MaxAudioFileSize / (1024 * 1024)} MB ({fileInfo.Length / (1024 * 1024)} MB).");
 
         return await Task.Run(() =>
         {
@@ -77,6 +84,7 @@ public class AudioFileReader : IAudioFileReader
         var oggIn = new OpusOggReadStream(opusDecoder, fileStream);
 
         var pcmStream = new MemoryStream();
+        long totalBytes = 0;
         while (oggIn.HasNextPacket)
         {
             var samples = oggIn.DecodeNextPacket();
@@ -85,6 +93,9 @@ public class AudioFileReader : IAudioFileReader
             {
                 var bytes = BitConverter.GetBytes(sample);
                 pcmStream.Write(bytes, 0, bytes.Length);
+                totalBytes += bytes.Length;
+                if (totalBytes > MaxAudioFileSize)
+                    throw new InvalidOperationException("Decoded audio exceeds maximum size limit.");
             }
         }
 
