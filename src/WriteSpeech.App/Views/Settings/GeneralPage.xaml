@@ -149,7 +149,7 @@
                                    Margin="0,3,0,0"/>
                     </StackPanel>
                     <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
-                                  IsChecked="{Binding VadEnabled}" Command="{Binding ToggleVadCommand}"
+                                  IsChecked="{Binding VadEnabled}"
                                   VerticalAlignment="Center"/>
                 </Grid>
 

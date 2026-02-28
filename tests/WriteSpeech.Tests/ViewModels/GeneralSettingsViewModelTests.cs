@@ -480,11 +480,11 @@ public class GeneralSettingsViewModelTests
     }
 
     [Fact]
-    public void ToggleVad_TriggersSave()
+    public void VadEnabled_Change_TriggersSave()
     {
         var vm = CreateViewModel();
 
-        vm.ToggleVadCommand.Execute(null);
+        vm.VadEnabled = true;
 
         _saveCalled.Should().BeTrue();
         vm.VadEnabled.Should().BeTrue();
