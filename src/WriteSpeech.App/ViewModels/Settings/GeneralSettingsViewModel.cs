@@ -66,6 +66,11 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isAutoDetectLanguage;
     [ObservableProperty] private string? _pendingLanguageCode;
 
+    // --- Voice Activity Detection ---
+    [ObservableProperty] private bool _vadEnabled;
+    [ObservableProperty] private float _vadSilenceDuration = 1.5f;
+    [ObservableProperty] private float _vadSensitivity = 0.5f;
+
     public ObservableCollection<LanguageInfo> AvailableLanguages { get; } =
         new(SupportedLanguages.All.Select(l => new LanguageInfo(l.Code, l.Name, l.Flag)));
 
@@ -92,6 +97,9 @@ public partial class GeneralSettingsViewModel : ObservableObject
         _selectedMicrophoneIndex = options.Audio.DeviceIndex;
         _selectedLanguageCode = options.Language;
         _isAutoDetectLanguage = options.Language == null;
+        _vadEnabled = options.Audio.VoiceActivity.Enabled;
+        _vadSilenceDuration = options.Audio.VoiceActivity.SilenceDurationSeconds;
+        _vadSensitivity = options.Audio.VoiceActivity.Threshold;
 
         LoadMicrophones();
         UpdateDisplayTexts();
@@ -341,6 +349,18 @@ public partial class GeneralSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    // --- Voice Activity Detection ---
+
+    [RelayCommand]
+    private void ToggleVad()
+    {
+        VadEnabled = !VadEnabled;
+        _scheduleSave();
+    }
+
+    partial void OnVadSilenceDurationChanged(float value) => _scheduleSave();
+    partial void OnVadSensitivityChanged(float value) => _scheduleSave();
+
     // --- Persistence ---
 
     [RelayCommand]
@@ -375,6 +395,12 @@ public partial class GeneralSettingsViewModel : ObservableObject
         ptt["Key"] = PttKey;
         ptt["MouseButton"] = PttMouseButton;
 
-        SettingsViewModel.EnsureObject(section, "Audio")["DeviceIndex"] = SelectedMicrophoneIndex;
+        var audio = SettingsViewModel.EnsureObject(section, "Audio");
+        audio["DeviceIndex"] = SelectedMicrophoneIndex;
+
+        var vad = SettingsViewModel.EnsureObject(audio, "VoiceActivity");
+        vad["Enabled"] = VadEnabled;
+        vad["SilenceDurationSeconds"] = VadSilenceDuration;
+        vad["Threshold"] = VadSensitivity;
     }
 }

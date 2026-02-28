@@ -179,6 +179,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
         IParakeetModelManager parakeetModelManager,
+        IVadModelManager vadModelManager,
         IModelPreloadService preloadService,
         ILogger logger,
         IDispatcherService dispatcher,
@@ -234,7 +235,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         UpdateProviderApiKeyDisplay(CustomCorrectionApiKey, v => CustomCorrectionApiKeyDisplay = v);
 
         Models = new ModelManagementViewModel(
-            modelManager, correctionModelManager, parakeetModelManager,
+            modelManager, correctionModelManager, parakeetModelManager, vadModelManager,
             preloadService, logger, dispatcher, scheduleSave,
             () => TranscriptionModel,
             name => { TranscriptionModel = name; _localModelName = name; },
@@ -534,6 +535,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         Models.RefreshModels();
         Models.RefreshCorrectionModels();
         Models.RefreshParakeetModels();
+        Models.RefreshVadModel();
     }
 
     // --- Persistence ---

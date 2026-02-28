@@ -14,6 +14,7 @@ public class ModelManagementViewModelTests
     private readonly IModelManager _modelManager;
     private readonly ICorrectionModelManager _correctionModelManager;
     private readonly IParakeetModelManager _parakeetModelManager;
+    private readonly IVadModelManager _vadModelManager;
     private readonly IModelPreloadService _preloadService;
     private readonly Action _scheduleSave;
 
@@ -28,6 +29,7 @@ public class ModelManagementViewModelTests
         _modelManager = Substitute.For<IModelManager>();
         _correctionModelManager = Substitute.For<ICorrectionModelManager>();
         _parakeetModelManager = Substitute.For<IParakeetModelManager>();
+        _vadModelManager = Substitute.For<IVadModelManager>();
         _preloadService = Substitute.For<IModelPreloadService>();
         _scheduleSave = () => _saveCalled = true;
 
@@ -42,6 +44,7 @@ public class ModelManagementViewModelTests
             _modelManager,
             _correctionModelManager,
             _parakeetModelManager,
+            _vadModelManager,
             _preloadService,
             NullLogger.Instance,
             new SynchronousDispatcherService(),
@@ -377,5 +380,67 @@ public class ModelManagementViewModelTests
         item.IsDownloaded.Should().BeFalse();
         item.IsActive.Should().BeFalse();
         item.StatusText.Should().Be("Not downloaded");
+    }
+
+    // --- VAD Model ---
+
+    [Fact]
+    public void RefreshVadModel_WhenNotDownloaded_ShowsNotDownloaded()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(false);
+
+        var vm = CreateViewModel();
+        vm.RefreshVadModel();
+
+        vm.IsVadModelDownloaded.Should().BeFalse();
+        vm.VadModelStatusText.Should().Be("Not downloaded");
+    }
+
+    [Fact]
+    public void RefreshVadModel_WhenDownloaded_ShowsDownloaded()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(true);
+
+        var vm = CreateViewModel();
+        vm.RefreshVadModel();
+
+        vm.IsVadModelDownloaded.Should().BeTrue();
+        vm.VadModelStatusText.Should().Be("Downloaded");
+    }
+
+    [Fact]
+    public void CanDownloadVadModel_WhenNotDownloadedAndNotDownloading_IsTrue()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(false);
+
+        var vm = CreateViewModel();
+        vm.RefreshVadModel();
+
+        vm.CanDownloadVadModel.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanDownloadVadModel_WhenDownloaded_IsFalse()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(true);
+
+        var vm = CreateViewModel();
+        vm.RefreshVadModel();
+
+        vm.CanDownloadVadModel.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DeleteVadModel_CallsManager()
+    {
+        _vadModelManager.IsModelDownloaded.Returns(true);
+
+        var vm = CreateViewModel();
+        vm.RefreshVadModel();
+        vm.DeleteVadModelCommand.Execute(null);
+
+        _vadModelManager.Received(1).DeleteModel();
+        vm.IsVadModelDownloaded.Should().BeFalse();
+        vm.VadModelStatusText.Should().Be("Not downloaded");
     }
 }

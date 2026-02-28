@@ -521,4 +521,121 @@ public class WriteSpeechOptionsTests
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("NumThreads");
     }
+
+    // --- Voice Activity Detection Options ---
+
+    [Fact]
+    public void VoiceActivityOptions_DefaultValues()
+    {
+        var vad = new VoiceActivityOptions();
+
+        vad.Enabled.Should().BeFalse();
+        vad.SilenceDurationSeconds.Should().Be(1.5f);
+        vad.MinRecordingSeconds.Should().Be(0.5f);
+        vad.Threshold.Should().Be(0.5f);
+        vad.PreBufferSeconds.Should().Be(0.5f);
+    }
+
+    [Fact]
+    public void VoiceActivityOptions_GetModelDirectory_HasDefault()
+    {
+        var vad = new VoiceActivityOptions();
+        var dir = vad.GetModelDirectory();
+
+        dir.Should().Contain("WriteSpeech");
+        dir.Should().Contain("vad-models");
+    }
+
+    [Fact]
+    public void Validator_VadDisabled_AcceptsInvalidValues()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.VoiceActivity.Enabled = false;
+        options.Audio.VoiceActivity.SilenceDurationSeconds = 0.01f; // Would be invalid if enabled
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(0.4f)]
+    [InlineData(11.0f)]
+    public void Validator_VadEnabled_InvalidSilenceDuration_Fails(float duration)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.VoiceActivity.Enabled = true;
+        options.Audio.VoiceActivity.SilenceDurationSeconds = duration;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("SilenceDuration");
+    }
+
+    [Theory]
+    [InlineData(0.5f)]
+    [InlineData(1.5f)]
+    [InlineData(10.0f)]
+    public void Validator_VadEnabled_ValidSilenceDuration_Succeeds(float duration)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.VoiceActivity.Enabled = true;
+        options.Audio.VoiceActivity.SilenceDurationSeconds = duration;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(0.05f)]
+    [InlineData(0.95f)]
+    public void Validator_VadEnabled_InvalidThreshold_Fails(float threshold)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.VoiceActivity.Enabled = true;
+        options.Audio.VoiceActivity.Threshold = threshold;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("Threshold");
+    }
+
+    [Theory]
+    [InlineData(0.1f)]
+    [InlineData(0.5f)]
+    [InlineData(0.9f)]
+    public void Validator_VadEnabled_ValidThreshold_Succeeds(float threshold)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.VoiceActivity.Enabled = true;
+        options.Audio.VoiceActivity.Threshold = threshold;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(0.05f)]
+    [InlineData(2.5f)]
+    public void Validator_VadEnabled_InvalidPreBufferSeconds_Fails(float preBuffer)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Audio.VoiceActivity.Enabled = true;
+        options.Audio.VoiceActivity.PreBufferSeconds = preBuffer;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("PreBuffer");
+    }
 }

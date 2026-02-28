@@ -15,6 +15,7 @@ public class TranscriptionSettingsViewModelTests
     private readonly IModelManager _modelManager = Substitute.For<IModelManager>();
     private readonly ICorrectionModelManager _correctionModelManager = Substitute.For<ICorrectionModelManager>();
     private readonly IParakeetModelManager _parakeetModelManager = Substitute.For<IParakeetModelManager>();
+    private readonly IVadModelManager _vadModelManager = Substitute.For<IVadModelManager>();
     private readonly IModelPreloadService _preloadService = Substitute.For<IModelPreloadService>();
     private bool _saveCalled;
 
@@ -27,7 +28,7 @@ public class TranscriptionSettingsViewModelTests
         };
         configure?.Invoke(options);
         return new TranscriptionSettingsViewModel(
-            _modelManager, _correctionModelManager, _parakeetModelManager, _preloadService,
+            _modelManager, _correctionModelManager, _parakeetModelManager, _vadModelManager, _preloadService,
             NullLogger<TranscriptionSettingsViewModel>.Instance,
             new SynchronousDispatcherService(),
             () => _saveCalled = true,

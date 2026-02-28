@@ -118,6 +118,8 @@ public partial class App : Application
                 services.AddSingleton<IModelManager, ModelManager>();
                 services.AddSingleton<ICorrectionModelManager, CorrectionModelManager>();
                 services.AddSingleton<IParakeetModelManager, ParakeetModelManager>();
+                services.AddSingleton<IVadModelManager, VadModelManager>();
+                services.AddSingleton<IVoiceActivityService, VoiceActivityService>();
                 services.AddSingleton<IModelPreloadService, ModelPreloadService>();
                 services.AddSingleton<IDictionaryService, DictionaryService>();
                 services.AddSingleton<IIDEContextService, IDEContextService>();
@@ -390,6 +392,8 @@ public partial class App : Application
 
             var audioService = _host.Services.GetService<IAudioRecordingService>();
             (audioService as IDisposable)?.Dispose();
+
+            _host.Services.GetService<IVoiceActivityService>()?.Dispose();
 
             _host.Services.GetService<IModeService>()?.Dispose();
 

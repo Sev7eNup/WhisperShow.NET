@@ -25,6 +25,7 @@
         <!-- Wave stroke brushes -->
         <SolidColorBrush x:Key="RecordingWaveStroke" Color="#CCEF5350"/>
         <SolidColorBrush x:Key="CommandWaveStroke" Color="#CC7986CB"/>
+        <SolidColorBrush x:Key="ListeningBorderBrush" Color="#CC4DD0E1"/>
 
         <!-- Text colors -->
         <SolidColorBrush x:Key="TextBrush" Color="#FFFFFFFF"/>
@@ -155,6 +156,30 @@
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border Background="Transparent" Width="44" Height="44"/>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <!-- Listening State (VAD: waiting for speech) -->
+                    <Grid x:Name="ListeningPanel" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" IsHitTestVisible="False">
+                            <Path x:Name="ListeningMicIcon"
+                                  Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
+                                  Fill="{StaticResource TextBrush}" Stretch="Uniform"
+                                  Width="12" Height="12"
+                                  VerticalAlignment="Center" Opacity="0.7"/>
+                            <TextBlock Text="Listening..."
+                                       Foreground="{StaticResource SubtleBrush}"
+                                       FontSize="10" FontFamily="Segoe UI"
+                                       VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <Button Click="RecordButton_Click" Cursor="Hand"
+                                BorderThickness="0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" MinWidth="90" MinHeight="36"/>
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>

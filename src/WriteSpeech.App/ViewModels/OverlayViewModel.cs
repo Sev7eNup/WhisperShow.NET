@@ -47,6 +47,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private string? _selectedText;
     private bool _isCommandMode;
     private bool _isTransitioning;
+    private bool _isVadListeningLoop;
     private CancellationTokenSource? _autoDismissCts;
     private CancellationTokenSource? _transcriptionCts;
     private DateTime _recordingStartTime;
@@ -141,6 +142,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _audioService.AudioLevelChanged += OnAudioLevelChanged;
         _audioService.RecordingError += OnRecordingError;
         _audioService.MaxDurationReached += OnMaxDurationReached;
+        _audioService.SpeechStarted += OnAudioSpeechStarted;
+        _audioService.SilenceDetected += OnAudioSilenceDetected;
 
         _optionsChangeRegistration = _optionsMonitor.OnChange(OnOptionsChanged);
 
@@ -154,8 +157,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     {
         _dispatcher.Invoke(() =>
         {
-            if (State != RecordingState.Recording) return;
+            if (State is not (RecordingState.Recording or RecordingState.Listening)) return;
 
+            _isVadListeningLoop = false;
             StopRecordingTimer();
             if (MuteWhileDictating)
                 _mutingService.UnmuteAll();
@@ -207,8 +211,14 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
         switch (State)
         {
+            case RecordingState.Idle when Options.Audio.VoiceActivity.Enabled:
+                await StartListeningModeAsync();
+                break;
             case RecordingState.Idle:
                 await StartRecordingAsync();
+                break;
+            case RecordingState.Listening:
+                StopListeningMode();
                 break;
             case RecordingState.Recording:
                 await StopAndTranscribeAsync();
@@ -290,6 +300,94 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         }
     }
 
+    private async Task StartListeningModeAsync()
+    {
+        CancelAutoDismissTimer();
+        _isTransitioning = true;
+        try
+        {
+            _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
+            _activeProcessName = _windowFocusService.GetProcessName(_previousForegroundWindow);
+
+            PrepareIDEContext();
+
+            if (MuteWhileDictating)
+                _mutingService.MuteOtherApplications();
+
+            _isVadListeningLoop = true;
+            State = RecordingState.Listening;
+            await _audioService.StartListeningAsync();
+
+            _logger.LogInformation("State: Idle -> Listening (VAD mode)");
+        }
+        catch (Exception ex)
+        {
+            _isVadListeningLoop = false;
+            if (MuteWhileDictating)
+                _mutingService.UnmuteAll();
+            _logger.LogError(ex, "Failed to start listening");
+            ErrorMessage = $"Listening failed: {SanitizeErrorMessage(ex)}";
+            State = RecordingState.Error;
+            _soundEffects.PlayError();
+            StartAutoDismissTimer();
+        }
+        finally
+        {
+            _isTransitioning = false;
+        }
+    }
+
+    private void StopListeningMode()
+    {
+        _isVadListeningLoop = false;
+        _audioService.StopListening();
+        StopRecordingTimer();
+        if (MuteWhileDictating)
+            _mutingService.UnmuteAll();
+        State = RecordingState.Idle;
+        _logger.LogInformation("State: Listening -> Idle (manual stop)");
+    }
+
+    private void OnAudioSpeechStarted(object? sender, EventArgs e)
+    {
+        _dispatcher.Invoke(() =>
+        {
+            if (State != RecordingState.Listening) return;
+
+            _soundEffects.PlayStartRecording();
+            State = RecordingState.Recording;
+            StartRecordingTimer();
+            _logger.LogInformation("State: Listening -> Recording (VAD speech detected)");
+        });
+    }
+
+    private async void OnAudioSilenceDetected(object? sender, EventArgs e)
+    {
+        try
+        {
+            await _dispatcher.InvokeAsync(async () =>
+            {
+                if (State != RecordingState.Recording) return;
+
+                var elapsed = (DateTime.UtcNow - _recordingStartTime).TotalSeconds;
+                var minDuration = Options.Audio.VoiceActivity.MinRecordingSeconds;
+                if (elapsed < minDuration)
+                {
+                    _logger.LogDebug("Silence detected but recording too short ({Elapsed:F1}s < {Min}s), ignoring",
+                        elapsed, minDuration);
+                    return;
+                }
+
+                _logger.LogInformation("VAD: Auto-stopping recording after silence");
+                await StopAndTranscribeAsync();
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Silence detection handler failed");
+        }
+    }
+
     private async Task StopAndTranscribeAsync()
     {
         _isTransitioning = true;
@@ -313,6 +411,23 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             if (audioData.Length < 1000)
             {
                 _logger.LogWarning("Recording too short ({Size} bytes), discarding", audioData.Length);
+                if (_isVadListeningLoop)
+                {
+                    try
+                    {
+                        await _audioService.StartListeningAsync();
+                        State = RecordingState.Listening;
+                        _logger.LogInformation("State: Transcribing -> Listening (too short, VAD loop)");
+                    }
+                    catch (Exception listenEx)
+                    {
+                        _logger.LogWarning(listenEx, "Failed to restart listening after short recording");
+                        _isVadListeningLoop = false;
+                        if (MuteWhileDictating) _mutingService.UnmuteAll();
+                        State = RecordingState.Idle;
+                    }
+                    return;
+                }
                 ErrorMessage = "Recording too short. Please try again.";
                 State = RecordingState.Error;
                 StartAutoDismissTimer();
@@ -379,6 +494,24 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             if (string.IsNullOrWhiteSpace(text))
             {
                 _logger.LogWarning("Transcription returned empty text");
+                if (_isVadListeningLoop)
+                {
+                    // VAD: empty result is expected (e.g., brief noise), restart listening
+                    try
+                    {
+                        await _audioService.StartListeningAsync();
+                        State = RecordingState.Listening;
+                        _logger.LogInformation("State: Transcribing -> Listening (empty result, VAD loop)");
+                    }
+                    catch (Exception listenEx)
+                    {
+                        _logger.LogWarning(listenEx, "Failed to restart listening after empty result");
+                        _isVadListeningLoop = false;
+                        if (MuteWhileDictating) _mutingService.UnmuteAll();
+                        State = RecordingState.Idle;
+                    }
+                    return;
+                }
                 ErrorMessage = "No speech detected. Please try again.";
                 State = RecordingState.Error;
                 StartAutoDismissTimer();
@@ -397,7 +530,27 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             // Auto-insert into the previously focused window
             await InsertTextAsync();
 
-            if (Options.Overlay.ShowResultOverlay)
+            if (_isVadListeningLoop)
+            {
+                // VAD listening loop: restart listening for next utterance
+                try
+                {
+                    TranscribedText = null;
+                    StreamingText = null;
+                    await _audioService.StartListeningAsync();
+                    State = RecordingState.Listening;
+                    _logger.LogInformation("State: Transcribing -> Listening (VAD loop)");
+                }
+                catch (Exception listenEx)
+                {
+                    _logger.LogWarning(listenEx, "Failed to restart listening, falling back to Idle");
+                    _isVadListeningLoop = false;
+                    if (MuteWhileDictating)
+                        _mutingService.UnmuteAll();
+                    State = RecordingState.Idle;
+                }
+            }
+            else if (Options.Overlay.ShowResultOverlay)
             {
                 // Show result panel with transcribed text, auto-dismiss after configured timeout
                 State = RecordingState.Result;
@@ -413,10 +566,16 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         catch (OperationCanceledException)
         {
             _logger.LogInformation("Transcription cancelled");
+            if (_isVadListeningLoop)
+                _isVadListeningLoop = false;
+            if (MuteWhileDictating)
+                _mutingService.UnmuteAll();
             State = RecordingState.Idle;
         }
         catch (Exception ex)
         {
+            if (_isVadListeningLoop)
+                _isVadListeningLoop = false;
             _statsService.RecordError();
             _logger.LogError(ex, "Transcription failed");
             ErrorMessage = $"Transcription failed: {SanitizeErrorMessage(ex)}";
@@ -519,6 +678,15 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _selectedText = null;
         _isCommandMode = false;
         IsCommandModeActive = false;
+
+        if (_isVadListeningLoop)
+        {
+            _isVadListeningLoop = false;
+            _audioService.StopListening();
+        }
+        if (MuteWhileDictating && previousState is RecordingState.Listening or RecordingState.Recording)
+            _mutingService.UnmuteAll();
+
         State = RecordingState.Idle;
         _logger.LogDebug("Result dismissed (was {PreviousState})", previousState);
     }
@@ -655,6 +823,8 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _audioService.AudioLevelChanged -= OnAudioLevelChanged;
         _audioService.RecordingError -= OnRecordingError;
         _audioService.MaxDurationReached -= OnMaxDurationReached;
+        _audioService.SpeechStarted -= OnAudioSpeechStarted;
+        _audioService.SilenceDetected -= OnAudioSilenceDetected;
         _transcriptionCts?.Cancel();
         _transcriptionCts?.Dispose();
         _transcriptionCts = null;

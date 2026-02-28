@@ -14,6 +14,7 @@ public partial class ModelManagementViewModel : ObservableObject
     private readonly IModelManager _modelManager;
     private readonly ICorrectionModelManager _correctionModelManager;
     private readonly IParakeetModelManager _parakeetModelManager;
+    private readonly IVadModelManager _vadModelManager;
     private readonly IModelPreloadService _preloadService;
     private readonly ILogger _logger;
     private readonly IDispatcherService _dispatcher;
@@ -33,10 +34,21 @@ public partial class ModelManagementViewModel : ObservableObject
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];
     public ObservableCollection<ParakeetModelItemViewModel> ParakeetModelItems { get; } = [];
 
+    // --- VAD Model ---
+    [ObservableProperty] private bool _isVadModelDownloaded;
+    [ObservableProperty] private bool _isVadModelDownloading;
+    [ObservableProperty] private string _vadModelStatusText = "";
+    [ObservableProperty] private float _vadModelDownloadProgress;
+    public bool CanDownloadVadModel => !IsVadModelDownloaded && !IsVadModelDownloading;
+
+    partial void OnIsVadModelDownloadedChanged(bool value) => OnPropertyChanged(nameof(CanDownloadVadModel));
+    partial void OnIsVadModelDownloadingChanged(bool value) => OnPropertyChanged(nameof(CanDownloadVadModel));
+
     public ModelManagementViewModel(
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
         IParakeetModelManager parakeetModelManager,
+        IVadModelManager vadModelManager,
         IModelPreloadService preloadService,
         ILogger logger,
         IDispatcherService dispatcher,
@@ -53,6 +65,7 @@ public partial class ModelManagementViewModel : ObservableObject
         _modelManager = modelManager;
         _correctionModelManager = correctionModelManager;
         _parakeetModelManager = parakeetModelManager;
+        _vadModelManager = vadModelManager;
         _preloadService = preloadService;
         _logger = logger;
         _dispatcher = dispatcher;
@@ -361,6 +374,68 @@ public partial class ModelManagementViewModel : ObservableObject
         {
             item.StatusText = $"Error: {ex.Message}";
             _logger.LogError(ex, "Failed to delete Parakeet model {Name}", item.Name);
+        }
+    }
+
+    // --- VAD Model ---
+
+    public void RefreshVadModel()
+    {
+        IsVadModelDownloaded = _vadModelManager.IsModelDownloaded;
+        VadModelStatusText = IsVadModelDownloaded ? "Downloaded" : "Not downloaded";
+    }
+
+    [RelayCommand]
+    private async Task DownloadVadModel()
+    {
+        if (IsVadModelDownloading) return;
+
+        IsVadModelDownloading = true;
+        VadModelStatusText = "Downloading...";
+        VadModelDownloadProgress = 0;
+
+        try
+        {
+            var progress = new Progress<float>(p =>
+            {
+                _dispatcher.Invoke(() =>
+                {
+                    VadModelDownloadProgress = p;
+                    VadModelStatusText = $"Downloading... {p * 100:F0}%";
+                });
+            });
+
+            await _vadModelManager.DownloadModelAsync(progress);
+
+            IsVadModelDownloaded = true;
+            VadModelStatusText = "Downloaded";
+            _logger.LogInformation("Silero VAD model downloaded successfully");
+        }
+        catch (Exception ex)
+        {
+            VadModelStatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to download Silero VAD model");
+        }
+        finally
+        {
+            IsVadModelDownloading = false;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteVadModel()
+    {
+        try
+        {
+            _vadModelManager.DeleteModel();
+            IsVadModelDownloaded = false;
+            VadModelStatusText = "Not downloaded";
+            _logger.LogInformation("Silero VAD model deleted");
+        }
+        catch (Exception ex)
+        {
+            VadModelStatusText = $"Error: {ex.Message}";
+            _logger.LogError(ex, "Failed to delete Silero VAD model");
         }
     }
 

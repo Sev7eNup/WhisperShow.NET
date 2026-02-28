@@ -357,6 +357,7 @@ public partial class OverlayWindow : Window
 
         // Hide all panels
         IdlePanel.Visibility = Visibility.Collapsed;
+        ListeningPanel.Visibility = Visibility.Collapsed;
         RecordingPanel.Visibility = Visibility.Collapsed;
         TranscribingPanel.Visibility = Visibility.Collapsed;
         ResultPanel.Visibility = Visibility.Collapsed;
@@ -365,8 +366,8 @@ public partial class OverlayWindow : Window
         // Auto-show/hide for non-always-visible mode
         if (!_viewModel.IsOverlayAlwaysVisible)
         {
-            if (state is RecordingState.Recording or RecordingState.Transcribing
-                or RecordingState.Result or RecordingState.Error)
+            if (state is RecordingState.Listening or RecordingState.Recording
+                or RecordingState.Transcribing or RecordingState.Result or RecordingState.Error)
             {
                 if (!IsVisible)
                 {
@@ -395,6 +396,10 @@ public partial class OverlayWindow : Window
                 };
                 BubbleScale.BeginAnimation(ScaleTransform.ScaleXProperty, resetScale);
                 BubbleScale.BeginAnimation(ScaleTransform.ScaleYProperty, resetScale);
+                break;
+            case RecordingState.Listening:
+                ListeningPanel.Visibility = Visibility.Visible;
+                AnimateStateTransition();
                 break;
             case RecordingState.Recording:
                 RecordingPanel.Visibility = Visibility.Visible;
@@ -426,6 +431,12 @@ public partial class OverlayWindow : Window
 
         switch (state)
         {
+            case RecordingState.Listening:
+                GlassPill.Background = _glassBackground;
+                StartBorderGlow(
+                    Color.FromArgb(0xCC, 0x4D, 0xD0, 0xE1),
+                    Color.FromArgb(0x60, 0x4D, 0xD0, 0xE1));
+                break;
             case RecordingState.Recording when _viewModel.IsCommandModeActive:
                 GlassPill.Background = _glassBackground;
                 StartBorderGlow(

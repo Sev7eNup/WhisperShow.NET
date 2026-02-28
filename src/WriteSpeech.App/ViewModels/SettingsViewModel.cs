@@ -60,6 +60,7 @@ public partial class SettingsViewModel : ObservableObject
         IModelManager modelManager,
         ICorrectionModelManager correctionModelManager,
         IParakeetModelManager parakeetModelManager,
+        IVadModelManager vadModelManager,
         IModelPreloadService preloadService,
         IAutoStartService autoStartService,
         IDispatcherService dispatcher,
@@ -78,7 +79,7 @@ public partial class SettingsViewModel : ObservableObject
             autoStartService, persistenceService, ScheduleSave, opts, App.RestartApp);
 
         Transcription = new TranscriptionSettingsViewModel(
-            modelManager, correctionModelManager, parakeetModelManager,
+            modelManager, correctionModelManager, parakeetModelManager, vadModelManager,
             preloadService, logger, dispatcher, ScheduleSave, opts);
 
         Integrations = new IntegrationsSettingsViewModel(ScheduleSave, opts);

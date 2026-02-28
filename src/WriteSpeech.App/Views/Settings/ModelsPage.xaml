@@ -923,5 +923,40 @@
         </Border>
         </StackPanel>
         </StackPanel>
+
+        <!-- ===== Voice Activity Detection Model ===== -->
+        <TextBlock Text="Voice Activity Detection" Style="{StaticResource GroupHeaderStyle}"/>
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="0">
+            <Grid Margin="20,12,20,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Silero VAD" FontSize="12.5" FontWeight="SemiBold"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="{Binding Models.VadModelStatusText}" FontSize="11.5"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                               Margin="0,3,0,0"/>
+                    <TextBlock Text="~629 KB · Required for hands-free mode" FontSize="10.5"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                               Margin="0,2,0,0"/>
+                    <!-- Download progress bar -->
+                    <ProgressBar Value="{Binding Models.VadModelDownloadProgress}" Maximum="1" Height="4"
+                                 Margin="0,6,0,0"
+                                 Visibility="{Binding Models.IsVadModelDownloading, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Download button (when not downloaded and not downloading) -->
+                    <Button Content="Download" Style="{StaticResource PillButtonStyle}"
+                            Command="{Binding Models.DownloadVadModelCommand}"
+                            Visibility="{Binding Models.CanDownloadVadModel, Converter={StaticResource BoolToVisibility}}"/>
+                    <!-- Delete button (when downloaded) -->
+                    <Button Content="Delete" Style="{StaticResource PillButtonStyle}"
+                            Command="{Binding Models.DeleteVadModelCommand}"
+                            Visibility="{Binding Models.IsVadModelDownloaded, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     </StackPanel>
 </UserControl>

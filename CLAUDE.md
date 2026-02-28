@@ -30,14 +30,16 @@ WriteSpeech.slnx
 src/
   WriteSpeech.Core/          # Platform-independent core logic (net10.0)
     Configuration/            # WriteSpeechOptions (strongly-typed config, IOptionsMonitor)
-    Models/                   # RecordingState, TranscriptionResult, TranscriptionProvider,
+    Models/                   # RecordingState (Idle/Listening/Recording/Transcribing/Result/Error),
+                              # TranscriptionResult, TranscriptionProvider, VadModelInfo,
                               # ModelInfoBase (abstract base), WhisperModel, CorrectionModelInfo,
                               # ParakeetModelInfo (directory-based model with IsDirectoryComplete),
                               # TextCorrectionProvider, TranscriptionHistoryEntry, UsageStats,
                               # CorrectionMode (Name, SystemPrompt, AppPatterns, IsBuiltIn, TargetLanguage),
                               # IDEInfo, SupportedLanguages
     Services/
-      Audio/                  # IAudioRecordingService, AudioRecordingService (NAudio WaveInEvent)
+      Audio/                  # IAudioRecordingService, AudioRecordingService (NAudio WaveInEvent, VAD listening mode)
+                              # IVoiceActivityService, VoiceActivityService (Silero VAD via sherpa-onnx)
                               # IAudioMutingService, AudioMutingService (NAudio CoreAudioApi)
                               # IAudioCompressor, AudioCompressor (NAudio.Lame WAV→MP3)
                               # IAudioFileReader (interface for multi-format audio reading)
@@ -64,6 +66,7 @@ src/
       ModelManagement/        # IModelManager, ModelManager (Whisper GGML model download)
                               # ICorrectionModelManager, CorrectionModelManager (GGUF model download)
                               # IParakeetModelManager, ParakeetModelManager (Parakeet model download from HuggingFace)
+                              # IVadModelManager, VadModelManager (Silero VAD model download)
                               # IModelPreloadService, ModelPreloadService
                               # ModelDownloadHelper (shared download logic, uses IHttpClientFactory)
       History/                # ITranscriptionHistoryService, TranscriptionHistoryService
@@ -164,7 +167,7 @@ tests/
 dotnet test tests/WriteSpeech.Tests
 ```
 
-46 test files, ~857 test methods across services, ViewModels, views, models, converters, and configuration.
+49 test files, ~1258 test methods across services, ViewModels, views, models, converters, and configuration.
 
 Key test patterns:
 - **Mocking**: NSubstitute for all service interfaces
@@ -303,6 +306,18 @@ Trigger→replacement text substitution applied after transcription. Uses compil
 10. Unmutes other apps, restores focus via `SetForegroundWindow` + `AttachThreadInput`
 11. Auto-inserts text via clipboard + simulated Ctrl+V -> Back to **Idle**
 
+### Voice Activity Detection (VAD)
+Optional hands-free dictation mode using Silero VAD via sherpa-onnx. Default: **disabled**.
+- **State flow**: Idle → Listening → Recording → Transcribing → Listening → ... (continuous loop)
+- **Listening mode**: Mic open, audio fed to `VoiceActivityService`, circular pre-buffer captures audio before speech onset
+- **Auto-start**: `SpeechStarted` event transitions from Listening → Recording, pre-buffer flushed into WAV writer
+- **Auto-stop**: `SilenceDetected` event after `MinRecordingSeconds` triggers transcription
+- **Loop**: After successful transcription, auto-restarts listening for next utterance
+- **Manual cancel**: Toggle hotkey from Listening → Idle
+- **Push-to-Talk**: Unaffected by VAD (always manual start/stop, no listening state)
+- **Model**: `silero_vad.onnx` (~629 KB), downloaded via `VadModelManager` from GitHub releases
+- **Config**: `VoiceActivityOptions` in `AudioOptions` — `Enabled`, `SilenceDurationSeconds`, `Threshold`, `PreBufferSeconds`
+
 ### CUDA Path Discovery (App.xaml.cs)
 `AddCudaLibraryPaths()` scans three sources for CUDA 13.x libraries:
 1. Versioned env vars (`CUDA_PATH_V13_1`, etc.)
@@ -367,6 +382,11 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `Audio.CompressBeforeUpload`: compress WAV→MP3 before cloud upload (default: `true`)
 - `Audio.MuteWhileDictating`: mute other apps during recording (default: `true`)
 - `Audio.MaxRecordingSeconds`: max recording length (default: 300)
+- `Audio.VoiceActivity.Enabled`: enable VAD hands-free mode (default: `false`)
+- `Audio.VoiceActivity.SilenceDurationSeconds`: auto-stop after N seconds silence (default: 1.5)
+- `Audio.VoiceActivity.MinRecordingSeconds`: minimum recording before auto-stop (default: 0.5)
+- `Audio.VoiceActivity.Threshold`: Silero VAD sensitivity 0.1-0.9 (default: 0.5)
+- `Audio.VoiceActivity.PreBufferSeconds`: pre-buffer duration for speech onset (default: 0.5)
 - `TextCorrection.Provider`: `"Off"`, `"Cloud"` (legacy→OpenAI), `"OpenAI"`, `"Anthropic"`, `"Google"`, `"Groq"`, or `"Local"`
 - `TextCorrection.Anthropic.ApiKey`: Anthropic API key
 - `TextCorrection.Anthropic.Model`: default `"claude-sonnet-4-5-20250514"`

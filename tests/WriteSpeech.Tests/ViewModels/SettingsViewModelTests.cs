@@ -67,6 +67,7 @@ public class SettingsViewModelTests
             Substitute.For<IModelManager>(),
             Substitute.For<ICorrectionModelManager>(),
             Substitute.For<IParakeetModelManager>(),
+            Substitute.For<IVadModelManager>(),
             _preloadService,
             Substitute.For<IAutoStartService>(),
             new SynchronousDispatcherService(),

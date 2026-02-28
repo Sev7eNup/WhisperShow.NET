@@ -131,5 +131,78 @@
                 </Grid>
             </StackPanel>
         </Border>
+
+        <TextBlock Text="Voice Activity Detection" Style="{StaticResource GroupHeaderStyle}"/>
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="0">
+            <StackPanel>
+                <!-- Hands-free mode toggle -->
+                <Grid Margin="20,12,20,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Hands-free mode" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Auto-start on voice, auto-stop on silence" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding VadEnabled}" Command="{Binding ToggleVadCommand}"
+                                  VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Silence duration slider (only visible when VAD enabled) -->
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"
+                        Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}"/>
+                <Grid Margin="20,12,20,12"
+                      Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="40"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Silence duration" FontSize="12.5" FontWeight="SemiBold"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <Slider Grid.Column="1" Minimum="0.5" Maximum="5.0" TickFrequency="0.5"
+                            IsSnapToTickEnabled="True" Value="{Binding VadSilenceDuration}"
+                            VerticalAlignment="Center" Margin="8,0"/>
+                    <TextBlock Grid.Column="2" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                               Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
+                               Text="{Binding VadSilenceDuration, StringFormat={}{0:F1}s}"/>
+                </Grid>
+
+                <!-- Sensitivity slider -->
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"
+                        Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}"/>
+                <Grid Margin="20,12,20,12"
+                      Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="40"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Sensitivity" FontSize="12.5" FontWeight="SemiBold"
+                               FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <Slider Grid.Column="1" Minimum="0.1" Maximum="0.9" TickFrequency="0.1"
+                            IsSnapToTickEnabled="True" Value="{Binding VadSensitivity}"
+                            VerticalAlignment="Center" Margin="8,0"/>
+                    <TextBlock Grid.Column="2" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                               Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
+                               Text="{Binding VadSensitivity, StringFormat={}{0:F1}}"/>
+                </Grid>
+
+                <!-- Model download hint -->
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"
+                        Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}"/>
+                <TextBlock Margin="20,8,20,12" FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
+                           Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
+                           Visibility="{Binding VadEnabled, Converter={StaticResource BoolToVisibility}}"
+                           Text="Requires Silero VAD model (~629 KB). Download it on the Models page."/>
+            </StackPanel>
+        </Border>
     </StackPanel>
 </UserControl>

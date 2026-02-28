@@ -452,6 +452,94 @@ public class GeneralSettingsViewModelTests
 
         _hotkeyService.SuppressActions.Should().BeFalse();
     }
+    // --- VAD Settings ---
+
+    [Fact]
+    public void Constructor_LoadsVadSettings()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Audio.VoiceActivity.Enabled = true;
+            o.Audio.VoiceActivity.SilenceDurationSeconds = 2.0f;
+            o.Audio.VoiceActivity.Threshold = 0.7f;
+        });
+
+        vm.VadEnabled.Should().BeTrue();
+        vm.VadSilenceDuration.Should().Be(2.0f);
+        vm.VadSensitivity.Should().Be(0.7f);
+    }
+
+    [Fact]
+    public void Constructor_VadDefaults()
+    {
+        var vm = CreateViewModel();
+
+        vm.VadEnabled.Should().BeFalse();
+        vm.VadSilenceDuration.Should().Be(1.5f);
+        vm.VadSensitivity.Should().Be(0.5f);
+    }
+
+    [Fact]
+    public void ToggleVad_TriggersSave()
+    {
+        var vm = CreateViewModel();
+
+        vm.ToggleVadCommand.Execute(null);
+
+        _saveCalled.Should().BeTrue();
+        vm.VadEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void VadSilenceDuration_Change_TriggersSave()
+    {
+        var vm = CreateViewModel();
+        _saveCalled = false;
+
+        vm.VadSilenceDuration = 3.0f;
+
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void VadSensitivity_Change_TriggersSave()
+    {
+        var vm = CreateViewModel();
+        _saveCalled = false;
+
+        vm.VadSensitivity = 0.8f;
+
+        _saveCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void WriteSettings_WritesVadSettings()
+    {
+        var vm = CreateViewModel(o =>
+        {
+            o.Audio.VoiceActivity.Enabled = true;
+            o.Audio.VoiceActivity.SilenceDurationSeconds = 2.5f;
+            o.Audio.VoiceActivity.Threshold = 0.6f;
+        });
+
+        var json = JsonNode.Parse("{}")!;
+        vm.WriteSettings(json);
+
+        json["Audio"]!["VoiceActivity"]!["Enabled"]!.GetValue<bool>().Should().BeTrue();
+        json["Audio"]!["VoiceActivity"]!["SilenceDurationSeconds"]!.GetValue<float>().Should().Be(2.5f);
+        json["Audio"]!["VoiceActivity"]!["Threshold"]!.GetValue<float>().Should().Be(0.6f);
+    }
+
+    [Fact]
+    public void WriteSettings_VadDisabled_WritesFalse()
+    {
+        var vm = CreateViewModel();
+
+        var json = JsonNode.Parse("{}")!;
+        vm.WriteSettings(json);
+
+        json["Audio"]!["VoiceActivity"]!["Enabled"]!.GetValue<bool>().Should().BeFalse();
+    }
 }
 
 // Test helper extension to avoid coupling to internal state

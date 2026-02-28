@@ -95,6 +95,20 @@ public class AudioOptions
     public int MaxRecordingSeconds { get; set; } = 300;
     public bool CompressBeforeUpload { get; set; }
     public bool MuteWhileDictating { get; set; } = true;
+    public VoiceActivityOptions VoiceActivity { get; set; } = new();
+}
+
+public class VoiceActivityOptions
+{
+    public bool Enabled { get; set; }
+    public float SilenceDurationSeconds { get; set; } = 1.5f;
+    public float MinRecordingSeconds { get; set; } = 0.5f;
+    public float Threshold { get; set; } = 0.5f;
+    public float PreBufferSeconds { get; set; } = 0.5f;
+    public string? ModelDirectory { get; set; }
+
+    public string GetModelDirectory() =>
+        WriteSpeechOptions.ResolveModelDirectory(ModelDirectory, "vad-models");
 }
 
 public class OverlayOptions
@@ -236,6 +250,19 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
 
         // Note: Anthropic/Google/Groq API keys are NOT validated here — the user must be able
         // to start the app and configure keys in Settings. Services handle missing keys at usage time.
+
+        var vad = options.Audio.VoiceActivity;
+        if (vad.Enabled)
+        {
+            if (vad.SilenceDurationSeconds is < 0.5f or > 10f)
+                failures.Add($"Audio.VoiceActivity.SilenceDurationSeconds must be between 0.5 and 10.0 (got {vad.SilenceDurationSeconds}).");
+            if (vad.MinRecordingSeconds is < 0.1f or > 10f)
+                failures.Add($"Audio.VoiceActivity.MinRecordingSeconds must be between 0.1 and 10.0 (got {vad.MinRecordingSeconds}).");
+            if (vad.Threshold is < 0.1f or > 0.9f)
+                failures.Add($"Audio.VoiceActivity.Threshold must be between 0.1 and 0.9 (got {vad.Threshold}).");
+            if (vad.PreBufferSeconds is < 0.1f or > 2f)
+                failures.Add($"Audio.VoiceActivity.PreBufferSeconds must be between 0.1 and 2.0 (got {vad.PreBufferSeconds}).");
+        }
 
         if (options.Hotkey.Method is not ("RegisterHotKey" or "LowLevelHook"))
             failures.Add($"Hotkey.Method must be 'RegisterHotKey' or 'LowLevelHook' (got '{options.Hotkey.Method}').");
