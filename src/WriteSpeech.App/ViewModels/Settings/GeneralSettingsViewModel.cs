@@ -351,13 +351,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
 
     // --- Voice Activity Detection ---
 
-    [RelayCommand]
-    private void ToggleVad()
-    {
-        VadEnabled = !VadEnabled;
-        _scheduleSave();
-    }
-
+    partial void OnVadEnabledChanged(bool value) => _scheduleSave();
     partial void OnVadSilenceDurationChanged(float value) => _scheduleSave();
     partial void OnVadSensitivityChanged(float value) => _scheduleSave();
 
