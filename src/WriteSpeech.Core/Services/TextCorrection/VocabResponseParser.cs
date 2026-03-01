@@ -9,6 +9,12 @@ namespace WriteSpeech.Core.Services.TextCorrection;
 public static class VocabResponseParser
 {
     /// <summary>
+    /// Maximum number of vocabulary entries extracted per AI response.
+    /// Prevents the model from over-extracting low-quality entries.
+    /// </summary>
+    internal const int MaxEntriesPerResponse = 5;
+
+    /// <summary>
     /// Splits the AI response into corrected text and vocabulary entries.
     /// If no delimiter is found, the entire response is treated as corrected text.
     /// </summary>
@@ -33,6 +39,7 @@ public static class VocabResponseParser
             .Where(w => !w.Contains("---"))
             .Where(IsValidVocabEntry)
             .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaxEntriesPerResponse)
             .ToList();
 
         return (text, words);
@@ -63,6 +70,34 @@ public static class VocabResponseParser
         var hyphenSegments = entry.Split('-', StringSplitOptions.RemoveEmptyEntries).Length;
         if (hyphenSegments >= 3)
             return false;
+
+        // Single unhyphenated words must show unusual casing/structure to qualify as
+        // a brand, acronym, or technical term. Plain Title Case (e.g., "Hausverwaltung",
+        // "Großvater", "Test") is rejected — German capitalizes ALL nouns, so Title Case
+        // alone is not a signal for proper nouns. Well-known proper nouns like "Kubernetes"
+        // or "Berlin" don't need to be in the custom dictionary — the AI already knows them.
+        if (wordCount == 1 && hyphenSegments < 2)
+        {
+            // All-uppercase with ≥2 letters (CUDA, AI, API, GPU)
+            if (entry.Length >= 2 && entry.All(c => !char.IsLetter(c) || char.IsUpper(c))
+                && entry.Count(char.IsUpper) >= 2)
+                return true;
+
+            // Internal uppercase — uppercase letter after position 0 (TensorFlow, iPhone, macOS)
+            if (entry.Skip(1).Any(char.IsUpper))
+                return true;
+
+            // Contains a digit (GPT4, H264)
+            if (entry.Any(char.IsDigit))
+                return true;
+
+            // Contains a dot (Inc., Dr.)
+            if (entry.Contains('.'))
+                return true;
+
+            // Plain Title Case single word — reject
+            return false;
+        }
 
         return true;
     }
