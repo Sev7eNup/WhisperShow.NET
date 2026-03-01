@@ -50,10 +50,18 @@ public static class TextCorrectionDefaults
     public const string VocabExtractionInstruction =
         """
 
-        After the corrected text, if you detected any proper nouns, brand names, or technical terms, add a line containing only "---VOCAB---" followed by one term per line.
-        ONLY include: names of people, companies, products, places, or widely established technical terms (e.g., "TensorFlow", "Kubernetes", "CUDA").
-        NEVER include: common nouns (even if capitalized in German — German capitalizes all nouns), verbs, adjectives, full sentences, descriptive phrases, hyphenated compound descriptions, or UI element names.
-        Each entry must be a specific, widely recognized proper name or established term — not a general description.
+        After the corrected text, if you detected any proper nouns, brand names, or technical terms that a language model might NOT already know, add a line containing only "---VOCAB---" followed by one term per line.
+        ONLY include terms with unusual spelling or casing:
+        - Brand names with special casing (e.g., "TensorFlow", "iPhone", "macOS")
+        - Domain-specific acronyms (e.g., "CUDA", "ONNX")
+        - People's full names (first + last name together, e.g., "Hans Müller")
+        - Uncommon company or product names
+        NEVER include:
+        - Single common words, even if capitalized (German capitalizes ALL nouns — "Hausverwaltung", "Großvater", "Fenster", "Bildschirm" are NOT vocab entries)
+        - Words that any language model already knows (Berlin, Computer, Test, Internet, Kubernetes, Python)
+        - Transcription artifacts or words you are unsure about
+        - Verbs, adjectives, descriptions, or full sentences
+        When in doubt, do NOT include the term.
         If no special terms were detected, do NOT add the ---VOCAB--- delimiter.
         """;
 }
