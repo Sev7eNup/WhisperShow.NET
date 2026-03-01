@@ -79,13 +79,16 @@ public class AudioFileReader : IAudioFileReader
 
     private RawSourceWaveStream DecodeOpusOgg(string filePath)
     {
+        const int maxPackets = 50_000;
+
         using var fileStream = File.OpenRead(filePath);
         var opusDecoder = OpusCodecFactory.CreateDecoder(48000, 1);
         var oggIn = new OpusOggReadStream(opusDecoder, fileStream);
 
         var pcmStream = new MemoryStream();
         long totalBytes = 0;
-        while (oggIn.HasNextPacket)
+        int packetCount = 0;
+        while (oggIn.HasNextPacket && packetCount++ < maxPackets)
         {
             var samples = oggIn.DecodeNextPacket();
             if (samples is null) continue;

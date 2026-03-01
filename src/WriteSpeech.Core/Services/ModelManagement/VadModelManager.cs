@@ -65,7 +65,8 @@ public class VadModelManager : IVadModelManager
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await _downloadHelper.DownloadToFileAsync(stream, targetPath, ModelSizeBytes, progress, cancellationToken);
+        await _downloadHelper.DownloadToFileAsync(stream, targetPath, ModelSizeBytes, progress, cancellationToken,
+            expectedSha256: "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6");
 
         _logger.LogInformation("Silero VAD model downloaded successfully");
     }

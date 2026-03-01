@@ -31,6 +31,10 @@ internal static partial class NativeMethods
     internal static partial bool SetForegroundWindow(IntPtr hWnd);
 
     [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool IsWindow(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
     internal static partial int GetWindowLongW(IntPtr hWnd, int nIndex);
 
     [LibraryImport("user32.dll")]

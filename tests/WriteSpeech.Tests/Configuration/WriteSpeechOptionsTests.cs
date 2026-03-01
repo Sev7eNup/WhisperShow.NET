@@ -290,6 +290,97 @@ public class WriteSpeechOptionsTests
         result.Succeeded.Should().BeTrue();
     }
 
+    // --- HTTPS enforcement ---
+
+    [Fact]
+    public void Validator_HttpEndpoint_Fails()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.OpenAI.Endpoint = "http://api.openai.com/v1";
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("HTTPS");
+    }
+
+    [Fact]
+    public void Validator_HttpGoogleEndpoint_Fails()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.TextCorrection.Google.Endpoint = "http://insecure.example.com/v1";
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("HTTPS");
+    }
+
+    [Fact]
+    public void Validator_HttpGroqEndpoint_Fails()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.TextCorrection.Groq.Endpoint = "http://insecure.example.com/v1";
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("HTTPS");
+    }
+
+    [Fact]
+    public void Validator_HttpCustomEndpoint_Fails()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.TextCorrection.Custom.Endpoint = "http://my-server.local/v1";
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("HTTPS");
+    }
+
+    [Fact]
+    public void Validator_HttpCustomTranscriptionEndpoint_Fails()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.CustomTranscription.Endpoint = "http://my-server.local/v1";
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("HTTPS");
+    }
+
+    [Fact]
+    public void Validator_HttpsCustomEndpoint_Succeeds()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.TextCorrection.Custom.Endpoint = "https://my-server.local/v1";
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validator_NullCustomEndpoint_Succeeds()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.TextCorrection.Custom.Endpoint = null;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
     [Fact]
     public void Validator_MultipleFailures_ReportsAll()
     {

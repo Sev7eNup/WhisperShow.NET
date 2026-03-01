@@ -96,7 +96,7 @@ public class SnippetService : ISnippetService
             regexes = _cachedRegexes ??= _snippets
                 .Select(s => (
                     new Regex(@"\b" + Regex.Escape(s.Trigger) + @"\b",
-                        RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                        RegexOptions.IgnoreCase | RegexOptions.NonBacktracking),
                     s.Replacement))
                 .ToList();
         }

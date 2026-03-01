@@ -24,7 +24,7 @@ public class ParakeetModelManager : IParakeetModelManager
         ("encoder.int8.onnx", 622_000_000, "5c5b211a279e6cfc78b528e6cee6d05d1df3b0c5c26a889d3901c8d1d185d416"),
         ("decoder.int8.onnx", 7_000_000, "a793c390f54bb5a0f3db9825b14b612ae81d8b3e3398fefe72a8ce98e5d05446"),
         ("joiner.int8.onnx", 2_000_000, "574a3af8df9c2745aebc54f8485b1ec63a876d0f66bbb6244ff846c7ca1cdcd8"),
-        ("tokens.txt", 9_000, null), // not LFS-tracked, no hash available
+        ("tokens.txt", 9_000, "ec182b70dd42113aff6c5372c75cac58c952443eb22322f57bbd7f53977d497d"),
     ];
 
     public string ModelDirectory => _optionsMonitor.CurrentValue.Parakeet.GetModelDirectory();

@@ -17,7 +17,7 @@ public class WindowFocusService : IWindowFocusService
 
     public async Task<bool> RestoreFocusAsync(IntPtr windowHandle)
     {
-        if (windowHandle == IntPtr.Zero) return false;
+        if (windowHandle == IntPtr.Zero || !NativeMethods.IsWindow(windowHandle)) return false;
 
         var foregroundThread = NativeMethods.GetWindowThreadProcessId(
             NativeMethods.GetForegroundWindow(), out _);

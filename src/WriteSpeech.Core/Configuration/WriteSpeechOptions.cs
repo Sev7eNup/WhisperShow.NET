@@ -215,8 +215,11 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         if (options.App.MaxHistoryEntries < 1)
             failures.Add($"App.MaxHistoryEntries must be at least 1 (got {options.App.MaxHistoryEntries}).");
 
-        if (options.OpenAI.Endpoint is not null && !Uri.IsWellFormedUriString(options.OpenAI.Endpoint, UriKind.Absolute))
-            failures.Add($"OpenAI.Endpoint is not a valid URL: '{options.OpenAI.Endpoint}'.");
+        ValidateEndpoint(options.OpenAI.Endpoint, "OpenAI.Endpoint", failures);
+        ValidateEndpoint(options.TextCorrection.Google.Endpoint, "TextCorrection.Google.Endpoint", failures);
+        ValidateEndpoint(options.TextCorrection.Groq.Endpoint, "TextCorrection.Groq.Endpoint", failures);
+        ValidateEndpoint(options.TextCorrection.Custom.Endpoint, "TextCorrection.Custom.Endpoint", failures);
+        ValidateEndpoint(options.CustomTranscription.Endpoint, "CustomTranscription.Endpoint", failures);
 
         if (options.Provider == TranscriptionProvider.Local
             && string.IsNullOrWhiteSpace(options.Local.ModelName))
@@ -278,5 +281,19 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         return failures.Count > 0
             ? ValidateOptionsResult.Fail(failures)
             : ValidateOptionsResult.Success;
+    }
+
+    private static void ValidateEndpoint(string? endpoint, string fieldName, List<string> failures)
+    {
+        if (endpoint is null) return;
+
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
+        {
+            failures.Add($"{fieldName} is not a valid URL: '{endpoint}'.");
+            return;
+        }
+
+        if (uri.Scheme != "https")
+            failures.Add($"{fieldName} must use HTTPS (got '{uri.Scheme}').");
     }
 }
