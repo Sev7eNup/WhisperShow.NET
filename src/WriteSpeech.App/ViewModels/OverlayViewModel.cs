@@ -258,7 +258,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _isTransitioning = true;
         try
         {
-            _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
+            _previousForegroundWindow = GetTargetForegroundWindow();
             _activeProcessName = _windowFocusService.GetProcessName(_previousForegroundWindow);
 
             // Capture selected text BEFORE recording starts (focus is still on the previous window)
@@ -306,7 +306,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _isTransitioning = true;
         try
         {
-            _previousForegroundWindow = _windowFocusService.GetForegroundWindow();
+            _previousForegroundWindow = GetTargetForegroundWindow();
             _activeProcessName = _windowFocusService.GetProcessName(_previousForegroundWindow);
 
             PrepareIDEContext();
@@ -654,10 +654,27 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _logger.LogInformation("Inserting transcribed text ({Length} chars)", TranscribedText.Length);
 
         // Restore focus to previously active window
-        await _windowFocusService.RestoreFocusAsync(_previousForegroundWindow);
+        var focusRestored = await _windowFocusService.RestoreFocusAsync(_previousForegroundWindow);
+        if (!focusRestored)
+            _logger.LogWarning("Could not restore focus to target window — paste may go to wrong window");
 
         await _textInsertionService.InsertTextAsync(TranscribedText);
         _ideContextService.Clear();
+    }
+
+    private IntPtr GetTargetForegroundWindow()
+    {
+        var hwnd = _windowFocusService.GetForegroundWindow();
+        if (hwnd == IntPtr.Zero) return IntPtr.Zero;
+
+        NativeMethods.GetWindowThreadProcessId(hwnd, out var pid);
+        if (pid == Environment.ProcessId)
+        {
+            _logger.LogDebug("Foreground window 0x{Handle:X} belongs to own process, ignoring",
+                hwnd.ToInt64());
+            return IntPtr.Zero;
+        }
+        return hwnd;
     }
 
     [RelayCommand]

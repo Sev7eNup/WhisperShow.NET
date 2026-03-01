@@ -15,9 +15,9 @@ public class WindowFocusService : IWindowFocusService
 
     public IntPtr GetForegroundWindow() => NativeMethods.GetForegroundWindow();
 
-    public async Task RestoreFocusAsync(IntPtr windowHandle)
+    public async Task<bool> RestoreFocusAsync(IntPtr windowHandle)
     {
-        if (windowHandle == IntPtr.Zero) return;
+        if (windowHandle == IntPtr.Zero) return false;
 
         var foregroundThread = NativeMethods.GetWindowThreadProcessId(
             NativeMethods.GetForegroundWindow(), out _);
@@ -32,13 +32,28 @@ public class WindowFocusService : IWindowFocusService
                     currentThread, foregroundThread);
         }
 
-        if (!NativeMethods.SetForegroundWindow(windowHandle))
-            _logger.LogDebug("SetForegroundWindow failed for handle 0x{Handle:X}", windowHandle.ToInt64());
+        NativeMethods.SetForegroundWindow(windowHandle);
 
         if (attached)
             NativeMethods.AttachThreadInput(currentThread, foregroundThread, false);
 
         await Task.Delay(150);
+
+        // Verify focus was restored
+        if (NativeMethods.GetForegroundWindow() == windowHandle)
+            return true;
+
+        // Retry once
+        _logger.LogDebug("Focus verification failed, retrying SetForegroundWindow for 0x{Handle:X}",
+            windowHandle.ToInt64());
+        NativeMethods.SetForegroundWindow(windowHandle);
+        await Task.Delay(100);
+
+        var success = NativeMethods.GetForegroundWindow() == windowHandle;
+        if (!success)
+            _logger.LogWarning("Failed to restore focus to window 0x{Handle:X} after retry",
+                windowHandle.ToInt64());
+        return success;
     }
 
     public string? GetProcessName(IntPtr windowHandle)
