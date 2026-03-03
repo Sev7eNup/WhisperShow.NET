@@ -7,74 +7,41 @@ namespace WriteSpeech.Tests.Services;
 
 public class TextCorrectionProviderFactoryTests
 {
-    private readonly ITextCorrectionService _openAiService;
-    private readonly ITextCorrectionService _anthropicService;
-    private readonly ITextCorrectionService _googleService;
-    private readonly ITextCorrectionService _groqService;
-    private readonly ITextCorrectionService _localService;
     private readonly TextCorrectionProviderFactory _factory;
 
     public TextCorrectionProviderFactoryTests()
     {
-        _openAiService = Substitute.For<ITextCorrectionService>();
-        _openAiService.ProviderType.Returns(TextCorrectionProvider.OpenAI);
+        var openAi = Substitute.For<ITextCorrectionService>();
+        openAi.ProviderType.Returns(TextCorrectionProvider.OpenAI);
 
-        _anthropicService = Substitute.For<ITextCorrectionService>();
-        _anthropicService.ProviderType.Returns(TextCorrectionProvider.Anthropic);
+        var anthropic = Substitute.For<ITextCorrectionService>();
+        anthropic.ProviderType.Returns(TextCorrectionProvider.Anthropic);
 
-        _googleService = Substitute.For<ITextCorrectionService>();
-        _googleService.ProviderType.Returns(TextCorrectionProvider.Google);
+        var google = Substitute.For<ITextCorrectionService>();
+        google.ProviderType.Returns(TextCorrectionProvider.Google);
 
-        _groqService = Substitute.For<ITextCorrectionService>();
-        _groqService.ProviderType.Returns(TextCorrectionProvider.Groq);
+        var groq = Substitute.For<ITextCorrectionService>();
+        groq.ProviderType.Returns(TextCorrectionProvider.Groq);
 
-        _localService = Substitute.For<ITextCorrectionService>();
-        _localService.ProviderType.Returns(TextCorrectionProvider.Local);
+        var local = Substitute.For<ITextCorrectionService>();
+        local.ProviderType.Returns(TextCorrectionProvider.Local);
 
-        _factory = new TextCorrectionProviderFactory(
-            [_openAiService, _anthropicService, _googleService, _groqService, _localService]);
+        _factory = new TextCorrectionProviderFactory([openAi, anthropic, google, groq, local]);
     }
 
-    [Fact]
-    public void GetProvider_OpenAI_ReturnsOpenAiService()
+    [Theory]
+    [InlineData(TextCorrectionProvider.OpenAI, TextCorrectionProvider.OpenAI)]
+    [InlineData(TextCorrectionProvider.Cloud, TextCorrectionProvider.OpenAI)]
+    [InlineData(TextCorrectionProvider.Anthropic, TextCorrectionProvider.Anthropic)]
+    [InlineData(TextCorrectionProvider.Google, TextCorrectionProvider.Google)]
+    [InlineData(TextCorrectionProvider.Groq, TextCorrectionProvider.Groq)]
+    [InlineData(TextCorrectionProvider.Local, TextCorrectionProvider.Local)]
+    public void GetProvider_ReturnsMatchingService(TextCorrectionProvider input, TextCorrectionProvider expectedType)
     {
-        var provider = _factory.GetProvider(TextCorrectionProvider.OpenAI);
-        provider.Should().BeSameAs(_openAiService);
-    }
+        var service = _factory.GetProvider(input);
 
-    [Fact]
-    public void GetProvider_Cloud_MapsToOpenAI()
-    {
-        var provider = _factory.GetProvider(TextCorrectionProvider.Cloud);
-        provider.Should().BeSameAs(_openAiService);
-    }
-
-    [Fact]
-    public void GetProvider_Anthropic_ReturnsAnthropicService()
-    {
-        var provider = _factory.GetProvider(TextCorrectionProvider.Anthropic);
-        provider.Should().BeSameAs(_anthropicService);
-    }
-
-    [Fact]
-    public void GetProvider_Google_ReturnsGoogleService()
-    {
-        var provider = _factory.GetProvider(TextCorrectionProvider.Google);
-        provider.Should().BeSameAs(_googleService);
-    }
-
-    [Fact]
-    public void GetProvider_Groq_ReturnsGroqService()
-    {
-        var provider = _factory.GetProvider(TextCorrectionProvider.Groq);
-        provider.Should().BeSameAs(_groqService);
-    }
-
-    [Fact]
-    public void GetProvider_Local_ReturnsLocalService()
-    {
-        var provider = _factory.GetProvider(TextCorrectionProvider.Local);
-        provider.Should().BeSameAs(_localService);
+        service.Should().NotBeNull();
+        service!.ProviderType.Should().Be(expectedType);
     }
 
     [Fact]

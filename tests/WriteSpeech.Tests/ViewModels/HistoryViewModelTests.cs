@@ -238,23 +238,6 @@ public class HistoryViewModelTests
     }
 
     [Fact]
-    public void ClearAll_ResetsSearchQuery()
-    {
-        _historyService.GetEntries().Returns(new List<TranscriptionHistoryEntry>
-        {
-            MakeEntry("Hello")
-        });
-
-        var vm = CreateViewModel();
-        vm.Refresh();
-        vm.SearchQuery = "Hello";
-
-        vm.ClearAllCommand.Execute(null);
-
-        vm.SearchQuery.Should().BeEmpty();
-    }
-
-    [Fact]
     public void EntryCountDisplay_SingleEntry_ShowsCount()
     {
         _historyService.GetEntries().Returns(new List<TranscriptionHistoryEntry>

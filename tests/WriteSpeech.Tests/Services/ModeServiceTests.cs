@@ -582,4 +582,20 @@ public class ModeServiceTests : IDisposable
                 because: $"{app} should match Message mode");
         }
     }
+
+    [Fact]
+    public async Task Dispose_FlushesPendingSaves()
+    {
+        // Add a mode (triggers debounced save)
+        _service.AddMode("FlushTest", "test prompt", ["testapp"]);
+
+        // Dispose should flush immediately (no need to wait for debounce)
+        _service.Dispose();
+
+        var filePath = Path.Combine(_tempDir, "modes.json");
+        File.Exists(filePath).Should().BeTrue("Dispose should flush pending saves to disk");
+
+        var content = await File.ReadAllTextAsync(filePath);
+        content.Should().Contain("FlushTest");
+    }
 }
