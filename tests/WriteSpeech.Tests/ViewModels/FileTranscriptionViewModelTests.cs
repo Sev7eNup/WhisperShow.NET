@@ -399,4 +399,35 @@ public class FileTranscriptionViewModelTests
         item.TimeAgo.Should().Be("2h ago");
         item.FileInfo.Should().Be("MP3, 4.2 MB");
     }
+
+    // --- IDisposable ---
+
+    [Fact]
+    public void Dispose_DoesNotThrow_WhenNoCtsCreated()
+    {
+        var vm = CreateViewModel();
+
+        var act = () => vm.Dispose();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_DoesNotThrow_WhenCalledMultipleTimes()
+    {
+        var vm = CreateViewModel();
+
+        vm.Dispose();
+        var act = () => vm.Dispose();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Dispose_ImplementsIDisposable()
+    {
+        var vm = CreateViewModel();
+
+        vm.Should().BeAssignableTo<IDisposable>();
+    }
 }

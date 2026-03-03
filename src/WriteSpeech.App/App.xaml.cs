@@ -154,16 +154,16 @@ public partial class App : Application
 
         await _host.StartAsync();
 
-        // Preload all services that persist data to disk
-        await Task.WhenAll(
-            _host.Services.GetRequiredService<ITranscriptionHistoryService>().LoadAsync(),
-            _host.Services.GetRequiredService<IUsageStatsService>().LoadAsync(),
-            _host.Services.GetRequiredService<IDictionaryService>().LoadAsync(),
-            _host.Services.GetRequiredService<ISnippetService>().LoadAsync(),
-            _host.Services.GetRequiredService<IModeService>().LoadAsync());
-
         try
         {
+            // Preload all services that persist data to disk
+            await Task.WhenAll(
+                _host.Services.GetRequiredService<ITranscriptionHistoryService>().LoadAsync(),
+                _host.Services.GetRequiredService<IUsageStatsService>().LoadAsync(),
+                _host.Services.GetRequiredService<IDictionaryService>().LoadAsync(),
+                _host.Services.GetRequiredService<ISnippetService>().LoadAsync(),
+                _host.Services.GetRequiredService<IModeService>().LoadAsync());
+
             // First-run setup wizard
             var opts = _host.Services.GetRequiredService<IOptions<WriteSpeechOptions>>().Value;
             if (!opts.App.SetupCompleted)
@@ -214,8 +214,12 @@ public partial class App : Application
         {
             Log.Fatal(ex, "Failed to start application");
             Log.CloseAndFlush();
-            MessageBox.Show($"Startup error:\n\n{ex}", "WriteSpeech Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            var logDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "WriteSpeech", "logs");
+            MessageBox.Show(
+                $"WriteSpeech failed to start. Please check the log files for details:\n\n{logDir}",
+                "WriteSpeech Error", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
         }
     }

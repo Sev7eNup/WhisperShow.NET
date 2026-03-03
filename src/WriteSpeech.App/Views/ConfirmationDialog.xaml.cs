@@ -25,12 +25,7 @@ public partial class ConfirmationDialog : Window
             .Services?.GetService(typeof(WriteSpeech.App.ViewModels.SettingsViewModel))
             as WriteSpeech.App.ViewModels.SettingsViewModel;
 
-        var isDark = settingsVm?.System.IsDarkMode ?? true;
-        var themeUri = isDark
-            ? new Uri("/Themes/SettingsDarkTheme.xaml", UriKind.Relative)
-            : new Uri("/Themes/SettingsLightTheme.xaml", UriKind.Relative);
-
-        Resources.MergedDictionaries[0] = new ResourceDictionary { Source = themeUri };
+        ThemeHelper.Apply(this, settingsVm?.System.IsDarkMode ?? true);
     }
 
     private void Confirm_Click(object sender, RoutedEventArgs e)

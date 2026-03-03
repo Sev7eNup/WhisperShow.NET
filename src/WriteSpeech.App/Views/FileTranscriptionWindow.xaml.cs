@@ -34,21 +34,7 @@ public partial class FileTranscriptionWindow : Window
         });
     }
 
-    private void ApplyTheme(bool isDark)
-    {
-        var themePath = isDark
-            ? "/Themes/SettingsDarkTheme.xaml"
-            : "/Themes/SettingsLightTheme.xaml";
-
-        var themeUri = new Uri(themePath, UriKind.Relative);
-        var themeDict = new ResourceDictionary { Source = themeUri };
-
-        var merged = Resources.MergedDictionaries;
-        if (merged.Count > 0)
-            merged[0] = themeDict;
-        else
-            merged.Insert(0, themeDict);
-    }
+    private void ApplyTheme(bool isDark) => ThemeHelper.Apply(this, isDark);
 
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
     {

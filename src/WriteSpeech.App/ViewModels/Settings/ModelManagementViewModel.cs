@@ -21,14 +21,14 @@ public partial class ModelManagementViewModel : ObservableObject
     private readonly Action _scheduleSave;
 
     // Shared state with parent - these get read/written by the parent SettingsViewModel
-    private Func<string> _getTranscriptionModel;
-    private Action<string> _setTranscriptionModel;
-    private Func<string> _getCorrectionLocalModelName;
-    private Action<string> _setCorrectionLocalModelName;
-    private Func<string> _getParakeetModelName;
-    private Action<string> _setParakeetModelName;
-    private Action<TranscriptionProvider> _setProvider;
-    private Func<TranscriptionProvider> _getProvider;
+    private readonly Func<string> _getTranscriptionModel;
+    private readonly Action<string> _setTranscriptionModel;
+    private readonly Func<string> _getCorrectionLocalModelName;
+    private readonly Action<string> _setCorrectionLocalModelName;
+    private readonly Func<string> _getParakeetModelName;
+    private readonly Action<string> _setParakeetModelName;
+    private readonly Action<TranscriptionProvider> _setProvider;
+    private readonly Func<TranscriptionProvider> _getProvider;
 
     public ObservableCollection<ModelItemViewModel> ModelItems { get; } = [];
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];

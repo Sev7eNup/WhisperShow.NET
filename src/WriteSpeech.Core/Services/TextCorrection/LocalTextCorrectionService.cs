@@ -19,6 +19,12 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private const uint DefaultContextSize = 2048;
     private const int MinInferenceTokens = 256;
 
+    /// <summary>
+    /// Maximum character length for text sent to local correction model.
+    /// Prevents excessive memory usage from very long input during prompt encoding.
+    /// </summary>
+    internal const int MaxInputLength = 50_000;
+
     private readonly Lock _loadLock = new();
     private LLamaWeights? _model;
     private string? _loadedModelPath;
@@ -46,6 +52,13 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
             var options = _optionsMonitor.CurrentValue;
             var correctionOpts = options.TextCorrection;
 
+            if (rawText.Length > MaxInputLength)
+            {
+                _logger.LogWarning("Input text exceeds maximum length ({Length} > {Max}), truncating",
+                    rawText.Length, MaxInputLength);
+                rawText = rawText[..MaxInputLength];
+            }
+
             var modelPath = GetModelPath(correctionOpts);
             if (modelPath is null)
             {
@@ -55,33 +68,19 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
 
             EnsureModelLoaded(modelPath, correctionOpts.LocalGpuAcceleration);
 
-            var systemPrompt = systemPromptOverride ?? correctionOpts.SystemPrompt ?? TextCorrectionDefaults.CorrectionSystemPrompt;
-            systemPrompt += _dictionaryService.BuildPromptFragment();
-            if (options.Integration.IncludeForLocalModels)
-                systemPrompt += _ideContextService.BuildPromptFragment();
+            var ideContextFragment = options.Integration.IncludeForLocalModels
+                ? _ideContextService.BuildPromptFragment()
+                : "";
 
-            if (correctionOpts.AutoAddToDictionary)
-                systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
-
-            // Escape closing tags to prevent prompt injection via transcription text
-            var sanitizedText = rawText.Replace("</transcription>", "&lt;/transcription&gt;");
-
-            string userMessage;
-            if (!string.IsNullOrEmpty(targetLanguage))
-            {
-                userMessage = $"[Translate to: {targetLanguage}]\n<transcription>{sanitizedText}</transcription>";
-            }
-            else if (systemPromptOverride is not null)
-            {
-                userMessage = $"<transcription>{sanitizedText}</transcription>";
-            }
-            else
-            {
-                var languageHint = string.IsNullOrEmpty(language)
-                    ? "Keep the SAME language as the input — do NOT translate"
-                    : $"Output language MUST be: {language}";
-                userMessage = $"[{languageHint}]\n<transcription>{sanitizedText}</transcription>";
-            }
+            var (systemPrompt, userMessage) = TextCorrectionDefaults.BuildCorrectionPrompt(
+                systemPromptOverride,
+                correctionOpts.SystemPrompt,
+                _dictionaryService.BuildPromptFragment(),
+                ideContextFragment,
+                correctionOpts.AutoAddToDictionary,
+                rawText,
+                language,
+                targetLanguage);
 
             _logger.LogInformation("Running local text correction ({Length} chars, model: {Model})",
                 rawText.Length, correctionOpts.LocalModelName);

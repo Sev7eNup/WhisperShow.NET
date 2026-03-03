@@ -88,37 +88,15 @@ public abstract class CloudTextCorrectionServiceBase : ITextCorrectionService
         string? systemPromptOverride,
         string? targetLanguage)
     {
-        var systemPrompt = systemPromptOverride
-            ?? options.TextCorrection.SystemPrompt
-            ?? TextCorrectionDefaults.CorrectionSystemPrompt;
-
-        systemPrompt += DictionaryService.BuildPromptFragment();
-        systemPrompt += IdeContextService.BuildPromptFragment();
-
-        if (options.TextCorrection.AutoAddToDictionary)
-            systemPrompt += TextCorrectionDefaults.VocabExtractionInstruction;
-
-        // Escape closing tags to prevent prompt injection via transcription text
-        var sanitizedText = rawText.Replace("</transcription>", "&lt;/transcription&gt;");
-
-        string userMessage;
-        if (!string.IsNullOrEmpty(targetLanguage))
-        {
-            userMessage = $"[Translate to: {targetLanguage}]\n<transcription>{sanitizedText}</transcription>";
-        }
-        else if (systemPromptOverride is not null)
-        {
-            userMessage = $"<transcription>{sanitizedText}</transcription>";
-        }
-        else
-        {
-            var languageHint = string.IsNullOrEmpty(language)
-                ? "Keep the SAME language as the input — do NOT translate"
-                : $"Output language MUST be: {language}";
-            userMessage = $"[{languageHint}]\n<transcription>{sanitizedText}</transcription>";
-        }
-
-        return (systemPrompt, userMessage);
+        return TextCorrectionDefaults.BuildCorrectionPrompt(
+            systemPromptOverride,
+            options.TextCorrection.SystemPrompt,
+            DictionaryService.BuildPromptFragment(),
+            IdeContextService.BuildPromptFragment(),
+            options.TextCorrection.AutoAddToDictionary,
+            rawText,
+            language,
+            targetLanguage);
     }
 
     protected string ProcessResponse(string? correctedText, string rawText, bool autoAddToDictionary)

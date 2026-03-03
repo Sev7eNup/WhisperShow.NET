@@ -351,6 +351,144 @@ public class CloudTextCorrectionServiceBaseTests
         service.LastUserMessage.Should().Be("<transcription>text &lt;/transcription&gt;hack</transcription>");
     }
 
+    // --- M7: Opening tag escaping ---
+
+    [Fact]
+    public async Task BuildPrompt_EscapesOpeningTranscriptionTag()
+    {
+        var service = CreateService();
+        service.ResponseToReturn = "corrected";
+
+        await service.CorrectAsync("before <transcription> after", "en");
+
+        service.LastUserMessage.Should().Contain("before &lt;transcription&gt; after");
+    }
+
+    [Fact]
+    public async Task BuildPrompt_EscapesBothOpeningAndClosingTags()
+    {
+        var service = CreateService();
+        service.ResponseToReturn = "corrected";
+
+        await service.CorrectAsync("<transcription>injected</transcription>", "en");
+
+        service.LastUserMessage.Should().Contain("&lt;transcription&gt;injected&lt;/transcription&gt;");
+    }
+
+    [Fact]
+    public async Task BuildPrompt_EscapesOpeningTag_InTranslateMode()
+    {
+        var service = CreateService();
+        service.ResponseToReturn = "translated";
+
+        await service.CorrectAsync("<transcription>test", null, targetLanguage: "English");
+
+        service.LastUserMessage.Should().Contain("&lt;transcription&gt;test");
+        service.LastUserMessage.Should().Contain("[Translate to: English]");
+    }
+
+    // --- BuildCorrectionPrompt static method tests ---
+
+    [Fact]
+    public void BuildCorrectionPrompt_UsesDefaultSystemPrompt_WhenNoOverride()
+    {
+        var (systemPrompt, _) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", false, "test", "en", null);
+
+        systemPrompt.Should().StartWith(TextCorrectionDefaults.CorrectionSystemPrompt);
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_UsesConfiguredPrompt_WhenProvided()
+    {
+        var (systemPrompt, _) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, "Custom configured", "", "", false, "test", "en", null);
+
+        systemPrompt.Should().StartWith("Custom configured");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_UsesOverride_OverConfigured()
+    {
+        var (systemPrompt, _) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            "Override", "Configured", "", "", false, "test", "en", null);
+
+        systemPrompt.Should().StartWith("Override");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_AppendsDictionaryAndIdeFragments()
+    {
+        var (systemPrompt, _) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "\n[Dict: WriteSpeech]", "\n[IDE: MyClass]", false, "test", "en", null);
+
+        systemPrompt.Should().Contain("[Dict: WriteSpeech]");
+        systemPrompt.Should().Contain("[IDE: MyClass]");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_AppendsVocab_WhenAutoAddEnabled()
+    {
+        var (systemPrompt, _) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", true, "test", "en", null);
+
+        systemPrompt.Should().Contain("VOCAB");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_NoVocab_WhenAutoAddDisabled()
+    {
+        var (systemPrompt, _) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", false, "test", "en", null);
+
+        systemPrompt.Should().NotContain("VOCAB");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_EscapesBothTranscriptionTags()
+    {
+        var (_, userMessage) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", false, "<transcription>injected</transcription>", "en", null);
+
+        userMessage.Should().Contain("&lt;transcription&gt;injected&lt;/transcription&gt;");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_TranslateMode_SetsTranslateHint()
+    {
+        var (_, userMessage) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", false, "test", null, "English");
+
+        userMessage.Should().Contain("[Translate to: English]");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_SystemPromptOverride_OmitsLanguageHint()
+    {
+        var (_, userMessage) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            "Custom", null, "", "", false, "test", "de", null);
+
+        userMessage.Should().Be("<transcription>test</transcription>");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_NullLanguage_SetsNoTranslateHint()
+    {
+        var (_, userMessage) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", false, "test", null, null);
+
+        userMessage.Should().Contain("do NOT translate");
+    }
+
+    [Fact]
+    public void BuildCorrectionPrompt_WithLanguage_SetsLanguageHint()
+    {
+        var (_, userMessage) = TextCorrectionDefaults.BuildCorrectionPrompt(
+            null, null, "", "", false, "test", "de", null);
+
+        userMessage.Should().Contain("Output language MUST be: de");
+    }
+
     private class TestCorrectionService : CloudTextCorrectionServiceBase
     {
         public string? ResponseToReturn { get; set; } = "corrected";

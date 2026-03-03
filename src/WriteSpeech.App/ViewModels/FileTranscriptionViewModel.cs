@@ -16,8 +16,10 @@ namespace WriteSpeech.App.ViewModels;
 
 public record RecentFileItem(string FilePath, string FileName, string TimeAgo, string FileInfo);
 
-public partial class FileTranscriptionViewModel : ObservableObject
+public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
+
     internal static readonly HashSet<string> AudioExtensions =
         [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".mp4"];
 
@@ -258,6 +260,14 @@ public partial class FileTranscriptionViewModel : ObservableObject
         if (string.IsNullOrEmpty(ResultText)) return;
         _dispatcher.Invoke(() => System.Windows.Clipboard.SetText(ResultText));
         IsCopied = true;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 
     internal static string FormatFileSize(long bytes) => bytes switch
