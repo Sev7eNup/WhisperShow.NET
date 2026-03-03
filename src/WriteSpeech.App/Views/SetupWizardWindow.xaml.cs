@@ -219,6 +219,21 @@ public partial class SetupWizardWindow : Window
         if (sender is TextBox tb) _viewModel.SetOpenAiApiKey(tb.Text);
     }
 
+    private void OpenAiCorrectionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetOpenAiApiKey(tb.Text);
+    }
+
+    private void OpenAiCorrectionApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetOpenAiApiKey(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+    }
+
     private void GroqTranscriptionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (sender is TextBox tb) _viewModel.SetGroqTranscriptionApiKey(tb.Text);

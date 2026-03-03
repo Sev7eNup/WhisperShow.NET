@@ -716,6 +716,15 @@
                                    FontSize="11" FontFamily="Segoe UI Variable, Segoe UI"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"
                                    Visibility="{Binding IsReusableOpenAiKey, Converter={StaticResource BoolToVisibility}}"/>
+                        <!-- API key field (shown when no key from transcription step) -->
+                        <StackPanel Visibility="{Binding IsReusableOpenAiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="OpenAiCorrectionApiKeyBox" Style="{StaticResource SettingsTextBoxStyle}"
+                                     Text="{Binding OpenAiApiKey, Mode=OneTime}"
+                                     Tag="sk-..." MaxWidth="460" MinWidth="300"
+                                     KeyDown="OpenAiCorrectionApiKeyBox_KeyDown" TextChanged="OpenAiCorrectionApiKeyBox_TextChanged"/>
+                        </StackPanel>
                         <TextBlock Text="Model" FontSize="11" FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
                         <ItemsControl ItemsSource="{x:Static svm:TranscriptionSettingsViewModel.CloudCorrectionModels}">
