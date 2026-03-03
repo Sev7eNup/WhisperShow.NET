@@ -20,9 +20,9 @@ public class AudioRecordingService : IAudioRecordingService
     private System.Timers.Timer? _maxDurationTimer;
     private bool _disposed;
 
-    // Listening mode state
-    private bool _isListening;
-    private bool _isRecording;
+    // Listening mode state (volatile: read from NAudio callback thread without lock)
+    private volatile bool _isListening;
+    private volatile bool _isRecording;
 
     // Circular pre-buffer for capturing audio before speech detection
     private byte[]? _preBuffer;
@@ -211,48 +211,56 @@ public class AudioRecordingService : IAudioRecordingService
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
-        bool wasRecording = _isRecording;
-
-        // Pre-buffer: write raw bytes before VAD processing so the current chunk
-        // is included when the pre-buffer is flushed on speech detection
-        if (_isListening && !_isRecording)
+        try
         {
-            WriteToPreBuffer(e.Buffer, e.BytesRecorded);
-        }
+            bool wasRecording = _isRecording;
 
-        // Feed audio to VAD for speech/silence detection
-        if (_vadService is not null && (_isListening || _isRecording))
-        {
-            var samples = ConvertBytesToFloats(e.Buffer, e.BytesRecorded);
-            _vadService.ProcessAudioChunk(samples);
-            // SpeechStarted/SilenceDetected events may have fired synchronously,
-            // potentially transitioning _isRecording from false to true
-        }
-
-        // Write to WAV file (only if we were already recording before VAD processing,
-        // to avoid double-writing the chunk that triggered the transition)
-        if (wasRecording)
-        {
-            lock (_recordingLock)
+            // Pre-buffer: write raw bytes before VAD processing so the current chunk
+            // is included when the pre-buffer is flushed on speech detection
+            if (_isListening && !_isRecording)
             {
-                _waveFileWriter?.Write(e.Buffer, 0, e.BytesRecorded);
+                WriteToPreBuffer(e.Buffer, e.BytesRecorded);
             }
+
+            // Feed audio to VAD for speech/silence detection
+            if (_vadService is not null && (_isListening || _isRecording))
+            {
+                var samples = ConvertBytesToFloats(e.Buffer, e.BytesRecorded);
+                _vadService.ProcessAudioChunk(samples);
+                // SpeechStarted/SilenceDetected events may have fired synchronously,
+                // potentially transitioning _isRecording from false to true
+            }
+
+            // Write to WAV file (only if we were already recording before VAD processing,
+            // to avoid double-writing the chunk that triggered the transition)
+            if (wasRecording)
+            {
+                lock (_recordingLock)
+                {
+                    _waveFileWriter?.Write(e.Buffer, 0, e.BytesRecorded);
+                }
+            }
+
+            // Calculate RMS audio level for visualization
+            int sampleCount = e.BytesRecorded / 2; // 16-bit = 2 bytes per sample
+            if (sampleCount == 0) return;
+
+            float sum = 0;
+            for (int i = 0; i < e.BytesRecorded; i += 2)
+            {
+                short sample = BitConverter.ToInt16(e.Buffer, i);
+                float normalized = sample / 32768f;
+                sum += normalized * normalized;
+            }
+
+            float rms = MathF.Sqrt(sum / sampleCount);
+            AudioLevelChanged?.Invoke(this, rms);
         }
-
-        // Calculate RMS audio level for visualization
-        int sampleCount = e.BytesRecorded / 2; // 16-bit = 2 bytes per sample
-        if (sampleCount == 0) return;
-
-        float sum = 0;
-        for (int i = 0; i < e.BytesRecorded; i += 2)
+        catch (Exception ex)
         {
-            short sample = BitConverter.ToInt16(e.Buffer, i);
-            float normalized = sample / 32768f;
-            sum += normalized * normalized;
+            _logger.LogError(ex, "Error processing audio data");
+            RecordingError?.Invoke(this, ex);
         }
-
-        float rms = MathF.Sqrt(sum / sampleCount);
-        AudioLevelChanged?.Invoke(this, rms);
     }
 
     private void OnVadSpeechStarted(object? sender, EventArgs e)

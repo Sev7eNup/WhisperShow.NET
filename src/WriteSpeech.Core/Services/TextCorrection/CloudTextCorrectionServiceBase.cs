@@ -36,11 +36,7 @@ public abstract class CloudTextCorrectionServiceBase : ITextCorrectionService
         IdeContextService = ideContextService;
     }
 
-    /// <summary>
-    /// Maximum character length for text sent to cloud correction APIs.
-    /// Prevents excessive token usage from very long transcriptions or selected text.
-    /// </summary>
-    internal const int MaxInputLength = 50_000;
+    internal const int MaxInputLength = TextCorrectionDefaults.MaxInputLength;
 
     public async Task<string> CorrectAsync(
         string rawText,

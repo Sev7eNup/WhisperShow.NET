@@ -31,7 +31,7 @@ public enum SettingsPage
     Statistics
 }
 
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsPersistenceService _persistenceService;
 
@@ -144,5 +144,10 @@ public partial class SettingsViewModel : ObservableObject
             parent[key] = obj;
         }
         return obj;
+    }
+
+    public void Dispose()
+    {
+        Transcription.PropertyChanged -= OnTranscriptionPropertyChanged;
     }
 }

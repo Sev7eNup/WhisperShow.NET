@@ -108,6 +108,12 @@ public static class TextCorrectionDefaults
         return (systemPrompt, userMessage);
     }
 
+    /// <summary>
+    /// Maximum character length for text sent to correction APIs (cloud and local).
+    /// Prevents excessive token usage from very long transcriptions or selected text.
+    /// </summary>
+    public const int MaxInputLength = 50_000;
+
     public const string VocabDelimiter = "---VOCAB---";
 
     public const string VocabExtractionInstruction =

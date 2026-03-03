@@ -19,11 +19,7 @@ public class LocalTextCorrectionService : ITextCorrectionService, IDisposable
     private const uint DefaultContextSize = 2048;
     private const int MinInferenceTokens = 256;
 
-    /// <summary>
-    /// Maximum character length for text sent to local correction model.
-    /// Prevents excessive memory usage from very long input during prompt encoding.
-    /// </summary>
-    internal const int MaxInputLength = 50_000;
+    internal const int MaxInputLength = TextCorrectionDefaults.MaxInputLength;
 
     private readonly Lock _loadLock = new();
     private LLamaWeights? _model;

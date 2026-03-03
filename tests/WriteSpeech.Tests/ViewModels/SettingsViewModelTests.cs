@@ -852,6 +852,31 @@ public class SettingsViewModelTests
         result.Count.Should().Be(0);
     }
 
+    // --- Dispose ---
+
+    [Fact]
+    public void Dispose_UnsubscribesFromTranscriptionPropertyChanged()
+    {
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Cloud);
+
+        vm.Dispose();
+
+        // After dispose, changing correction provider should NOT propagate to sub-VMs
+        vm.DictionarySnippets.IsCorrectionOff = false;
+        vm.Transcription.SelectCorrectionProviderCommand.Execute("Off");
+        vm.DictionarySnippets.IsCorrectionOff.Should().BeFalse(); // Not updated because handler was unsubscribed
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var vm = CreateViewModel();
+
+        var act = () => { vm.Dispose(); vm.Dispose(); };
+
+        act.Should().NotThrow();
+    }
+
     // --- Mic Test ---
 
     [Fact]
