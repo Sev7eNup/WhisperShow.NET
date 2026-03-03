@@ -15,7 +15,7 @@ public class DebouncedSaveHelperTests
             NullLogger.Instance, delayMs: 50);
 
         helper.Schedule();
-        await Task.Delay(300);
+        await helper.FlushAsync();
 
         saveCount.Should().Be(1);
     }
@@ -32,7 +32,7 @@ public class DebouncedSaveHelperTests
         helper.Schedule();
         await Task.Delay(30);
         helper.Schedule();
-        await Task.Delay(200);
+        await helper.FlushAsync();
 
         saveCount.Should().Be(1);
     }
@@ -108,7 +108,7 @@ public class DebouncedSaveHelperTests
 
         // Schedule again after flush — should work
         helper.Schedule();
-        await Task.Delay(200);
+        await helper.FlushAsync();
 
         saveCount.Should().Be(2);
     }
@@ -145,12 +145,12 @@ public class DebouncedSaveHelperTests
 
         // First save fails
         helper.Schedule();
-        await Task.Delay(200);
+        await helper.FlushAsync();
 
         // Second save should still work
         shouldFail = false;
         helper.Schedule();
-        await Task.Delay(200);
+        await helper.FlushAsync();
 
         successCount.Should().Be(1);
     }
