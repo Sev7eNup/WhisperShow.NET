@@ -48,20 +48,27 @@ jobs:
         shell: bash
         run: |
           python3 -c "
-          import json, sys
-          with open('publish/appsettings.json') as f:
-              data = json.load(f)
-          ws = data.get('WriteSpeech', {})
-          keys_to_check = [
-              ('OpenAI.ApiKey', ws.get('OpenAI', {}).get('ApiKey', '')),
-              ('TextCorrection.Anthropic.ApiKey', ws.get('TextCorrection', {}).get('Anthropic', {}).get('ApiKey', '')),
-              ('TextCorrection.Google.ApiKey', ws.get('TextCorrection', {}).get('Google', {}).get('ApiKey', '')),
-              ('TextCorrection.Groq.ApiKey', ws.get('TextCorrection', {}).get('Groq', {}).get('ApiKey', '')),
-          ]
-          leaked = [name for name, val in keys_to_check if val and val != 'null']
+          import json, sys, os
+          files_to_check = ['publish/appsettings.template.json', 'publish/appsettings.json']
+          leaked = []
+          for path in files_to_check:
+              if not os.path.exists(path):
+                  continue
+              with open(path) as f:
+                  data = json.load(f)
+              ws = data.get('WriteSpeech', {})
+              keys_to_check = [
+                  ('OpenAI.ApiKey', ws.get('OpenAI', {}).get('ApiKey', '')),
+                  ('TextCorrection.Anthropic.ApiKey', ws.get('TextCorrection', {}).get('Anthropic', {}).get('ApiKey', '')),
+                  ('TextCorrection.Google.ApiKey', ws.get('TextCorrection', {}).get('Google', {}).get('ApiKey', '')),
+                  ('TextCorrection.Groq.ApiKey', ws.get('TextCorrection', {}).get('Groq', {}).get('ApiKey', '')),
+              ]
+              for name, val in keys_to_check:
+                  if val and val != 'null':
+                      leaked.append(f'{path}: {name}')
           if leaked:
-              for name in leaked:
-                  print(f'::error::appsettings.json contains non-empty API key: {name}')
+              for item in leaked:
+                  print(f'::error::Published config contains non-empty API key: {item}')
               sys.exit(1)
           print('All API key fields are empty — OK')
           "
