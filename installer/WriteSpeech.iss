@@ -44,7 +44,7 @@ Name: "launchstartup"; Description: "Start WriteSpeech with Windows"; GroupDescr
 
 [Files]
 ; Preserve user-modified appsettings.json on upgrades
-Source: "..\publish\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
+Source: "..\publish\appsettings.template.json"; DestDir: "{app}"; DestName: "appsettings.json"; Flags: onlyifdoesntexist
 ; All other files are always overwritten
 Source: "..\publish\*"; DestDir: "{app}"; Excludes: "appsettings.json"; Flags: ignoreversion recursesubdirs createallsubdirs
 
