@@ -138,6 +138,8 @@ public partial class App : Application
                 services.AddSingleton<TrayIconManager>();
 
                 // ViewModels
+                services.AddSingleton<RecordingController>();
+                services.AddSingleton<TranscriptionPipeline>();
                 services.AddSingleton<OverlayViewModel>();
                 services.AddSingleton<SettingsViewModel>();
                 services.AddSingleton<HistoryViewModel>();

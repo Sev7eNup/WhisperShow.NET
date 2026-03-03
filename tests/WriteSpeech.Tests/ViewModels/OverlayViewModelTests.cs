@@ -70,7 +70,7 @@ public class OverlayViewModelTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        return new OverlayViewModel(
+        return OverlayViewModel.CreateForTests(
             _audioService,
             _mutingService,
             providerFactory,
@@ -1086,7 +1086,7 @@ public class OverlayViewModelTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        return new OverlayViewModel(
+        return OverlayViewModel.CreateForTests(
             _audioService, _mutingService,
             new TestProviderFactory(_transcriptionProvider),
             _textInsertionService,
@@ -1125,7 +1125,7 @@ public class OverlayViewModelTests : IDisposable
             o.Integration = _optionsValue.Integration;
         });
 
-        return new OverlayViewModel(
+        return OverlayViewModel.CreateForTests(
             _audioService, _mutingService,
             new TestProviderFactory(_transcriptionProvider),
             _textInsertionService,
@@ -1155,7 +1155,7 @@ public class OverlayViewModelTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        return new OverlayViewModel(
+        return OverlayViewModel.CreateForTests(
             _audioService, _mutingService,
             new TestProviderFactory(_transcriptionProvider),
             _textInsertionService,

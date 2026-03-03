@@ -69,7 +69,7 @@ public class OverlayViewModelFocusTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        _viewModel = new OverlayViewModel(
+        _viewModel = OverlayViewModel.CreateForTests(
             _audioService,
             Substitute.For<IAudioMutingService>(),
             providerFactory,

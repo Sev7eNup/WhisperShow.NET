@@ -238,7 +238,7 @@ public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "File transcription failed: {FileName}", FileName);
-            ErrorMessage = $"Transcription failed: {OverlayViewModel.SanitizeErrorMessage(ex)}";
+            ErrorMessage = $"Transcription failed: {ErrorMessageHelper.SanitizeErrorMessage(ex)}";
         }
         finally
         {

@@ -71,7 +71,7 @@ public class OverlayViewModelCommandModeTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        _viewModel = new OverlayViewModel(
+        _viewModel = OverlayViewModel.CreateForTests(
             _audioService,
             _mutingService,
             providerFactory,

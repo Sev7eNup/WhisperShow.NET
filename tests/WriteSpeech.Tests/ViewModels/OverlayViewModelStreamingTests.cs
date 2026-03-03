@@ -65,7 +65,7 @@ public class OverlayViewModelStreamingTests : IDisposable
             o.Overlay = _optionsValue.Overlay;
         });
 
-        return new OverlayViewModel(
+        return OverlayViewModel.CreateForTests(
             _audioService,
             _mutingService,
             providerFactory,
