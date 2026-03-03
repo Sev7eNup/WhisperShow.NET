@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
+using WriteSpeech.Core.Services;
 
 namespace WriteSpeech.Core.Services.History;
 
@@ -102,7 +103,7 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
             Directory.CreateDirectory(dir);
 
             var json = JsonSerializer.Serialize(snapshot, s_jsonOptions);
-            await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+            await AtomicFileHelper.WriteAllTextAsync(_filePath, json);
         }
         catch (Exception ex)
         {

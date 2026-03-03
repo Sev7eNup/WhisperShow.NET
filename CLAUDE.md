@@ -58,7 +58,7 @@ src/
                               # IDictionaryService, DictionaryService (custom word dictionary)
                               # VocabResponseParser (extract vocabulary from correction responses)
       Modes/                  # IModeService, ModeService (context-aware correction modes)
-                              # CorrectionModeDefaults (6 built-in modes: Default, Email, Message, Code, Note, Translate)
+                              # CorrectionModeDefaults (6 built-in modes: Default, E-Mail, Message, Code, Note, Translate)
       IDE/                    # IIDEDetectionService (detect active IDE from window handle)
                               # IIDEContextService, IDEContextService (scan workspace for identifiers/files)
                               # SourceFileParser (static: extract identifiers from source code)
@@ -209,7 +209,7 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 
 ### Correction Modes (IModeService)
 Context-aware text correction with different system prompts based on active application.
-- **6 built-in modes**: Default, Email, Message, Code, Note, Translate — each with tailored system prompts and app patterns
+- **6 built-in modes**: Default, E-Mail, Message, Code, Note, Translate — each with tailored system prompts and app patterns
 - **Custom modes**: Users can create modes with custom prompts and app-matching patterns
 - **Auto-switch**: When enabled, automatically selects mode based on foreground process name matching against `AppPatterns`
 - **Manual pin**: Users can pin a specific mode that overrides auto-switch
@@ -219,7 +219,7 @@ Context-aware text correction with different system prompts based on active appl
 - **Tray integration**: Mode submenu in system tray context menu for quick switching
 
 Built-in mode app patterns:
-- **Email**: Outlook, Thunderbird, olk
+- **E-Mail**: (no app patterns — manual selection only, composes formal German emails from keywords)
 - **Message**: Slack, Teams, Discord, Telegram, WhatsApp, Signal
 - **Code**: Code, Cursor, Windsurf, devenv, rider64, idea64
 - **Note**: Obsidian, Notion, WINWORD, EXCEL, notepad, OneNote

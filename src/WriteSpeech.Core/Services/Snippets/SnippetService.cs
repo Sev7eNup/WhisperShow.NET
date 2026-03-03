@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Services;
 
 namespace WriteSpeech.Core.Services.Snippets;
 
@@ -151,7 +152,7 @@ public class SnippetService : ISnippetService
             lock (_lock) snapshot = [.. _snippets];
 
             var json = JsonSerializer.Serialize(snapshot, JsonOptions);
-            await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+            await AtomicFileHelper.WriteAllTextAsync(_filePath, json);
             _logger.LogDebug("Saved {Count} snippets", snapshot.Count);
         }
         catch (Exception ex)

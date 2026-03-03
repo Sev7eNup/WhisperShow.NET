@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
+using WriteSpeech.Core.Services;
 
 namespace WriteSpeech.Core.Services.Statistics;
 
@@ -110,7 +111,7 @@ public class UsageStatsService : IUsageStatsService
             lock (_lock) snapshot = Clone(_stats);
 
             var json = JsonSerializer.Serialize(snapshot, s_jsonOptions);
-            await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+            await AtomicFileHelper.WriteAllTextAsync(_filePath, json);
         }
         catch (Exception ex)
         {

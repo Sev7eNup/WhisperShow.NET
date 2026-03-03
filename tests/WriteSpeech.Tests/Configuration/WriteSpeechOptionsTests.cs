@@ -399,6 +399,41 @@ public class WriteSpeechOptionsTests
         result.FailureMessage.Should().Contain("AutoDismissSeconds");
     }
 
+    // --- MaxHistoryEntries ---
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(10_001)]
+    [InlineData(100_000)]
+    public void Validator_InvalidMaxHistoryEntries_Fails(int entries)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.App.MaxHistoryEntries = entries;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("MaxHistoryEntries");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(20)]
+    [InlineData(1000)]
+    [InlineData(10_000)]
+    public void Validator_ValidMaxHistoryEntries_Succeeds(int entries)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.App.MaxHistoryEntries = entries;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
     // --- HotkeyBinding ---
 
     [Fact]

@@ -111,4 +111,10 @@ public class StripMetaCommentaryTests
 
         LocalTextCorrectionService.StripMetaCommentary(input).Should().Be("Da bin ich mal gespannt.");
     }
+
+    [Fact]
+    public void MaxInputLength_MatchesCloudBaseValue()
+    {
+        LocalTextCorrectionService.MaxInputLength.Should().Be(CloudTextCorrectionServiceBase.MaxInputLength);
+    }
 }

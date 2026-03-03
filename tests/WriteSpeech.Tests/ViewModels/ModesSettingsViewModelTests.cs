@@ -51,7 +51,7 @@ public class ModesSettingsViewModelTests : IDisposable
         var vm = CreateViewModel();
 
         vm.Modes.Should().HaveCount(6);
-        vm.Modes.Select(m => m.Name).Should().Contain(["Default", "Email", "Message", "Code", "Note", "Translate"]);
+        vm.Modes.Select(m => m.Name).Should().Contain(["Default", "E-Mail", "Message", "Code", "Note", "Translate"]);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class ModesSettingsViewModelTests : IDisposable
     {
         var vm = CreateViewModel();
 
-        var email = vm.Modes.First(m => m.Name == "Email");
+        var email = vm.Modes.First(m => m.Name == "E-Mail");
         vm.RemoveModeCommand.Execute(email);
 
         vm.Modes.Should().HaveCount(6);
@@ -255,7 +255,7 @@ public class ModesSettingsViewModelTests : IDisposable
     public void SaveModeCommand_DuplicateName_DoesNotAdd()
     {
         var vm = CreateViewModel();
-        vm.NewModeName = "Email"; // Built-in name
+        vm.NewModeName = "E-Mail"; // Built-in name
         vm.NewModePrompt = "duplicate prompt";
 
         vm.SaveModeCommand.Execute(null);
@@ -291,16 +291,16 @@ public class ModesSettingsViewModelTests : IDisposable
     public void SaveModeCommand_EditingBuiltInMode_PreservesName()
     {
         var vm = CreateViewModel();
-        var email = vm.Modes.First(m => m.Name == "Email");
+        var email = vm.Modes.First(m => m.Name == "E-Mail");
         vm.EditModeCommand.Execute(email);
 
-        vm.NewModeName = "Renamed Email"; // Try to rename built-in
+        vm.NewModeName = "Renamed E-Mail"; // Try to rename built-in
         vm.NewModePrompt = "updated prompt";
         vm.SaveModeCommand.Execute(null);
 
         // Built-in mode name should be preserved
-        vm.Modes.Should().Contain(m => m.Name == "Email");
-        var updated = vm.Modes.First(m => m.Name == "Email");
+        vm.Modes.Should().Contain(m => m.Name == "E-Mail");
+        var updated = vm.Modes.First(m => m.Name == "E-Mail");
         updated.SystemPrompt.Should().Be("updated prompt");
     }
 }

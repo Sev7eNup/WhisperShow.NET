@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using WriteSpeech.Core.Configuration;
+using WriteSpeech.Core.Services;
 
 namespace WriteSpeech.Core.Services.TextCorrection;
 
@@ -109,7 +110,7 @@ public class DictionaryService : IDictionaryService
             lock (_lock) snapshot = [.. _entries];
 
             var json = JsonSerializer.Serialize(snapshot, s_jsonOptions);
-            await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+            await AtomicFileHelper.WriteAllTextAsync(_filePath, json);
             _logger.LogDebug("Saved {Count} custom dictionary entries", snapshot.Count);
         }
         catch (Exception ex)

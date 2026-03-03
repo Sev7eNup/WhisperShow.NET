@@ -76,11 +76,8 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 
             mutator(section);
 
-            // Write to temp file first, then rename atomically to avoid
-            // FileSystemWatcher seeing a truncated/empty file during the write
-            var tempPath = _filePath + ".tmp";
-            await File.WriteAllTextAsync(tempPath, doc.ToJsonString(s_jsonOptions));
-            File.Move(tempPath, _filePath, overwrite: true);
+            // Write atomically: temp file + rename to avoid FileSystemWatcher seeing truncated data
+            await AtomicFileHelper.WriteAllTextAsync(_filePath, doc.ToJsonString(s_jsonOptions));
             _logger.LogInformation("Settings saved to appsettings.json");
         }
         finally

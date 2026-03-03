@@ -212,8 +212,8 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         if (options.Overlay.Scale is < 0.5 or > 3.0)
             failures.Add($"Overlay.Scale must be between 0.5 and 3.0 (got {options.Overlay.Scale}).");
 
-        if (options.App.MaxHistoryEntries < 1)
-            failures.Add($"App.MaxHistoryEntries must be at least 1 (got {options.App.MaxHistoryEntries}).");
+        if (options.App.MaxHistoryEntries is < 1 or > 10_000)
+            failures.Add($"App.MaxHistoryEntries must be between 1 and 10000 (got {options.App.MaxHistoryEntries}).");
 
         ValidateEndpoint(options.OpenAI.Endpoint, "OpenAI.Endpoint", failures);
         ValidateEndpoint(options.TextCorrection.Google.Endpoint, "TextCorrection.Google.Endpoint", failures);

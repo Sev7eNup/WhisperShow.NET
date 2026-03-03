@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Models;
+using WriteSpeech.Core.Services;
 
 namespace WriteSpeech.Core.Services.Modes;
 
@@ -263,7 +264,7 @@ public class ModeService : IModeService
 
             var data = new ModeFileData(toSave);
             var json = JsonSerializer.Serialize(data, JsonOptions);
-            await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+            await AtomicFileHelper.WriteAllTextAsync(_filePath, json);
             _logger.LogDebug("Saved {Count} correction modes", toSave.Count);
         }
         catch (Exception ex)

@@ -44,7 +44,7 @@ public class ModeServiceTests : IDisposable
     {
         var modes = _service.GetModes();
         modes.Should().HaveCount(6);
-        modes.Select(m => m.Name).Should().Contain(["Default", "Email", "Message", "Code", "Note", "Translate"]);
+        modes.Select(m => m.Name).Should().Contain(["Default", "E-Mail", "Message", "Code", "Note", "Translate"]);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class ModeServiceTests : IDisposable
     [Fact]
     public void AddMode_DuplicateName_DoesNotAdd()
     {
-        _service.AddMode("Email", "duplicate", []);
+        _service.AddMode("E-Mail", "duplicate", []);
 
         _service.GetModes().Should().HaveCount(6);
     }
@@ -110,10 +110,10 @@ public class ModeServiceTests : IDisposable
     [Fact]
     public void RemoveMode_BuiltInMode_DoesNotRemove()
     {
-        _service.RemoveMode("Email");
+        _service.RemoveMode("E-Mail");
 
         _service.GetModes().Should().HaveCount(6);
-        _service.GetModes().Should().Contain(m => m.Name == "Email");
+        _service.GetModes().Should().Contain(m => m.Name == "E-Mail");
     }
 
     [Fact]
@@ -145,11 +145,11 @@ public class ModeServiceTests : IDisposable
     [Fact]
     public void UpdateMode_BuiltInMode_CanUpdatePromptButNotName()
     {
-        _service.UpdateMode("Email", "Renamed", "custom email prompt", []);
+        _service.UpdateMode("E-Mail", "Renamed", "custom email prompt", []);
 
-        var mode = _service.GetModes().First(m => m.Name == "Email");
+        var mode = _service.GetModes().First(m => m.Name == "E-Mail");
         mode.SystemPrompt.Should().Be("custom email prompt");
-        mode.Name.Should().Be("Email"); // Name unchanged for built-in
+        mode.Name.Should().Be("E-Mail"); // Name unchanged for built-in
     }
 
     [Fact]
@@ -178,28 +178,10 @@ public class ModeServiceTests : IDisposable
     public void ResolveSystemPrompt_NonDefaultMode_ReturnsPrompt()
     {
         _service.AutoSwitchEnabled = false;
-        _service.SetActiveMode("Email");
+        _service.SetActiveMode("E-Mail");
 
         var prompt = _service.ResolveSystemPrompt(null);
-        prompt.Should().Be(CorrectionModeDefaults.EmailPrompt);
-    }
-
-    [Fact]
-    public void ResolveSystemPrompt_AutoSwitch_MatchesProcessName()
-    {
-        _service.AutoSwitchEnabled = true;
-
-        var prompt = _service.ResolveSystemPrompt("Outlook");
-        prompt.Should().Be(CorrectionModeDefaults.EmailPrompt);
-    }
-
-    [Fact]
-    public void ResolveSystemPrompt_AutoSwitch_CaseInsensitive()
-    {
-        _service.AutoSwitchEnabled = true;
-
-        var prompt = _service.ResolveSystemPrompt("outlook");
-        prompt.Should().Be(CorrectionModeDefaults.EmailPrompt);
+        prompt.Should().Be(CorrectionModeDefaults.ComposePrompt);
     }
 
     [Fact]
@@ -427,7 +409,7 @@ public class ModeServiceTests : IDisposable
     public void ResolveTargetLanguage_NonTranslateMode_ReturnsNull()
     {
         _service.AutoSwitchEnabled = false;
-        _service.SetActiveMode("Email");
+        _service.SetActiveMode("E-Mail");
 
         _service.ResolveTargetLanguage(null).Should().BeNull();
     }
@@ -492,6 +474,48 @@ public class ModeServiceTests : IDisposable
         }
     }
 
+    // --- E-Mail mode ---
+
+    [Fact]
+    public void EmailMode_ContainsGermanEmailInstructions()
+    {
+        var email = _service.GetModes().First(m => m.Name == "E-Mail");
+        email.SystemPrompt.Should().Contain("German");
+        email.SystemPrompt.Should().Contain("greeting");
+        email.SystemPrompt.Should().Contain("closing");
+    }
+
+    [Fact]
+    public void EmailMode_IsBuiltIn()
+    {
+        var email = _service.GetModes().First(m => m.Name == "E-Mail");
+        email.IsBuiltIn.Should().BeTrue();
+    }
+
+    [Fact]
+    public void EmailMode_HasNoAppPatterns()
+    {
+        var email = _service.GetModes().First(m => m.Name == "E-Mail");
+        email.AppPatterns.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void EmailMode_HasNoTargetLanguage()
+    {
+        var email = _service.GetModes().First(m => m.Name == "E-Mail");
+        email.TargetLanguage.Should().BeNull();
+    }
+
+    [Fact]
+    public void ResolveSystemPrompt_EmailMode_ReturnsComposePrompt()
+    {
+        _service.AutoSwitchEnabled = false;
+        _service.SetActiveMode("E-Mail");
+
+        var prompt = _service.ResolveSystemPrompt(null);
+        prompt.Should().Be(CorrectionModeDefaults.ComposePrompt);
+    }
+
     [Fact]
     public void TranslatePrompt_DoesNotContainNeverTranslate()
     {
@@ -505,7 +529,7 @@ public class ModeServiceTests : IDisposable
     public void ResolveMode_AutoSwitchOn_MatchOverridesPinned()
     {
         _service.AutoSwitchEnabled = true;
-        _service.SetActiveMode("Email"); // Pinned to Email
+        _service.SetActiveMode("E-Mail"); // Pinned to E-Mail
 
         // "Slack" matches Message mode — auto-switch should win over pin
         var prompt = _service.ResolveSystemPrompt("Slack");
@@ -516,11 +540,11 @@ public class ModeServiceTests : IDisposable
     public void ResolveMode_AutoSwitchOff_PinnedOverridesMatch()
     {
         _service.AutoSwitchEnabled = false;
-        _service.SetActiveMode("Email"); // Pinned to Email
+        _service.SetActiveMode("E-Mail"); // Pinned to E-Mail
 
         // Even though "Slack" would match Message, auto-switch is off → pinned wins
         var prompt = _service.ResolveSystemPrompt("Slack");
-        prompt.Should().Be(CorrectionModeDefaults.EmailPrompt);
+        prompt.Should().Be(CorrectionModeDefaults.ComposePrompt);
     }
 
     [Fact]
