@@ -18,7 +18,9 @@ taskkill //F //IM WriteSpeech.App.exe
 
 ## CI/CD
 
-GitHub Actions workflow (`.github/workflows/ci.yml`): builds and tests on `windows-latest` with .NET 10, triggered on push/PR to `main`.
+- `.github/workflows/ci.yml`: builds and tests on `windows-latest` with .NET 10, triggered on push/PR to `main`
+- `.github/workflows/release.yml`: triggered on `v*.*.*` tags — runs tests, publishes self-contained win-x64, verifies no API keys in config, builds Inno Setup installer, creates GitHub Release with installer artifact
+- `.github/dependabot.yml`: automated NuGet + GitHub Actions dependency updates
 
 ## Project Structure
 
@@ -26,6 +28,11 @@ GitHub Actions workflow (`.github/workflows/ci.yml`): builds and tests on `windo
 WriteSpeech.slnx
 .github/
   workflows/ci.yml            # GitHub Actions: Build + Test on Windows
+  workflows/release.yml       # GitHub Actions: Build installer + create Release on version tags
+  dependabot.yml              # Automated dependency updates (NuGet + Actions)
+
+installer/
+  WriteSpeech.iss             # Inno Setup installer script (x64, Win10+, preserves user config)
 
 src/
   WriteSpeech.Core/          # Platform-independent core logic (net10.0)
@@ -51,9 +58,10 @@ src/
       TextCorrection/         # ITextCorrectionService, CloudTextCorrectionServiceBase (abstract)
                               # OpenAiTextCorrectionService, AnthropicTextCorrectionService
                               # GoogleTextCorrectionService, GroqTextCorrectionService
+                              # CustomTextCorrectionService (user-defined endpoint)
                               # LocalTextCorrectionService (LLamaSharp)
                               # ICombinedTranscriptionCorrectionService, CombinedAudioTranscriptionService
-                              # TextCorrectionProviderFactory (Off/OpenAI/Anthropic/Google/Groq/Local)
+                              # TextCorrectionProviderFactory (Off/OpenAI/Anthropic/Google/Groq/Custom/Local)
                               # TextCorrectionDefaults (shared system prompt constants)
                               # IDictionaryService, DictionaryService (custom word dictionary)
                               # VocabResponseParser (extract vocabulary from correction responses)
@@ -77,6 +85,7 @@ src/
       IDispatcherService.cs   # UI dispatcher abstraction (testable)
       OpenAiClientFactory.cs  # Centralized OpenAI client caching (thread-safe, Lock)
       DebouncedSaveHelper.cs  # Reusable debounced async save utility (used by 7+ services)
+      AtomicFileHelper.cs     # Atomic file writes: write to .tmp → rename, corrupted file backup
 
   WriteSpeech.App/            # WPF application (net10.0-windows)
     App.xaml.cs               # Host builder, DI, Serilog, CUDA path discovery, single-instance (Mutex),
@@ -90,8 +99,12 @@ src/
       Icons/                  # app.ico (application icon)
     Converters/               # SettingsConverters.cs (Visibility, Boolean, etc.)
     ViewModels/
-      OverlayViewModel.cs     # Main state machine: Idle -> Recording -> Transcribing -> auto-insert
-                              # Voice command mode, IDE context injection, mode-aware correction
+      OverlayViewModel.cs     # State machine coordinator: delegates to RecordingController + TranscriptionPipeline
+      RecordingController.cs  # Audio recording lifecycle, timer, muting, sound effects, VAD event relay
+      TranscriptionPipeline.cs # Provider routing, streaming, correction, command mode, IDE context, snippets
+      ErrorMessageHelper.cs   # Static SanitizeErrorMessage() for user-friendly error strings
+      MicTestHelper.cs        # Shared mic testing utility (used by SetupWizard + GeneralSettings)
+      SetupWizardViewModel.cs # First-run wizard: language, providers, mic selection, model download
       SettingsViewModel.cs    # Settings coordinator, page navigation, delegates to sub-VMs
       HistoryViewModel.cs     # Transcription history list
       FileTranscriptionViewModel.cs # File-based audio transcription (tray menu → file dialog)
@@ -113,9 +126,14 @@ src/
       OverlayWindow.xaml.cs   # Waveform bars, drag support, visual state management
       SettingsWindow.xaml      # Settings window container (8 pages)
       SettingsWindow.xaml.cs   # Code-behind: hotkey capture, inline editing, theme switching
+      SetupWizardWindow.xaml   # First-run setup wizard (4 steps: Welcome → Transcription → Correction → Mic)
+      SetupWizardWindow.xaml.cs
+      ConfirmationDialog.xaml  # Custom themed confirmation dialog (replaces MessageBox)
+      ConfirmationDialog.xaml.cs
+      ThemeHelper.cs           # Static helper to apply dark/light theme to any FrameworkElement
       HistoryWindow.xaml       # Transcription history window (accent-styled)
       HistoryWindow.xaml.cs
-      FileTranscriptionWindow.xaml    # File transcription window (accent-styled)
+      FileTranscriptionWindow.xaml    # File transcription window (accent-styled, drag & drop audio picker)
       FileTranscriptionWindow.xaml.cs
       Settings/               # Per-page UserControls
         GeneralPage.xaml       # General settings (language, mic, hotkey, hotkey method)
@@ -167,7 +185,7 @@ tests/
 dotnet test tests/WriteSpeech.Tests
 ```
 
-49 test files, ~1258 test methods across services, ViewModels, views, models, converters, and configuration.
+74 test files, ~1454 test methods across services, ViewModels, views, models, converters, and configuration.
 
 Key test patterns:
 - **Mocking**: NSubstitute for all service interfaces
@@ -187,15 +205,19 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 
 ### Transcription Providers
 - **OpenAI**: Uses `OpenAI` SDK (`AudioClient.TranscribeAudioAsync`) — cloud-based, requires API key
+- **Groq**: Uses OpenAI SDK with Groq-compatible endpoint (`api.groq.com`) — cloud-based, whisper-large-v3-turbo
+- **Custom**: User-defined OpenAI-compatible transcription endpoint
 - **Local**: Uses `Whisper.net` (`WhisperFactory.FromPath`) — offline, requires GGML model file. Implements `IStreamingTranscriptionService` for segment-by-segment results.
 - **Parakeet**: Uses `sherpa-onnx` (`OfflineRecognizer`) — offline, English-only, NVIDIA Parakeet TDT 0.6B model. Directory-based model with 4 files (encoder/decoder/joiner .int8.onnx + tokens.txt). GPU (CUDA) or CPU inference. Auto-fallback to Whisper for non-English.
 - Switched via `TranscriptionProviderFactory` based on `WriteSpeechOptions.Provider` enum
+- Cloud sub-provider selection via `CloudTranscriptionProvider` (OpenAI/Groq/Custom)
 
 ### Text Correction Providers
 - **OpenAI**: Uses `ChatClient` (GPT-4.1-mini default) for post-processing transcriptions. Extends `CloudTextCorrectionServiceBase`.
 - **Anthropic**: Uses `IHttpClientFactory` + REST API (`api.anthropic.com/v1/messages`). No extra NuGet needed. Extends `CloudTextCorrectionServiceBase`.
 - **Google (Gemini)**: Uses OpenAI SDK with Gemini-compatible endpoint. Extends `CloudTextCorrectionServiceBase`.
 - **Groq**: Uses OpenAI SDK with Groq-compatible endpoint. Extends `CloudTextCorrectionServiceBase`.
+- **Custom**: User-defined OpenAI-compatible endpoint with custom API key/model. Extends `CloudTextCorrectionServiceBase`.
 - **Local**: Uses `LLamaSharp` with GGUF models for offline correction
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
 - **Base class**: `CloudTextCorrectionServiceBase` — shared prompt building, response processing, vocab extraction, error handling
@@ -205,7 +227,7 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 - **Filler-word removal**: All prompts instruct the AI to strip verbal hesitations (um, uh, ähm, basically, you know, etc.)
 - **Translation**: When a mode has `TargetLanguage` set, the user message includes `[Translate to: {language}]` instead of the normal language hint
 - **Vocabulary extraction**: `VocabResponseParser` extracts proper nouns/brand names/technical terms from correction responses, auto-adds to dictionary
-- Switched via `TextCorrectionProviderFactory` (Off/OpenAI/Anthropic/Google/Groq/Local). Legacy `Cloud` maps to `OpenAI`.
+- Switched via `TextCorrectionProviderFactory` (Off/OpenAI/Anthropic/Google/Groq/Custom/Local). Legacy `Cloud` maps to `OpenAI`.
 
 ### Correction Modes (IModeService)
 Context-aware text correction with different system prompts based on active application.
@@ -279,7 +301,7 @@ Reusable utility for debounced async persistence. Used by 7+ services: `Transcri
 `SettingsPersistenceService` provides `ScheduleUpdate(Action<JsonNode> mutator)`. Multiple mutators are composed — if several `ScheduleUpdate()` calls arrive before the debounce flush, all mutations apply to the same JSON document. Thread-safe via `Lock` + `DebouncedSaveHelper`.
 
 ### Options Validation (WriteSpeechOptionsValidator)
-`IValidateOptions<WriteSpeechOptions>` validates at startup and on reload: SampleRate (8000-48000), MaxRecordingSeconds (>=10), AutoDismissSeconds (>=1), Scale (0.5-3.0), MaxHistoryEntries (>=1), Endpoint (valid URI if set), Hotkey.Method (`RegisterHotKey` or `LowLevelHook`), mouse bindings require LowLevelHook, provider-specific requirements (API key for OpenAI/Cloud, model name for Local).
+`IValidateOptions<WriteSpeechOptions>` validates at startup and on reload: SampleRate (8000-48000), MaxRecordingSeconds (10-7200), AutoDismissSeconds (>=1), Scale (0.5-3.0), MaxHistoryEntries (1-10000), all Endpoints (valid URI + HTTPS required), Hotkey.Method (`RegisterHotKey` or `LowLevelHook`), mouse bindings require LowLevelHook, provider-specific requirements (API key for OpenAI/Cloud, model name for Local). **Provider-specific API key validation is deferred until `App.SetupCompleted = true`** — allows first-run without keys configured.
 
 ### IDispatcherService
 Abstraction over WPF `Dispatcher.Invoke()`. `WpfDispatcherService` wraps `Application.Current.Dispatcher`; tests use `SynchronousDispatcherService` that executes actions inline. All ViewModels use this instead of direct `Dispatcher` access.
@@ -293,15 +315,23 @@ Abstract base class shared by `WhisperModel` and `CorrectionModelInfo`. Provides
 ### Snippet Service (SnippetService)
 Trigger→replacement text substitution applied after transcription. Uses compiled `Regex` with word boundary matching (`\b`), cached and invalidated on add/remove. Persisted to `%APPDATA%/WriteSpeech/snippets.json`.
 
+### OverlayViewModel Architecture (Split)
+`OverlayViewModel` is the main state machine coordinator (~380 lines), delegating to two extracted components:
+- **`RecordingController`** (5 deps): audio recording lifecycle, timer management, muting, sound effects, VAD event relay. Fires events: `AudioLevelChanged`, `RecordingError`, `MaxDurationReached`, `SpeechStarted`, `SilenceDetected`, `RecordingTimerTick`, `AutoDismissExpired`.
+- **`TranscriptionPipeline`** (8 deps): provider routing, streaming, text correction, command mode, IDE context, snippet application. Fires events: `StatusChanged`, `StreamingTextChanged`. Returns `PipelineResult` record.
+- **`ErrorMessageHelper`**: Static `SanitizeErrorMessage()` converts exception types into user-friendly strings. Shared by `OverlayViewModel` and `FileTranscriptionViewModel`.
+- **`CreateForTests()`**: Internal factory method on `OverlayViewModel` preserves test compatibility (same 18-param signature as old constructor).
+- Both controllers registered as singletons in DI (`App.xaml.cs`).
+
 ### Recording Flow (OverlayViewModel)
 1. **Idle** -> User clicks mic button or presses hotkey
 2. Captures `_previousForegroundWindow` via `GetForegroundWindow()`
 3. Reads selected text via `ISelectedTextService` → activates command mode if text found
 4. Detects IDE via `IIDEDetectionService`, prepares workspace context via `IIDEContextService`
-5. Mutes other audio apps via `IAudioMutingService`
-6. **Recording** -> Audio captured via NAudio `WaveInEvent` (16kHz, 16-bit, Mono)
-7. User clicks stop -> **Transcribing** -> Provider transcribes audio
-8. Optional: Text correction via configured provider (mode-aware prompt, IDE context injected, targetLanguage for Translate mode)
+5. `RecordingController.StartRecordingAsync()` — mutes other audio apps, starts NAudio capture (16kHz, 16-bit, Mono)
+6. **Recording** -> Audio captured, `AudioLevelChanged` events update waveform
+7. User clicks stop -> `RecordingController.StopRecording()` returns audio bytes
+8. **Transcribing** -> `TranscriptionPipeline.ProcessAsync()` — provider transcribes, optional correction (mode-aware, IDE context), snippets applied
 9. If command mode: applies voice command to selected text via `VoiceCommandSystemPrompt`
 10. Unmutes other apps, restores focus via `SetForegroundWindow` + `AttachThreadInput`
 11. Auto-inserts text via clipboard + simulated Ctrl+V -> Back to **Idle**
@@ -317,6 +347,31 @@ Optional hands-free dictation mode using Silero VAD via sherpa-onnx. Default: **
 - **Push-to-Talk**: Unaffected by VAD (always manual start/stop, no listening state)
 - **Model**: `silero_vad.onnx` (~629 KB), downloaded via `VadModelManager` from GitHub releases
 - **Config**: `VoiceActivityOptions` in `AudioOptions` — `Enabled`, `SilenceDurationSeconds`, `Threshold`, `PreBufferSeconds`
+
+### Setup Wizard (SetupWizardViewModel)
+First-run configuration wizard, shown when `App.SetupCompleted` is `false`:
+- **4 steps**: Welcome (language) → Transcription Provider → Correction Provider → Microphone
+- Model download within wizard for Local/Parakeet providers
+- API key validation before advancing steps (cloud providers)
+- `MicTestHelper` for live mic level testing (shared with `GeneralSettingsViewModel`)
+- Persists settings via `ISettingsPersistenceService`, sets `App.SetupCompleted = true`
+- Reset via Settings triggers `ConfirmationDialog`, then app restart via single-instance Mutex release
+
+### ConfirmationDialog
+Custom themed replacement for standard `MessageBox`:
+- Accent stripe, dark/light theme support via `ThemeHelper.ApplyTheme()`
+- Constructor accepts title, message, and confirm button text
+- Used for wizard reset confirmation and other destructive actions
+
+### Atomic File Writes (AtomicFileHelper)
+All JSON persistence services use `AtomicFileHelper.WriteAllTextAsync()`:
+- Writes content to `.tmp` file first, then atomic rename to target path
+- If existing file is corrupted, backs it up with timestamp suffix (e.g. `modes.json.corrupt-20260304-120000`)
+- Used by: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `ModeService`, `SettingsPersistenceService`
+
+### Installer & Release Pipeline
+- **`installer/WriteSpeech.iss`**: Inno Setup script — installs to `{localappdata}\WriteSpeech`, preserves user `appsettings.json` on upgrades, German+English, desktop icon + Windows startup options, x64 only, Windows 10+
+- **`.github/workflows/release.yml`**: Triggered on `v*.*.*` tags — runs tests, publishes self-contained win-x64, Python script verifies no API keys in published config, builds installer via Inno Setup, creates GitHub Release with installer artifact
 
 ### CUDA Path Discovery (App.xaml.cs)
 `AddCudaLibraryPaths()` scans three sources for CUDA 13.x libraries:
@@ -363,9 +418,15 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 
 `appsettings.json` under section `"WriteSpeech"`:
 - `Provider`: `"OpenAI"`, `"Local"`, or `"Parakeet"`
+- `CloudTranscriptionProvider`: `"OpenAI"`, `"Groq"`, or `"Custom"` (sub-provider when Provider=OpenAI)
 - `OpenAI.ApiKey`: OpenAI API key (keep out of git!)
 - `OpenAI.Model`: default `"whisper-1"`
 - `OpenAI.Endpoint`: custom OpenAI-compatible endpoint URL (default: `null`, validated as URI)
+- `GroqTranscription.ApiKey`: Groq API key for cloud transcription
+- `GroqTranscription.Model`: default `"whisper-large-v3-turbo"`
+- `CustomTranscription.ApiKey`: Custom endpoint API key
+- `CustomTranscription.Endpoint`: Custom OpenAI-compatible transcription endpoint
+- `CustomTranscription.Model`: Custom transcription model name
 - `Local.ModelName`: GGML model filename, default `"ggml-small.bin"`
 - `Local.ModelDirectory`: path to models dir (default: `%APPDATA%/WriteSpeech/models`)
 - `Local.GpuAcceleration`: enable CUDA for local Whisper (default: `true`)
@@ -387,7 +448,7 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `Audio.VoiceActivity.MinRecordingSeconds`: minimum recording before auto-stop (default: 0.5)
 - `Audio.VoiceActivity.Threshold`: Silero VAD sensitivity 0.1-0.9 (default: 0.5)
 - `Audio.VoiceActivity.PreBufferSeconds`: pre-buffer duration for speech onset (default: 0.5)
-- `TextCorrection.Provider`: `"Off"`, `"Cloud"` (legacy→OpenAI), `"OpenAI"`, `"Anthropic"`, `"Google"`, `"Groq"`, or `"Local"`
+- `TextCorrection.Provider`: `"Off"`, `"Cloud"` (legacy→OpenAI), `"OpenAI"`, `"Anthropic"`, `"Google"`, `"Groq"`, `"Custom"`, or `"Local"`
 - `TextCorrection.Anthropic.ApiKey`: Anthropic API key
 - `TextCorrection.Anthropic.Model`: default `"claude-sonnet-4-6"`
 - `TextCorrection.Google.ApiKey`: Google AI API key
@@ -396,6 +457,9 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `TextCorrection.Groq.ApiKey`: Groq API key
 - `TextCorrection.Groq.Endpoint`: Groq OpenAI-compatible endpoint
 - `TextCorrection.Groq.Model`: default `"qwen/qwen3-32b"`
+- `TextCorrection.Custom.Endpoint`: Custom OpenAI-compatible correction endpoint
+- `TextCorrection.Custom.ApiKey`: Custom correction API key
+- `TextCorrection.Custom.Model`: Custom correction model name
 - `TextCorrection.Model`: cloud correction model (default: `"gpt-4.1-mini"`)
 - `TextCorrection.SystemPrompt`: custom system prompt for correction
 - `TextCorrection.LocalModelName`: GGUF model filename for local correction
@@ -420,6 +484,7 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `App.SoundEffects`: play sounds on start/stop (default: `false`)
 - `App.Theme`: `"Light"` or `"Dark"` (default: `"Dark"`)
 - `App.MaxHistoryEntries`: max history entries (default: 20)
+- `App.SetupCompleted`: first-run wizard completed (default: `false`)
 
 Environment variables prefixed with `WRITESPEECH_` also bind to config.
 
@@ -466,6 +531,9 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 - **sherpa-onnx structs are StructLayout(Sequential)**: Config types (`OfflineRecognizerConfig`, `OfflineModelConfig`) are value-type structs — use direct property assignment (e.g. `config.ModelConfig.Transducer.Encoder = "..."`) NOT object initializers with `new`.
 - **sherpa-onnx property naming**: Use `config.ModelConfig.Transducer` (not `TransducerConfig`), `config.ModelConfig.ModelType` (not `ModelType` on config root).
 - **Parakeet English-only**: Parakeet TDT models only support English. UI must show "English only" notice. Non-English languages should fall back to Whisper.
+- **AtomicFileHelper for persistence**: All JSON persistence services must use `AtomicFileHelper.WriteAllTextAsync()` — don't use `File.WriteAllText` directly for user data files.
+- **Setup wizard validation deferral**: Provider-specific options validation is skipped until `App.SetupCompleted = true` — allows app to start with default config during first-run wizard.
+- **Endpoint HTTPS enforcement**: `WriteSpeechOptionsValidator` rejects all non-HTTPS endpoint URLs. Custom endpoints must use HTTPS.
 
 ## Git Repository
 
