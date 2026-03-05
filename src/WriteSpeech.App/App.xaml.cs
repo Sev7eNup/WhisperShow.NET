@@ -37,6 +37,9 @@ public partial class App : Application
 
     public IServiceProvider? Services => _host?.Services;
 
+    /// <summary>Whether CUDA libraries were found during startup path discovery.</summary>
+    public static bool CudaDetected { get; private set; }
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -326,6 +329,10 @@ public partial class App : Application
             Environment.SetEnvironmentVariable("PATH", string.Join(";", additions) + ";" + currentPath);
             Log.Information("Added CUDA library paths: {Paths}", string.Join(", ", additions));
         }
+
+        CudaDetected = additions.Count > 0;
+        if (!CudaDetected)
+            Log.Warning("No CUDA libraries found — local models will use CPU inference (slower)");
     }
 
     private static void EnsureAppSettings()

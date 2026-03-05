@@ -94,6 +94,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isCommandModeActive;
 
+    [ObservableProperty]
+    private bool _isModelLoading;
+
     /// <summary>Horizontal screen position of the overlay window, persisted across sessions.</summary>
     public double PositionX { get; private set; }
 
@@ -144,6 +147,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _optionsChangeRegistration = _optionsMonitor.OnChange(OnOptionsChanged);
 
         UpdateProviderName();
+        StartModelLoadingPoll();
     }
 
     /// <summary>
@@ -376,6 +380,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             // Prepare IDE context while user records (non-blocking)
             _transcriptionPipeline.PrepareIDEContext(_previousForegroundWindow, Options,
                 h => _windowFocusService.GetProcessName(h));
+
+            if (!_transcriptionPipeline.IsTranscriptionModelReady(Options.Provider))
+                StatusText = "Loading model...";
 
             State = RecordingState.Recording;
             RecordingTimerText = "0:00";
@@ -691,6 +698,30 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     public void UpdateProviderName()
     {
         CurrentProviderName = _transcriptionPipeline.GetProviderName(Options.Provider);
+    }
+
+    /// <summary>Checks if local models are loaded and updates <see cref="IsModelLoading"/> accordingly.</summary>
+    internal void UpdateModelLoadingStatus()
+    {
+        var transcriptionReady = _transcriptionPipeline.IsTranscriptionModelReady(Options.Provider);
+        var correctionReady = _transcriptionPipeline.IsCorrectionModelReady(Options.TextCorrection.Provider);
+        IsModelLoading = !transcriptionReady || !correctionReady;
+    }
+
+    private void StartModelLoadingPoll()
+    {
+        UpdateModelLoadingStatus();
+        if (!IsModelLoading) return;
+
+        // Poll every second until models are ready, then stop
+        _ = Task.Run(async () =>
+        {
+            while (IsModelLoading)
+            {
+                await Task.Delay(1000);
+                _dispatcher.Invoke(UpdateModelLoadingStatus);
+            }
+        });
     }
 
     /// <summary>Unsubscribes from all events, cancels pending operations, and disposes resources.</summary>

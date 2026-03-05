@@ -113,6 +113,7 @@ internal static partial class NativeMethods
 
     internal const uint INPUT_KEYBOARD = 1;
     internal const uint KEYEVENTF_KEYUP = 0x0002;
+    internal const uint KEYEVENTF_UNICODE = 0x0004;
     internal const ushort VK_CONTROL = 0x11;
     internal const ushort VK_V = 0x56;
     internal const ushort VK_C = 0x43;
@@ -225,4 +226,113 @@ internal static partial class NativeMethods
 
     [LibraryImport("dwmapi.dll")]
     internal static partial int DwmExtendFrameIntoClientArea(IntPtr hWnd, in MARGINS pMarInset);
+
+    // --- Raw Input API (replaces WH_MOUSE_LL for mouse button detection) ---
+
+    internal const int WM_INPUT = 0x00FF;
+    internal const uint RIDEV_INPUTSINK = 0x00000100;
+    internal const uint RIDEV_REMOVE = 0x00000001;
+    internal const uint RID_INPUT = 0x10000003;
+    internal const uint RIM_TYPEMOUSE = 0;
+
+    internal const ushort RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
+    internal const ushort RI_MOUSE_MIDDLE_BUTTON_UP = 0x0020;
+    internal const ushort RI_MOUSE_BUTTON_4_DOWN = 0x0040;
+    internal const ushort RI_MOUSE_BUTTON_4_UP = 0x0080;
+    internal const ushort RI_MOUSE_BUTTON_5_DOWN = 0x0100;
+    internal const ushort RI_MOUSE_BUTTON_5_UP = 0x0200;
+
+    internal const ushort RI_MOUSE_BUTTON_MASK =
+        RI_MOUSE_MIDDLE_BUTTON_DOWN | RI_MOUSE_MIDDLE_BUTTON_UP |
+        RI_MOUSE_BUTTON_4_DOWN | RI_MOUSE_BUTTON_4_UP |
+        RI_MOUSE_BUTTON_5_DOWN | RI_MOUSE_BUTTON_5_UP;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RAWINPUTDEVICE
+    {
+        internal ushort usUsagePage;
+        internal ushort usUsage;
+        internal uint dwFlags;
+        internal IntPtr hwndTarget;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RAWINPUTHEADER
+    {
+        internal uint dwType;
+        internal uint dwSize;
+        internal IntPtr hDevice;
+        internal IntPtr wParam;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct RAWMOUSE
+    {
+        [FieldOffset(0)]  internal ushort usFlags;
+        // Win32 union (ULONG ulButtons | {USHORT usButtonFlags, USHORT usButtonData})
+        // starts at offset 4 due to ULONG alignment requirement (2 bytes padding after usFlags)
+        [FieldOffset(4)]  internal ushort usButtonFlags;
+        [FieldOffset(6)]  internal ushort usButtonData;
+        [FieldOffset(8)]  internal uint ulRawButtons;
+        [FieldOffset(12)] internal int lLastX;
+        [FieldOffset(16)] internal int lLastY;
+        [FieldOffset(20)] internal uint ulExtraInformation;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct RAWINPUT
+    {
+        [FieldOffset(0)] internal RAWINPUTHEADER header;
+        // On x64: RAWINPUTHEADER is 24 bytes (uint + uint + IntPtr + IntPtr = 4+4+8+8)
+        // On x86: RAWINPUTHEADER is 16 bytes (uint + uint + IntPtr + IntPtr = 4+4+4+4)
+        // We use a method to read RAWMOUSE at the correct offset instead of a fixed field offset.
+    }
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool RegisterRawInputDevices(
+        RAWINPUTDEVICE[] pRawInputDevices, uint uiNumDevices, uint cbSize);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    internal static partial uint GetRawInputData(
+        IntPtr hRawInput, uint uiCommand, IntPtr pData, ref uint pcbSize, uint cbSizeHeader);
+
+    // --- Message-only window support ---
+
+    internal static readonly IntPtr HWND_MESSAGE = new(-3);
+
+    internal delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct WNDCLASSEXW
+    {
+        internal uint cbSize;
+        internal uint style;
+        internal IntPtr lpfnWndProc;
+        internal int cbClsExtra;
+        internal int cbWndExtra;
+        internal IntPtr hInstance;
+        internal IntPtr hIcon;
+        internal IntPtr hCursor;
+        internal IntPtr hbrBackground;
+        internal IntPtr lpszMenuName;
+        internal IntPtr lpszClassName;
+        internal IntPtr hIconSm;
+    }
+
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "RegisterClassExW")]
+    internal static partial ushort RegisterClassEx(in WNDCLASSEXW lpwcx);
+
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "CreateWindowExW", StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial IntPtr CreateWindowEx(
+        uint dwExStyle, string lpClassName, string lpWindowName,
+        uint dwStyle, int x, int y, int nWidth, int nHeight,
+        IntPtr hWndParent, IntPtr hMenu, IntPtr hInstance, IntPtr lpParam);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool DestroyWindow(IntPtr hWnd);
+
+    [LibraryImport("user32.dll", EntryPoint = "DefWindowProcW")]
+    internal static partial IntPtr DefWindowProc(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 }

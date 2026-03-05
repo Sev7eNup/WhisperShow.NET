@@ -55,6 +55,14 @@ public class TranscriptionPipeline : IDisposable
     /// <summary>Whether the combined audio model is available.</summary>
     public bool IsCombinedModelAvailable => _combinedService.IsAvailable;
 
+    /// <summary>Checks whether the transcription model for the given provider is loaded and ready.</summary>
+    public bool IsTranscriptionModelReady(TranscriptionProvider provider)
+        => _providerFactory.GetProvider(provider).IsModelLoaded;
+
+    /// <summary>Checks whether the correction model for the given provider is loaded and ready.</summary>
+    public bool IsCorrectionModelReady(TextCorrectionProvider provider)
+        => _correctionFactory.GetProvider(provider)?.IsModelLoaded ?? true;
+
     /// <summary>Reports status changes ("Transcribing...", "Correcting text...", etc.).</summary>
     public event Action<string>? StatusChanged;
 

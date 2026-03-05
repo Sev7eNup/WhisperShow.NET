@@ -12,7 +12,8 @@
         ShowInTaskbar="True"
         Icon="/Resources/Icons/app.ico"
         Width="700" Height="580"
-        Title="WriteSpeech Setup">
+        Title="WriteSpeech Setup"
+        AutomationProperties.Name="WriteSpeech Setup">
 
     <Window.Resources>
         <ResourceDictionary>

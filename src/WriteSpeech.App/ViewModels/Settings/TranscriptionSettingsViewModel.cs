@@ -188,6 +188,9 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     public bool IsCustomCorrectionModel =>
         CloudCorrectionModels.All(m => m.Id != CorrectionCloudModel);
 
+    /// <summary>Returns true when CUDA is not detected but GPU acceleration is enabled on a local provider, indicating CPU fallback.</summary>
+    public bool ShowCudaWarning => !App.CudaDetected;
+
     /// <summary>Returns true when the user has a local transcription provider but an OpenAI cloud correction provider, suggesting the user could simplify by using cloud transcription too.</summary>
     public bool ShowCloudUsageHint =>
         Provider is TranscriptionProvider.Local or TranscriptionProvider.Parakeet &&

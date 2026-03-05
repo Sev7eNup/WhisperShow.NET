@@ -187,7 +187,7 @@ public class TrayIconManager : IDisposable
             var text = entries[0].Text;
             var targetWindow = _previousForegroundWindow;
             contextMenu.IsOpen = false;
-            await Task.Delay(200);
+            await Task.Delay(_optionsMonitor.CurrentValue.Timing.MenuCloseMs);
             await _windowFocusService.RestoreFocusAsync(targetWindow);
             await _textInsertionService.InsertTextAsync(text);
         };

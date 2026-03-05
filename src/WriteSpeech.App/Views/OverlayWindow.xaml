@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:WriteSpeech.App.ViewModels"
+        AutomationProperties.Name="WriteSpeech Overlay"
         WindowStyle="None"
         Background="Transparent"
         Topmost="True"
@@ -13,6 +14,8 @@
         WindowStartupLocation="Manual">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+
         <!-- Backgrounds -->
         <SolidColorBrush x:Key="GlassBackground" Color="#C0181818"/>
         <SolidColorBrush x:Key="IdleBackground" Color="#C09B7DFF"/>
@@ -143,6 +146,7 @@
                         <Button Click="RecordButton_Click" Cursor="Hand"
                                 Width="44" Height="44" BorderThickness="0"
                                 RenderTransformOrigin="0.5,0.5"
+                                AutomationProperties.Name="Start recording"
                                 ToolTipService.InitialShowDelay="0">
                             <Button.ToolTip>
                                 <ToolTip Style="{StaticResource DarkToolTipStyle}"
@@ -159,6 +163,11 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
+                        <!-- Model loading indicator -->
+                        <TextBlock Text="Loading model..." FontSize="8" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="#E8A735" HorizontalAlignment="Center"
+                                   VerticalAlignment="Bottom" Margin="0,0,0,2" IsHitTestVisible="False"
+                                   Visibility="{Binding IsModelLoading, Converter={StaticResource BoolToVisibility}}"/>
                     </Grid>
 
                     <!-- Listening State (VAD: waiting for speech) -->
@@ -176,6 +185,7 @@
                                        VerticalAlignment="Center" Margin="5,0,0,0"/>
                         </StackPanel>
                         <Button Click="RecordButton_Click" Cursor="Hand"
+                                AutomationProperties.Name="Stop listening"
                                 BorderThickness="0">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
@@ -192,6 +202,7 @@
                             <!-- Stop button -->
                             <Button Click="RecordButton_Click" Cursor="Hand"
                                     Width="34" Height="34" BorderThickness="0"
+                                    AutomationProperties.Name="Stop recording"
                                     VerticalAlignment="Center">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
@@ -283,6 +294,7 @@
                                 <!-- Insert button: glass green -->
                                 <Button Content="Insert" Margin="0,0,4,0"
                                         Click="InsertButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Insert text"
                                         Foreground="White" Padding="8,3" Cursor="Hand"
                                         FontSize="11">
                                     <Button.Template>
@@ -299,6 +311,7 @@
                                 <!-- Copy button: glass neutral -->
                                 <Button Content="Copy" Margin="0,0,4,0"
                                         Click="CopyButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Copy text"
                                         Foreground="{StaticResource SubtleBrush}" Padding="8,3"
                                         Cursor="Hand" FontSize="11">
                                     <Button.Template>
@@ -314,6 +327,7 @@
                                 </Button>
                                 <!-- Dismiss X -->
                                 <Button Content="X" Click="DismissButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Dismiss"
                                         Background="Transparent" Foreground="{StaticResource SubtleBrush}"
                                         Padding="4,3" Cursor="Hand"
                                         BorderThickness="0" FontWeight="Bold" FontSize="11">
@@ -344,6 +358,7 @@
                                            Foreground="{StaticResource ErrorBrush}" FontSize="10"
                                            MaxHeight="120" Margin="0,0,0,4"/>
                                 <Button Content="OK" Click="DismissButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Dismiss error"
                                         Foreground="White" Padding="8,3" Cursor="Hand"
                                         HorizontalAlignment="Right" FontSize="11">
                                     <Button.Template>

@@ -10,7 +10,8 @@
         ShowInTaskbar="True"
         Icon="/Resources/Icons/app.ico"
         Width="480" Height="540"
-        Title="Transcribe File">
+        Title="Transcribe File"
+        AutomationProperties.Name="Transcribe File">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -58,6 +59,7 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                            AutomationProperties.Name="Close"
                             Cursor="Hand" Click="CloseButton_Click">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
@@ -128,6 +130,7 @@
                                        HorizontalAlignment="Center" Margin="0,0,0,10"/>
                             <!-- Browse button -->
                             <Button Cursor="Hand" HorizontalAlignment="Center"
+                                    AutomationProperties.Name="Select audio file"
                                     Click="BrowseButton_Click">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
@@ -326,6 +329,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                                 <!-- Accent Copy button -->
                                 <Button Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
+                                        AutomationProperties.Name="Copy result"
                                         Command="{Binding CopyResultCommand}">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
@@ -363,6 +367,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                 <!-- New File button -->
                                 <Button Cursor="Hand" FontSize="11" FontFamily="Segoe UI"
+                                        AutomationProperties.Name="New transcription"
                                         Click="NewFileButton_Click"
                                         Visibility="{Binding IsTranscribing, Converter={StaticResource InverseBoolToVis}}">
                                     <Button.Template>
@@ -388,6 +393,7 @@
                                 </Button>
                                 <!-- Cancel button -->
                                 <Button Cursor="Hand" FontSize="11" FontFamily="Segoe UI" Margin="6,0,0,0"
+                                        AutomationProperties.Name="Cancel"
                                         Command="{Binding CancelCommand}"
                                         Visibility="{Binding IsTranscribing, Converter={StaticResource BoolToVisibility}}">
                                     <Button.Template>

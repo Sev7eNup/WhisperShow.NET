@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Services.TextInsertion;
 
 namespace WriteSpeech.App.Services;
@@ -18,13 +20,15 @@ namespace WriteSpeech.App.Services;
 public class WindowFocusService : IWindowFocusService
 {
     private readonly ILogger<WindowFocusService> _logger;
+    private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WindowFocusService"/> class.
     /// </summary>
-    public WindowFocusService(ILogger<WindowFocusService> logger)
+    public WindowFocusService(ILogger<WindowFocusService> logger, IOptionsMonitor<WriteSpeechOptions> optionsMonitor)
     {
         _logger = logger;
+        _optionsMonitor = optionsMonitor;
     }
 
     /// <summary>
@@ -44,6 +48,7 @@ public class WindowFocusService : IWindowFocusService
     public async Task<bool> RestoreFocusAsync(IntPtr windowHandle)
     {
         if (windowHandle == IntPtr.Zero || !NativeMethods.IsWindow(windowHandle)) return false;
+        var timing = _optionsMonitor.CurrentValue.Timing;
 
         var foregroundThread = NativeMethods.GetWindowThreadProcessId(
             NativeMethods.GetForegroundWindow(), out _);
@@ -63,7 +68,7 @@ public class WindowFocusService : IWindowFocusService
         if (attached)
             NativeMethods.AttachThreadInput(currentThread, foregroundThread, false);
 
-        await Task.Delay(150);
+        await Task.Delay(timing.FocusRestoreMs);
 
         // Verify focus was restored
         if (NativeMethods.GetForegroundWindow() == windowHandle)
@@ -73,7 +78,7 @@ public class WindowFocusService : IWindowFocusService
         _logger.LogDebug("Focus verification failed, retrying SetForegroundWindow for 0x{Handle:X}",
             windowHandle.ToInt64());
         NativeMethods.SetForegroundWindow(windowHandle);
-        await Task.Delay(100);
+        await Task.Delay(timing.FocusRetryMs);
 
         var success = NativeMethods.GetForegroundWindow() == windowHandle;
         if (!success)

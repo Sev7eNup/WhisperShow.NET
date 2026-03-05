@@ -59,6 +59,9 @@ public class WriteSpeechOptions
     /// <summary>IDE integration settings for injecting code context into correction prompts.</summary>
     public IntegrationOptions Integration { get; set; } = new();
 
+    /// <summary>Timing configuration for clipboard, focus restoration, and menu delays.</summary>
+    public TimingOptions Timing { get; set; } = new();
+
     /// <summary>
     /// Resolves a model directory path. Returns <paramref name="customPath"/> if set,
     /// otherwise falls back to %APPDATA%/WriteSpeech/{subfolder}.
@@ -434,6 +437,32 @@ public class IntegrationOptions
 }
 
 /// <summary>
+/// Timing configuration for clipboard operations, focus restoration, and tray menu delays.
+/// These delays compensate for asynchronous behavior in Windows clipboard and window management.
+/// Increase values if text insertion fails on slow systems or heavy applications (e.g., Outlook, Slack).
+/// </summary>
+public class TimingOptions
+{
+    /// <summary>Milliseconds to wait after Clipboard.SetText for the clipboard to settle. Default: 50.</summary>
+    public int ClipboardSettleMs { get; set; } = 50;
+
+    /// <summary>Milliseconds to wait after simulated Ctrl+V/Ctrl+C for the operation to complete. Default: 100.</summary>
+    public int PasteCompletionMs { get; set; } = 100;
+
+    /// <summary>Milliseconds to wait before simulating Ctrl+C to allow clipboard clearing. Default: 30.</summary>
+    public int PreCopyWaitMs { get; set; } = 30;
+
+    /// <summary>Milliseconds to wait after SetForegroundWindow for focus to take effect. Default: 150.</summary>
+    public int FocusRestoreMs { get; set; } = 150;
+
+    /// <summary>Milliseconds to wait on focus restore retry attempt. Default: 100.</summary>
+    public int FocusRetryMs { get; set; } = 100;
+
+    /// <summary>Milliseconds to wait after closing a tray context menu before performing actions. Default: 200.</summary>
+    public int MenuCloseMs { get; set; } = 200;
+}
+
+/// <summary>
 /// Validates <see cref="WriteSpeechOptions"/> constraints at startup and on configuration reload.
 /// Checks numeric ranges, required fields, HTTPS enforcement on endpoints, provider-specific
 /// requirements, and hotkey method compatibility with mouse bindings.
@@ -511,6 +540,13 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
                 failures.Add($"Audio.VoiceActivity.PreBufferSeconds must be between 0.1 and 2.0 (got {vad.PreBufferSeconds}).");
         }
 
+        ValidateTimingMs(options.Timing.ClipboardSettleMs, "Timing.ClipboardSettleMs", failures);
+        ValidateTimingMs(options.Timing.PasteCompletionMs, "Timing.PasteCompletionMs", failures);
+        ValidateTimingMs(options.Timing.PreCopyWaitMs, "Timing.PreCopyWaitMs", failures);
+        ValidateTimingMs(options.Timing.FocusRestoreMs, "Timing.FocusRestoreMs", failures);
+        ValidateTimingMs(options.Timing.FocusRetryMs, "Timing.FocusRetryMs", failures);
+        ValidateTimingMs(options.Timing.MenuCloseMs, "Timing.MenuCloseMs", failures);
+
         if (options.Hotkey.Method is not ("RegisterHotKey" or "LowLevelHook"))
             failures.Add($"Hotkey.Method must be 'RegisterHotKey' or 'LowLevelHook' (got '{options.Hotkey.Method}').");
 
@@ -525,6 +561,12 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         return failures.Count > 0
             ? ValidateOptionsResult.Fail(failures)
             : ValidateOptionsResult.Success;
+    }
+
+    private static void ValidateTimingMs(int value, string fieldName, List<string> failures)
+    {
+        if (value is < 10 or > 2000)
+            failures.Add($"{fieldName} must be between 10 and 2000 (got {value}).");
     }
 
     private static void ValidateEndpoint(string? endpoint, string fieldName, List<string> failures)
