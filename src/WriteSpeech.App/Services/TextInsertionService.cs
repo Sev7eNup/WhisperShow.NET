@@ -5,15 +5,42 @@ using WriteSpeech.Core.Services.TextInsertion;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Inserts text at the current cursor position in any Windows application by leveraging
+/// the system clipboard and simulated keystrokes.
+///
+/// Implementation approach:
+/// 1. Saves the current clipboard contents (so the user's clipboard is not destroyed).
+/// 2. Places the transcribed text onto the clipboard via <see cref="Clipboard.SetText"/>.
+/// 3. Waits briefly (50 ms) for the clipboard to settle — some applications poll the clipboard asynchronously.
+/// 4. Synthesizes a Ctrl+V keystroke sequence using the Win32 <c>SendInput</c> API, which injects
+///    hardware-level keyboard events into the input queue of the foreground window.
+/// 5. Waits again (100 ms) for the target application to process the paste.
+/// 6. Restores the original clipboard contents in a <c>finally</c> block to guarantee cleanup
+///    even if an exception occurs.
+///
+/// All clipboard operations are dispatched to the WPF UI thread because the clipboard is
+/// per-thread (STA) and must be accessed from the thread that owns it.
+/// </summary>
 public class TextInsertionService : ITextInsertionService
 {
     private readonly ILogger<TextInsertionService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TextInsertionService"/> class.
+    /// </summary>
     public TextInsertionService(ILogger<TextInsertionService> logger)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Inserts the specified text at the current cursor position in the foreground window.
+    /// The text is placed on the clipboard and pasted via a simulated Ctrl+V keystroke.
+    /// The previous clipboard contents are saved before the operation and restored afterward
+    /// in a <c>finally</c> block, so the user's clipboard is not permanently modified.
+    /// </summary>
+    /// <param name="text">The text to insert. Must not be null.</param>
     public async Task InsertTextAsync(string text)
     {
         _logger.LogInformation("Inserting text via clipboard ({Length} chars)", text.Length);

@@ -9,6 +9,13 @@ using WriteSpeech.Core.Services.TextCorrection;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+/// <summary>
+/// ViewModel for the dictionary and snippets settings page.
+/// Manages two features: (1) a custom word dictionary whose entries are injected into AI correction prompts
+/// to improve recognition of proper nouns, brand names, and technical terms; and (2) text snippets that define
+/// trigger-to-replacement substitutions applied after transcription (e.g., "addr" becomes a full mailing address).
+/// Both collections are persisted to JSON files in the user's AppData folder.
+/// </summary>
 public partial class DictionarySnippetsViewModel : ObservableObject
 {
     private readonly IDictionaryService _dictionaryService;
@@ -19,9 +26,11 @@ public partial class DictionarySnippetsViewModel : ObservableObject
     [ObservableProperty] private bool _isCorrectionOff;
     [ObservableProperty] private bool _autoAddToDictionary = true;
 
+    /// <summary>The current list of custom dictionary words that are injected into AI correction prompts for better recognition.</summary>
     public ObservableCollection<string> DictionaryEntries { get; } = [];
     [ObservableProperty] private string _newDictionaryWord = "";
 
+    /// <summary>The current list of text snippets, each mapping a trigger word to its replacement text.</summary>
     public ObservableCollection<SnippetEntry> SnippetItems { get; } = [];
     [ObservableProperty] private string _newSnippetTrigger = "";
     [ObservableProperty] private string _newSnippetReplacement = "";
@@ -48,12 +57,14 @@ public partial class DictionarySnippetsViewModel : ObservableObject
     [RelayCommand]
     private void ToggleAutoAddToDictionary() => _scheduleSave();
 
+    /// <summary>Writes the auto-add-to-dictionary setting into the given JSON configuration node for persistence.</summary>
     public void WriteSettings(JsonNode section)
     {
         var correction = SettingsViewModel.EnsureObject(section, "TextCorrection");
         correction["AutoAddToDictionary"] = AutoAddToDictionary;
     }
 
+    /// <summary>Reloads the dictionary word list from the dictionary service, replacing the current entries.</summary>
     public void RefreshEntries()
     {
         DictionaryEntries.Clear();

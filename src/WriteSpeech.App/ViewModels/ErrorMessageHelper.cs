@@ -2,8 +2,18 @@ using System.Net.Http;
 
 namespace WriteSpeech.App.ViewModels;
 
+/// <summary>
+/// Converts raw exception messages into user-friendly error strings suitable for display
+/// in the overlay UI. Maps common exception types (network errors, timeouts, missing API keys,
+/// corrupted downloads, etc.) to concise, actionable messages without exposing technical details.
+/// </summary>
 internal static class ErrorMessageHelper
 {
+    /// <summary>
+    /// Returns a user-friendly error message for the given exception.
+    /// Recognized exceptions (network, timeout, missing API key, corrupted download, oversized file,
+    /// missing VAD model) produce specific messages; all others return a generic fallback.
+    /// </summary>
     internal static string SanitizeErrorMessage(Exception ex) => ex switch
     {
         HttpRequestException => "Network error — check your internet connection.",

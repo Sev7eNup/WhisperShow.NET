@@ -5,6 +5,7 @@ using WriteSpeech.Core.Models;
 
 namespace WriteSpeech.App.Converters;
 
+/// <summary>Converts a boolean to Visibility: true yields Collapsed, false yields Visible (inverse of default BoolToVisibility).</summary>
 public class InverseBoolToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -14,6 +15,7 @@ public class InverseBoolToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts a boolean to "Enabled"/"Disabled" text, or "Listening for keys..."/"Rebind" when the parameter is "capturing".</summary>
 public class BoolToEnabledDisabledConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -27,6 +29,7 @@ public class BoolToEnabledDisabledConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts an integer number of seconds to a string showing whole minutes (integer division by 60).</summary>
 public class SecondsToMinutesConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -36,6 +39,7 @@ public class SecondsToMinutesConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts a TranscriptionProvider enum to Visibility: Visible if the provider matches the parameter string (supports pipe-separated values like "Local|Parakeet"), Collapsed otherwise.</summary>
 public class ProviderToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -55,6 +59,7 @@ public class ProviderToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts a string value to Visibility: Visible if the value equals the parameter string (exact match), Collapsed otherwise.</summary>
 public class StringEqualsToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -69,6 +74,7 @@ public class StringEqualsToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts a HotkeyCaptureTarget string to button text: "Listening for keys..." when the value matches the target parameter, "Rebind" otherwise.</summary>
 public class CapturingHotkeyTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -83,6 +89,7 @@ public class CapturingHotkeyTextConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts a string to Visibility: Visible when the string is null or empty, Collapsed when it has content.</summary>
 public class EmptyStringToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -92,6 +99,7 @@ public class EmptyStringToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Converts a string to Visibility: Visible when the string has content, Collapsed when it is null or empty.</summary>
 public class NonEmptyStringToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

@@ -9,6 +9,15 @@ using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+/// <summary>
+/// ViewModel for the model download management page in settings.
+/// Manages downloading, activating, and deleting local AI models used for offline speech-to-text
+/// and text correction: Whisper GGML models, NVIDIA Parakeet ONNX models, correction GGUF models,
+/// and the Silero VAD (Voice Activity Detection) model. Each model type has its own observable
+/// collection of download items with progress tracking. Communicates with the parent
+/// <see cref="TranscriptionSettingsViewModel"/> via delegate callbacks for shared state
+/// (current model names and active provider).
+/// </summary>
 public partial class ModelManagementViewModel : ObservableObject
 {
     private readonly IModelManager _modelManager;
@@ -30,8 +39,13 @@ public partial class ModelManagementViewModel : ObservableObject
     private readonly Action<TranscriptionProvider> _setProvider;
     private readonly Func<TranscriptionProvider> _getProvider;
 
+    /// <summary>Download items for Whisper GGML models (tiny through large-v3-turbo) used for local speech-to-text transcription.</summary>
     public ObservableCollection<ModelItemViewModel> ModelItems { get; } = [];
+
+    /// <summary>Download items for GGUF language models used for local (offline) post-transcription text correction via LLamaSharp.</summary>
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModelItems { get; } = [];
+
+    /// <summary>Download items for NVIDIA Parakeet ONNX models used for local English-only speech-to-text transcription via sherpa-onnx.</summary>
     public ObservableCollection<ParakeetModelItemViewModel> ParakeetModelItems { get; } = [];
 
     // --- VAD Model ---
@@ -39,6 +53,7 @@ public partial class ModelManagementViewModel : ObservableObject
     [ObservableProperty] private bool _isVadModelDownloading;
     [ObservableProperty] private string _vadModelStatusText = "";
     [ObservableProperty] private float _vadModelDownloadProgress;
+    /// <summary>Returns true when the VAD model is not yet downloaded and no download is in progress, enabling the download button.</summary>
     public bool CanDownloadVadModel => !IsVadModelDownloaded && !IsVadModelDownloading;
 
     partial void OnIsVadModelDownloadedChanged(bool value) => OnPropertyChanged(nameof(CanDownloadVadModel));
@@ -82,6 +97,7 @@ public partial class ModelManagementViewModel : ObservableObject
 
     // --- Whisper Models ---
 
+    /// <summary>Rebuilds the Whisper model item list by scanning available GGML models on disk and marking the currently active one.</summary>
     [RelayCommand]
     public void RefreshModels()
     {
@@ -184,6 +200,7 @@ public partial class ModelManagementViewModel : ObservableObject
 
     // --- Correction Models ---
 
+    /// <summary>Rebuilds the correction model item list by scanning available GGUF models on disk and marking the currently active one.</summary>
     [RelayCommand]
     public void RefreshCorrectionModels()
     {
@@ -237,6 +254,7 @@ public partial class ModelManagementViewModel : ObservableObject
         }
     }
 
+    /// <summary>Sets the specified correction model as the active model for local text correction, deactivating any previously active model.</summary>
     [RelayCommand]
     public void ActivateCorrectionModel(CorrectionModelItemViewModel item)
     {
@@ -277,6 +295,7 @@ public partial class ModelManagementViewModel : ObservableObject
 
     // --- Parakeet Models ---
 
+    /// <summary>Rebuilds the Parakeet model item list by scanning available ONNX model directories on disk and marking the currently active one.</summary>
     [RelayCommand]
     public void RefreshParakeetModels()
     {
@@ -331,6 +350,10 @@ public partial class ModelManagementViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Sets the specified Parakeet model as the active transcription model, switches the provider to Parakeet,
+    /// deactivates any active Whisper model, and triggers model preloading.
+    /// </summary>
     [RelayCommand]
     public void ActivateParakeetModel(ParakeetModelItemViewModel item)
     {
@@ -379,6 +402,7 @@ public partial class ModelManagementViewModel : ObservableObject
 
     // --- VAD Model ---
 
+    /// <summary>Checks whether the Silero VAD model file exists on disk and updates the download status display.</summary>
     public void RefreshVadModel()
     {
         IsVadModelDownloaded = _vadModelManager.IsModelDownloaded;

@@ -7,6 +7,26 @@ using WriteSpeech.Core.Services.IDE;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Detects whether the foreground window belongs to a known IDE (VS Code, Cursor, Windsurf)
+/// and resolves the workspace path on disk.
+///
+/// Detection approach:
+/// 1. Gets the process name from the window handle via Win32 <c>GetWindowThreadProcessId</c>.
+/// 2. Matches against a known list of IDE process names.
+/// 3. Parses the window title to extract the folder name and current file
+///    (VS Code format: "file.ts - myproject - Visual Studio Code").
+/// 4. Resolves the folder name to an absolute disk path by reading VS Code's
+///    <c>storage.json</c> file, which contains recently opened workspace URIs.
+///    Supports multiple storage.json formats across VS Code versions:
+///    - Legacy: <c>openedPathsList.entries[].folderUri</c>
+///    - Modern: <c>backupWorkspaces.folders[]</c>
+///    - Newest: <c>windowsState.lastActiveWindow.folder</c> / <c>openedWindows[].folder</c>
+///
+/// The resolved workspace path is then used by <c>IDEContextService</c> to scan for
+/// source code identifiers that improve transcription accuracy (e.g., variable names,
+/// class names injected into the correction prompt).
+/// </summary>
 public class IDEDetectionService : IIDEDetectionService
 {
     private readonly ILogger<IDEDetectionService> _logger;
@@ -19,11 +39,21 @@ public class IDEDetectionService : IIDEDetectionService
             ["Windsurf"] = "Windsurf",
         };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="IDEDetectionService"/> class.
+    /// </summary>
     public IDEDetectionService(ILogger<IDEDetectionService> logger)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Detects the IDE from the specified window handle. Returns an <see cref="IDEInfo"/>
+    /// containing the process name, resolved workspace path, and current file name,
+    /// or <c>null</c> if the window does not belong to a known IDE.
+    /// </summary>
+    /// <param name="windowHandle">The HWND of the window to inspect.</param>
+    /// <returns>IDE information, or <c>null</c> if not a known IDE.</returns>
     public IDEInfo? DetectIDE(IntPtr windowHandle)
     {
         try
@@ -71,6 +101,10 @@ public class IDEDetectionService : IIDEDetectionService
         }
     }
 
+    /// <summary>
+    /// Retrieves the window title text via Win32 <c>GetWindowText</c>.
+    /// Uses the Unicode variant (<c>GetWindowTextW</c>) for correct character handling.
+    /// </summary>
     internal static string GetWindowTitle(IntPtr hwnd)
     {
         var length = NativeMethods.GetWindowTextLength(hwnd);
@@ -81,6 +115,15 @@ public class IDEDetectionService : IIDEDetectionService
         return new string(buffer, 0, length);
     }
 
+    /// <summary>
+    /// Parses a VS Code-style window title into folder name and current file components.
+    /// Handles multiple title formats: "file.ts - myproject - Visual Studio Code",
+    /// "myproject - Visual Studio Code", "file.ts - myproject (Workspace) - Visual Studio Code".
+    /// Strips the " (Workspace)" suffix if present.
+    /// </summary>
+    /// <param name="title">The full window title string.</param>
+    /// <param name="ideSuffix">The IDE name suffix to strip (e.g., "Visual Studio Code").</param>
+    /// <returns>A tuple of (folder name, current file name), either or both may be null.</returns>
     internal static (string? FolderName, string? CurrentFile) ParseWindowTitle(string title, string ideSuffix)
     {
         // VS Code title formats:
@@ -118,12 +161,27 @@ public class IDEDetectionService : IIDEDetectionService
         return (null, null);
     }
 
+    /// <summary>
+    /// Resolves a workspace folder name to an absolute disk path by searching VS Code's
+    /// <c>storage.json</c> file. Uses the current user's <c>%APPDATA%</c> path.
+    /// </summary>
     internal static string? ResolveWorkspacePath(string processName, string? folderName)
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         return ResolveWorkspacePath(processName, folderName, appData);
     }
 
+    /// <summary>
+    /// Resolves a workspace folder name to an absolute disk path by searching VS Code's
+    /// <c>storage.json</c>. Checks two possible storage.json locations (globalStorage and root)
+    /// and tries three JSON formats (legacy, backup, windowsState) for compatibility
+    /// across VS Code versions. Opens the file with <c>FileShare.ReadWrite</c> because
+    /// VS Code may be writing to it concurrently.
+    /// </summary>
+    /// <param name="processName">The IDE process name (determines the AppData subfolder).</param>
+    /// <param name="folderName">The folder name from the window title to search for.</param>
+    /// <param name="appDataPath">The <c>%APPDATA%</c> directory path (injectable for testing).</param>
+    /// <returns>The absolute disk path to the workspace, or <c>null</c> if not found.</returns>
     internal static string? ResolveWorkspacePath(string processName, string? folderName, string appDataPath)
     {
         if (string.IsNullOrEmpty(folderName)) return null;
@@ -221,6 +279,16 @@ public class IDEDetectionService : IIDEDetectionService
         return null;
     }
 
+    /// <summary>
+    /// Checks if a <c>file://</c> URI's last path segment matches the expected folder name.
+    /// Handles a Windows-specific quirk: when the drive letter colon is percent-encoded as
+    /// <c>%3A</c> in the URI, <see cref="Uri.LocalPath"/> returns <c>/C:/...</c> with a
+    /// leading slash that breaks <see cref="System.IO.Directory.Exists"/>. This method
+    /// strips the leading slash in that case.
+    /// </summary>
+    /// <param name="folderUri">A <c>file://</c> URI from VS Code's storage.json.</param>
+    /// <param name="folderName">The expected folder name to match against the URI's last segment.</param>
+    /// <returns>The local filesystem path if it matches and exists, otherwise <c>null</c>.</returns>
     internal static string? MatchFolderUri(string? folderUri, string folderName)
     {
         if (folderUri is null) return null;

@@ -66,6 +66,10 @@ public class RecordingController : IDisposable
 
     // --- Audio control ---
 
+    /// <summary>
+    /// Starts audio recording. Optionally mutes other audio applications first
+    /// and plays a start-recording sound effect.
+    /// </summary>
     public async Task StartRecordingAsync(bool muteWhileDictating)
     {
         if (muteWhileDictating)
@@ -75,11 +79,16 @@ public class RecordingController : IDisposable
         await _audioService.StartRecordingAsync();
     }
 
+    /// <summary>Stops the active recording and returns the captured audio as a WAV byte array.</summary>
     public async Task<byte[]> StopRecordingAsync()
     {
         return await _audioService.StopRecordingAsync();
     }
 
+    /// <summary>
+    /// Starts VAD listening mode. The microphone is opened but no audio is saved
+    /// until Voice Activity Detection triggers the <see cref="SpeechStarted"/> event.
+    /// </summary>
     public async Task StartListeningAsync(bool muteWhileDictating)
     {
         if (muteWhileDictating)
@@ -88,6 +97,7 @@ public class RecordingController : IDisposable
         await _audioService.StartListeningAsync();
     }
 
+    /// <summary>Stops VAD listening mode and optionally unmutes other applications.</summary>
     public void StopListening(bool muteWhileDictating)
     {
         _audioService.StopListening();
@@ -97,6 +107,7 @@ public class RecordingController : IDisposable
 
     // --- Timer management ---
 
+    /// <summary>Starts a 1-second interval timer that fires <see cref="RecordingTimerTick"/> with formatted elapsed time.</summary>
     public void StartRecordingTimer()
     {
         _recordingStartTime = DateTime.UtcNow;
@@ -109,6 +120,7 @@ public class RecordingController : IDisposable
         _recordingTimer.Start();
     }
 
+    /// <summary>Stops and disposes the recording duration timer.</summary>
     public void StopRecordingTimer()
     {
         _recordingTimer?.Stop();
@@ -116,9 +128,11 @@ public class RecordingController : IDisposable
         _recordingTimer = null;
     }
 
+    /// <summary>Starts an auto-dismiss countdown that fires <see cref="AutoDismissExpired"/> after the specified delay.</summary>
     public void StartAutoDismissTimer(int autoDismissSeconds)
         => _ = RunAutoDismissAsync(autoDismissSeconds);
 
+    /// <summary>Cancels any pending auto-dismiss countdown.</summary>
     public void CancelAutoDismissTimer()
     {
         _autoDismissCts?.Cancel();
@@ -132,12 +146,18 @@ public class RecordingController : IDisposable
 
     // --- Sound effects ---
 
+    /// <summary>Plays the start-recording sound effect.</summary>
     public void PlayStartRecording() => _soundEffects.PlayStartRecording();
+
+    /// <summary>Plays the stop-recording sound effect.</summary>
     public void PlayStopRecording() => _soundEffects.PlayStopRecording();
+
+    /// <summary>Plays the error sound effect.</summary>
     public void PlayError() => _soundEffects.PlayError();
 
     // --- Muting ---
 
+    /// <summary>Restores audio for all applications that were muted during dictation.</summary>
     public void UnmuteAll() => _mutingService.UnmuteAll();
 
     // --- Private event handlers ---
@@ -172,6 +192,7 @@ public class RecordingController : IDisposable
         catch (TaskCanceledException) { }
     }
 
+    /// <summary>Unsubscribes from audio service events, cancels timers, and releases resources.</summary>
     public void Dispose()
     {
         _audioService.AudioLevelChanged -= OnAudioLevelChanged;

@@ -5,15 +5,37 @@ using WriteSpeech.Core.Services.TextInsertion;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Reads the currently selected text from the foreground window by simulating a Ctrl+C
+/// keystroke and reading the result from the clipboard.
+///
+/// Implementation approach:
+/// 1. Saves the current clipboard contents and clears the clipboard.
+/// 2. Synthesizes Ctrl+C via Win32 <c>SendInput</c> to copy the selection in the active window.
+/// 3. Waits 100 ms for the copy to complete, then reads the clipboard text.
+/// 4. Restores the original clipboard contents in a <c>finally</c> block.
+///
+/// If no text is selected, the clipboard remains empty after Ctrl+C and the method returns null.
+/// All clipboard operations are dispatched to the WPF UI thread (STA requirement).
+/// </summary>
 public class SelectedTextService : ISelectedTextService
 {
     private readonly ILogger<SelectedTextService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SelectedTextService"/> class.
+    /// </summary>
     public SelectedTextService(ILogger<SelectedTextService> logger)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Reads the currently selected text from the foreground window.
+    /// Simulates Ctrl+C, reads the clipboard, and restores the original clipboard contents.
+    /// Returns <c>null</c> if no text is selected or if clipboard access fails.
+    /// </summary>
+    /// <returns>The selected text, or <c>null</c> if no text is selected.</returns>
     public async Task<string?> ReadSelectedTextAsync()
     {
         string? selectedText = null;
