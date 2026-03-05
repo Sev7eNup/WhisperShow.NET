@@ -98,6 +98,10 @@
         <Grid.LayoutTransform>
             <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1"/>
         </Grid.LayoutTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <!-- Glass pill -->
         <Grid RenderTransformOrigin="0.5,0.5" Margin="3">
             <Grid.RenderTransform>
@@ -372,16 +376,12 @@
                 </Grid>
             </Border>
 
-            <!-- Model loading indicator (positioned below the bubble via RenderTransform) -->
-            <TextBlock Text="Loading..." FontSize="8" FontFamily="Segoe UI Variable, Segoe UI"
-                       Foreground="#E8A735" HorizontalAlignment="Center"
-                       VerticalAlignment="Bottom" IsHitTestVisible="False"
-                       Visibility="{Binding IsModelLoading, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock.RenderTransform>
-                    <TranslateTransform Y="12"/>
-                </TextBlock.RenderTransform>
-            </TextBlock>
         </Grid>
 
+        <!-- Model loading indicator (below the bubble, MaxWidth prevents widening) -->
+        <TextBlock Grid.Row="1" Text="Loading..." FontSize="8" FontFamily="Segoe UI Variable, Segoe UI"
+                   Foreground="#E8A735" HorizontalAlignment="Center" MaxWidth="56"
+                   Margin="0,1,0,0" IsHitTestVisible="False"
+                   Visibility="{Binding IsModelLoading, Converter={StaticResource BoolToVisibility}}"/>
     </Grid>
 </Window>
