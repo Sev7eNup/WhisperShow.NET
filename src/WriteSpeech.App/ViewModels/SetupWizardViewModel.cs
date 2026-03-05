@@ -14,8 +14,31 @@ using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels;
 
-public enum SetupStep { Welcome, Transcription, Correction, Microphone }
+/// <summary>
+/// Represents the four sequential steps of the first-run setup wizard.
+/// </summary>
+public enum SetupStep
+{
+    /// <summary>Welcome screen where the user selects their preferred language.</summary>
+    Welcome,
 
+    /// <summary>Transcription provider selection (Cloud/Local/Parakeet) with API key or model download.</summary>
+    Transcription,
+
+    /// <summary>AI text correction provider selection (Off/OpenAI/Anthropic/Google/Groq/Custom/Local).</summary>
+    Correction,
+
+    /// <summary>Microphone device selection with live audio level testing.</summary>
+    Microphone
+}
+
+/// <summary>
+/// ViewModel for the first-run setup wizard that guides new users through initial configuration.
+/// Walks through four steps: language selection, transcription provider setup (including model
+/// downloads for local providers), AI text correction provider setup, and microphone selection
+/// with live audio level testing. Validates API keys before allowing navigation forward and
+/// persists all settings to appsettings.json on completion.
+/// </summary>
 public partial class SetupWizardViewModel : ObservableObject
 {
     private readonly ISettingsPersistenceService _persistenceService;
@@ -33,8 +56,13 @@ public partial class SetupWizardViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsLastStep))]
     private SetupStep _currentStep = SetupStep.Welcome;
 
+    /// <summary>Zero-based index of the current wizard step (for progress indicator binding).</summary>
     public int CurrentStepIndex => (int)CurrentStep;
+
+    /// <summary>Whether the Back button should be enabled (disabled on the first step).</summary>
     public bool CanGoBack => CurrentStep != SetupStep.Welcome;
+
+    /// <summary>Whether the current step is the final one (Microphone), showing "Finish" instead of "Next".</summary>
     public bool IsLastStep => CurrentStep == SetupStep.Microphone;
 
     [ObservableProperty] private bool _canGoNext = true;
@@ -43,6 +71,7 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty] private string? _selectedLanguageCode;
     [ObservableProperty] private bool _isAutoDetectLanguage = true;
 
+    /// <summary>All supported languages for speech recognition, displayed in the language picker.</summary>
     public ObservableCollection<LanguageInfo> AvailableLanguages { get; } =
         new(SupportedLanguages.All.Select(l => new LanguageInfo(l.Code, l.Name, l.Flag)));
 
@@ -58,8 +87,10 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty] private string _localModelName = "ggml-small.bin";
     [ObservableProperty] private string _parakeetModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8";
 
-    // --- Local model download ---
+    /// <summary>Available Whisper GGML models for local transcription (download/select in wizard).</summary>
     public ObservableCollection<ModelItemViewModel> WhisperModels { get; } = [];
+
+    /// <summary>Available Parakeet ONNX models for local transcription (English-only, download/select in wizard).</summary>
     public ObservableCollection<ParakeetModelItemViewModel> ParakeetModels { get; } = [];
 
     // --- Step 3: Text Correction ---
@@ -77,15 +108,18 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty] private bool _correctionGpuAcceleration = true;
     [ObservableProperty] private string _correctionLocalModelName = "";
 
-    // --- Local correction model download ---
+    /// <summary>Available GGUF models for local AI text correction (download/select in wizard).</summary>
     public ObservableCollection<CorrectionModelItemViewModel> CorrectionModels { get; } = [];
 
+    /// <summary>Whether the OpenAI API key entered for transcription can be reused for correction.</summary>
     public bool IsReusableOpenAiKey =>
         CorrectionProvider is TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud
         && !string.IsNullOrWhiteSpace(OpenAiApiKey);
 
     // --- Step 4: Microphone ---
     [ObservableProperty] private int _selectedMicrophoneIndex;
+
+    /// <summary>Detected audio input devices available for selection.</summary>
     public ObservableCollection<MicrophoneInfo> AvailableMicrophones { get; } = [];
 
     // --- Mic test ---
@@ -93,7 +127,7 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty] private float _micTestLevel;
     private MicTestHelper? _micTestHelper;
 
-    // --- Result ---
+    /// <summary>Whether the wizard has been completed and settings have been persisted.</summary>
     public bool IsCompleted { get; private set; }
 
     public SetupWizardViewModel(
@@ -720,6 +754,7 @@ public partial class SetupWizardViewModel : ObservableObject
         }
     }
 
+    /// <summary>Maps a Whisper GGML model filename (e.g. "ggml-small.bin") to its corresponding <see cref="GgmlType"/> enum value.</summary>
     internal static GgmlType FileNameToGgmlType(string fileName) => fileName switch
     {
         "ggml-tiny.bin" => GgmlType.Tiny,

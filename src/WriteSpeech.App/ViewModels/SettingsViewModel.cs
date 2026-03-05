@@ -18,37 +18,75 @@ using WriteSpeech.Core.Services.TextCorrection;
 
 namespace WriteSpeech.App.ViewModels;
 
+/// <summary>
+/// Identifies the available pages in the settings window.
+/// </summary>
 public enum SettingsPage
 {
+    /// <summary>Language, microphone, hotkey configuration.</summary>
     General,
+
+    /// <summary>Theme, sound effects, auto-start at login.</summary>
     System,
+
+    /// <summary>IDE variable recognition and file tagging toggles.</summary>
     Integrations,
+
+    /// <summary>Whisper, Parakeet, and correction model download management.</summary>
     Models,
+
+    /// <summary>Text correction provider, API keys, and combined audio model settings.</summary>
     Intelligence,
+
+    /// <summary>Custom word dictionary for improving transcription accuracy.</summary>
     Dictionary,
+
+    /// <summary>Trigger-to-replacement text snippet management.</summary>
     Snippets,
+
+    /// <summary>Context-aware correction modes (Default, E-Mail, Code, etc.) with app-matching patterns.</summary>
     Modes,
+
+    /// <summary>Usage statistics (total recordings, words, duration, etc.).</summary>
     Statistics
 }
 
+/// <summary>
+/// Top-level coordinator for the settings window. Owns sub-ViewModels for each settings page
+/// (General, System, Intelligence, Modes, Integrations, Models, Dictionary, Statistics) and
+/// handles page navigation. Delegates persistence to <see cref="ISettingsPersistenceService"/>
+/// by collecting all sub-VM mutations into a single JSON write.
+/// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsPersistenceService _persistenceService;
 
-    // --- Sub-ViewModels ---
+    /// <summary>Language, microphone, and hotkey settings.</summary>
     public GeneralSettingsViewModel General { get; }
+
+    /// <summary>Theme, sound effects, and auto-start settings.</summary>
     public SystemSettingsViewModel System { get; }
+
+    /// <summary>Transcription and text correction provider settings.</summary>
     public TranscriptionSettingsViewModel Transcription { get; }
+
+    /// <summary>IDE integration settings (variable recognition, file tagging).</summary>
     public IntegrationsSettingsViewModel Integrations { get; }
+
+    /// <summary>Usage statistics display.</summary>
     public StatisticsViewModel Statistics { get; }
+
+    /// <summary>Custom dictionary and snippet management.</summary>
     public DictionarySnippetsViewModel DictionarySnippets { get; }
+
+    /// <summary>Correction mode management (built-in and custom modes).</summary>
     public ModesSettingsViewModel Modes { get; }
 
     // --- Page navigation ---
     [ObservableProperty]
     private SettingsPage _selectedPage = SettingsPage.General;
 
-    // Version
+    /// <summary>Application version string displayed in the settings window footer.</summary>
     public string VersionText => $"WriteSpeech v{GetType().Assembly.GetName().Version?.ToString(3) ?? "1.0.0"}";
 
     public SettingsViewModel(
@@ -146,6 +184,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         return obj;
     }
 
+    /// <summary>Unsubscribes from sub-ViewModel property change events.</summary>
     public void Dispose()
     {
         Transcription.PropertyChanged -= OnTranscriptionPropertyChanged;

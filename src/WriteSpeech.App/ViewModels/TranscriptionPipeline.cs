@@ -265,6 +265,7 @@ public class TranscriptionPipeline : IDisposable
             TextCorrectionDefaults.VoiceCommandSystemPrompt, targetLanguage: null, ct);
     }
 
+    /// <summary>Cancels any in-progress transcription and releases the cancellation token source.</summary>
     public void Dispose()
     {
         _transcriptionCts?.Cancel();

@@ -8,17 +8,46 @@ using WriteSpeech.Core.Services.Audio;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Reads audio files in various formats (MP3, WAV, M4A, FLAC, OGG/Vorbis, OGG/Opus, MP4)
+/// and converts them to 16 kHz, 16-bit, mono WAV — the format required by speech-to-text engines.
+///
+/// Format handling:
+/// - Most formats (MP3, WAV, M4A, FLAC, MP4) are opened via <c>MediaFoundationReader</c>,
+///   which delegates to the Windows Media Foundation codecs installed on the system.
+/// - OGG files require special handling because Media Foundation does not natively support OGG:
+///   first tries NAudio.Vorbis (<see cref="VorbisWaveReader"/>), and if that fails (not a
+///   Vorbis stream), falls back to the Concentus library for OGG/Opus decoding.
+///
+/// A 500 MB file size guard prevents out-of-memory crashes on very large files.
+/// Resampling uses <c>MediaFoundationResampler</c> at quality level 60 (highest).
+/// </summary>
 public class AudioFileReader : IAudioFileReader
 {
+    /// <summary>
+    /// Maximum allowed audio file size in bytes (500 MB). Files exceeding this limit
+    /// are rejected to prevent out-of-memory conditions during decoding and resampling.
+    /// </summary>
     internal const long MaxAudioFileSize = 500 * 1024 * 1024; // 500 MB
 
     private readonly ILogger<AudioFileReader> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AudioFileReader"/> class.
+    /// </summary>
     public AudioFileReader(ILogger<AudioFileReader> logger)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Reads an audio file from disk, decodes it, and converts it to 16 kHz / 16-bit / mono WAV format.
+    /// The conversion runs on a background thread via <see cref="Task.Run"/>.
+    /// Throws <see cref="InvalidOperationException"/> if the file exceeds <see cref="MaxAudioFileSize"/>.
+    /// </summary>
+    /// <param name="filePath">Absolute path to the audio file.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A byte array containing the complete WAV file (including header).</returns>
     public async Task<byte[]> ReadAsWavAsync(string filePath, CancellationToken ct = default)
     {
         _logger.LogInformation("Reading audio file as WAV: {FilePath}", filePath);
@@ -50,6 +79,13 @@ public class AudioFileReader : IAudioFileReader
         }, ct);
     }
 
+    /// <summary>
+    /// Reads a file as raw bytes without any format conversion.
+    /// Used when the caller needs the original file content (e.g., for cloud API upload).
+    /// </summary>
+    /// <param name="filePath">Absolute path to the audio file.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The raw file bytes.</returns>
     public async Task<byte[]> ReadRawAsync(string filePath, CancellationToken ct = default)
     {
         _logger.LogInformation("Reading raw audio file: {FilePath}", filePath);
