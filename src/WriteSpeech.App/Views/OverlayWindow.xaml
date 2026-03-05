@@ -98,6 +98,10 @@
         <Grid.LayoutTransform>
             <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1"/>
         </Grid.LayoutTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
         <!-- Glass pill -->
         <Grid RenderTransformOrigin="0.5,0.5" Margin="3">
@@ -163,11 +167,6 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
-                        <!-- Model loading indicator -->
-                        <TextBlock Text="Loading model..." FontSize="8" FontFamily="Segoe UI Variable, Segoe UI"
-                                   Foreground="#E8A735" HorizontalAlignment="Center"
-                                   VerticalAlignment="Bottom" Margin="0,0,0,2" IsHitTestVisible="False"
-                                   Visibility="{Binding IsModelLoading, Converter={StaticResource BoolToVisibility}}"/>
                     </Grid>
 
                     <!-- Listening State (VAD: waiting for speech) -->
@@ -378,5 +377,11 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <!-- Model loading indicator (below the overlay bubble) -->
+        <TextBlock Grid.Row="1" Text="Loading model..." FontSize="8" FontFamily="Segoe UI Variable, Segoe UI"
+                   Foreground="#E8A735" HorizontalAlignment="Center"
+                   Margin="0,1,0,0" IsHitTestVisible="False"
+                   Visibility="{Binding IsModelLoading, Converter={StaticResource BoolToVisibility}}"/>
     </Grid>
 </Window>
