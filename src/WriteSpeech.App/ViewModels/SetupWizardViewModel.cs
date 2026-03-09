@@ -114,6 +114,8 @@ public partial class SetupWizardViewModel : ObservableObject
     /// <summary>Whether the OpenAI API key entered for transcription can be reused for correction.</summary>
     public bool IsReusableOpenAiKey =>
         CorrectionProvider is TextCorrectionProvider.OpenAI or TextCorrectionProvider.Cloud
+        && Provider == TranscriptionProvider.OpenAI
+        && CloudTranscriptionProvider == "OpenAI"
         && !string.IsNullOrWhiteSpace(OpenAiApiKey);
 
     // --- Step 4: Microphone ---
@@ -259,6 +261,7 @@ public partial class SetupWizardViewModel : ObservableObject
     {
         CloudTranscriptionProvider = provider;
         UpdateCanGoNext();
+        OnPropertyChanged(nameof(IsReusableOpenAiKey));
     }
 
     [RelayCommand]
