@@ -31,6 +31,8 @@ public partial class SetupWizardWindow : Window
 
         UpdateProgressIndicator();
         UpdateProviderHighlight();
+        Dispatcher.BeginInvoke(UpdateLanguageHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
+        Dispatcher.BeginInvoke(UpdateMicrophoneHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
