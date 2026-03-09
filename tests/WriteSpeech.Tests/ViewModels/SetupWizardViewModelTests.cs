@@ -620,6 +620,39 @@ public class SetupWizardViewModelTests
         vm.IsReusableOpenAiKey.Should().BeFalse();
     }
 
+    [Fact]
+    public void IsReusableOpenAiKey_FalseWhenLocalTranscription()
+    {
+        var vm = CreateViewModel();
+        vm.SelectProvider("Local");
+        vm.SetOpenAiApiKey("sk-test");
+        vm.SelectCorrectionProvider("OpenAI");
+
+        vm.IsReusableOpenAiKey.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsReusableOpenAiKey_FalseWhenGroqCloudTranscription()
+    {
+        var vm = CreateViewModel();
+        vm.SelectCloudTranscriptionProvider("Groq");
+        vm.SetOpenAiApiKey("sk-test");
+        vm.SelectCorrectionProvider("OpenAI");
+
+        vm.IsReusableOpenAiKey.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsReusableOpenAiKey_FalseWhenParakeetTranscription()
+    {
+        var vm = CreateViewModel();
+        vm.SelectProvider("Parakeet");
+        vm.SetOpenAiApiKey("sk-test");
+        vm.SelectCorrectionProvider("OpenAI");
+
+        vm.IsReusableOpenAiKey.Should().BeFalse();
+    }
+
     // --- Cloud sub-provider ---
 
     [Fact]
