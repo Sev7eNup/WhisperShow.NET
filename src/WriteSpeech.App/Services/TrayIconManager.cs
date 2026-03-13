@@ -17,6 +17,26 @@ using WriteSpeech.Core.Services.TextInsertion;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Manages the Windows system tray (notification area) icon and its context menu.
+///
+/// Uses the H.NotifyIcon.Wpf library (<see cref="TaskbarIcon"/>) which requires
+/// <see cref="TaskbarIcon.ForceCreate"/> to be called manually because the icon is
+/// created in code, not placed in a XAML visual tree.
+///
+/// Context menu structure: Show/Hide Overlay, Language submenu (with flag icons),
+/// Microphone submenu, Mode submenu (auto + all correction modes), Paste Last Transcript,
+/// Transcribe File, Settings, History, Exit.
+///
+/// Dynamic submenus (Language, Microphone, Mode) use dirty flags (<c>_languageDirty</c>, etc.)
+/// and are rebuilt lazily when the context menu opens — not on every settings change.
+///
+/// Win32 workaround (KB135788): To show a context menu from a tray icon, the owning process
+/// must have a foreground window. The overlay has <c>WS_EX_NOACTIVATE</c> which prevents
+/// <c>SetForegroundWindow</c> from succeeding. The workaround temporarily removes
+/// <c>WS_EX_NOACTIVATE</c> from the overlay, calls <c>SetForegroundWindow</c>, opens the
+/// context menu, then restores the style flag when the menu closes.
+/// </summary>
 public class TrayIconManager : IDisposable
 {
     private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
@@ -42,6 +62,10 @@ public class TrayIconManager : IDisposable
     private bool _microphoneDirty = true;
     private bool _modeDirty = true;
 
+    /// <summary>
+    /// Initializes the tray icon manager. Subscribes to settings changes and mode changes
+    /// to mark dynamic submenus as dirty for lazy rebuild.
+    /// </summary>
     public TrayIconManager(
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor,
         ISettingsPersistenceService settingsPersistence,
@@ -66,6 +90,16 @@ public class TrayIconManager : IDisposable
         });
     }
 
+    /// <summary>
+    /// Creates the system tray icon, builds the context menu, and sets up mouse event handlers.
+    /// Must be called after the overlay window is created. Calls <see cref="TaskbarIcon.ForceCreate"/>
+    /// because the icon is not placed in a WPF visual tree and would not be created automatically.
+    /// </summary>
+    /// <param name="overlayWindow">The main overlay window (used for show/hide and focus workarounds).</param>
+    /// <param name="settingsFactory">Factory that creates a new settings window instance.</param>
+    /// <param name="historyFactory">Factory that creates a new history window instance.</param>
+    /// <param name="fileTranscriptionFactory">Factory that creates a new file transcription window instance.</param>
+    /// <param name="shutdown">Action to invoke when the user clicks Exit.</param>
     public void Initialize(OverlayWindow overlayWindow, Func<SettingsWindow> settingsFactory,
         Func<HistoryWindow> historyFactory, Func<FileTranscriptionWindow> fileTranscriptionFactory,
         Action shutdown)
@@ -153,7 +187,7 @@ public class TrayIconManager : IDisposable
             var text = entries[0].Text;
             var targetWindow = _previousForegroundWindow;
             contextMenu.IsOpen = false;
-            await Task.Delay(200);
+            await Task.Delay(_optionsMonitor.CurrentValue.Timing.MenuCloseMs);
             await _windowFocusService.RestoreFocusAsync(targetWindow);
             await _textInsertionService.InsertTextAsync(text);
         };
@@ -449,6 +483,10 @@ public class TrayIconManager : IDisposable
         _trayIcon!.TrayLeftMouseDown += _trayLeftMouseDownHandler;
     }
 
+    /// <summary>
+    /// Disposes the tray icon, unsubscribes all event handlers, and releases the
+    /// options change registration.
+    /// </summary>
     public void Dispose()
     {
         _optionsChangeRegistration?.Dispose();

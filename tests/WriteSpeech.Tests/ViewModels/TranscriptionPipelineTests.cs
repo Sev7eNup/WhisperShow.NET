@@ -244,4 +244,55 @@ public class TranscriptionPipelineTests : IDisposable
 
         act.Should().NotThrow();
     }
+
+    // --- Model readiness checks ---
+
+    [Fact]
+    public void IsTranscriptionModelReady_ReturnsTrue_WhenModelLoaded()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(true);
+
+        _pipeline.IsTranscriptionModelReady(TranscriptionProvider.OpenAI).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsTranscriptionModelReady_ReturnsFalse_WhenModelNotLoaded()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(false);
+
+        _pipeline.IsTranscriptionModelReady(TranscriptionProvider.Local).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsCorrectionModelReady_ReturnsTrue_WhenModelLoaded()
+    {
+        _textCorrectionService.IsModelLoaded.Returns(true);
+
+        _pipeline.IsCorrectionModelReady(TextCorrectionProvider.OpenAI).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsCorrectionModelReady_ReturnsFalse_WhenModelNotLoaded()
+    {
+        _textCorrectionService.IsModelLoaded.Returns(false);
+
+        _pipeline.IsCorrectionModelReady(TextCorrectionProvider.Local).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsCorrectionModelReady_ReturnsTrue_WhenProviderIsOff()
+    {
+        // Off provider returns null from factory, should default to true (no model needed)
+        _pipeline.IsCorrectionModelReady(TextCorrectionProvider.Off).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsCombinedModelAvailable_DelegatesToCombinedService()
+    {
+        _combinedService.IsAvailable.Returns(true);
+        _pipeline.IsCombinedModelAvailable.Should().BeTrue();
+
+        _combinedService.IsAvailable.Returns(false);
+        _pipeline.IsCombinedModelAvailable.Should().BeFalse();
+    }
 }

@@ -1,5 +1,8 @@
 namespace WriteSpeech.Core.Services.Audio;
 
+/// <summary>
+/// Compresses audio data to reduce file size before uploading to cloud APIs.
+/// </summary>
 public interface IAudioCompressor
 {
     /// <summary>

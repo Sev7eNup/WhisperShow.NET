@@ -513,4 +513,97 @@ public class HotkeyMatcherTests
 
         HotkeyMatcher.RequiresMouseHook(toggle, ptt, suppressActions: true).Should().BeTrue();
     }
+
+    // --- ClassifyRawInputFlags ---
+
+    [Fact]
+    public void ClassifyRawInputFlags_ZeroFlags_ReturnsEmpty()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(0, results, out var count);
+
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_MiddleDown_ReturnsMiddleTrue()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(NativeMethods.RI_MOUSE_MIDDLE_BUTTON_DOWN, results, out var count);
+
+        count.Should().Be(1);
+        results[0].Should().Be((MouseButtonKind.Middle, true));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_MiddleUp_ReturnsMiddleFalse()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(NativeMethods.RI_MOUSE_MIDDLE_BUTTON_UP, results, out var count);
+
+        count.Should().Be(1);
+        results[0].Should().Be((MouseButtonKind.Middle, false));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_XButton1Down_ReturnsXButton1True()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(NativeMethods.RI_MOUSE_BUTTON_4_DOWN, results, out var count);
+
+        count.Should().Be(1);
+        results[0].Should().Be((MouseButtonKind.XButton1, true));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_XButton1Up_ReturnsXButton1False()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(NativeMethods.RI_MOUSE_BUTTON_4_UP, results, out var count);
+
+        count.Should().Be(1);
+        results[0].Should().Be((MouseButtonKind.XButton1, false));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_XButton2Down_ReturnsXButton2True()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(NativeMethods.RI_MOUSE_BUTTON_5_DOWN, results, out var count);
+
+        count.Should().Be(1);
+        results[0].Should().Be((MouseButtonKind.XButton2, true));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_XButton2Up_ReturnsXButton2False()
+    {
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(NativeMethods.RI_MOUSE_BUTTON_5_UP, results, out var count);
+
+        count.Should().Be(1);
+        results[0].Should().Be((MouseButtonKind.XButton2, false));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_MultipleButtons_ReturnsAll()
+    {
+        ushort flags = (ushort)(NativeMethods.RI_MOUSE_MIDDLE_BUTTON_DOWN | NativeMethods.RI_MOUSE_BUTTON_5_UP);
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(flags, results, out var count);
+
+        count.Should().Be(2);
+        results[0].Should().Be((MouseButtonKind.Middle, true));
+        results[1].Should().Be((MouseButtonKind.XButton2, false));
+    }
+
+    [Fact]
+    public void ClassifyRawInputFlags_IrrelevantFlags_ReturnsEmpty()
+    {
+        // Left button flags (0x0001, 0x0002) are not in our mask
+        Span<(MouseButtonKind, bool)> results = stackalloc (MouseButtonKind, bool)[6];
+        HotkeyMatcher.ClassifyRawInputFlags(0x0001, results, out var count);
+
+        count.Should().Be(0);
+    }
 }

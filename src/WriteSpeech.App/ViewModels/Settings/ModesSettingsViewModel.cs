@@ -8,6 +8,14 @@ using WriteSpeech.Core.Services.Modes;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+/// <summary>
+/// ViewModel for the correction modes settings page.
+/// Manages context-aware text correction modes that apply different AI system prompts depending on
+/// the active application (e.g., formal tone for email clients, code-aware for IDEs, casual for messaging apps).
+/// Supports CRUD operations for custom user-defined modes, toggling auto-switch behavior (which automatically
+/// selects a mode based on the foreground process name), and manual mode pinning.
+/// Built-in modes (Default, E-Mail, Message, Code, Note, Translate) are read-only.
+/// </summary>
 public partial class ModesSettingsViewModel : ObservableObject
 {
     private readonly IModeService _modeService;
@@ -32,6 +40,7 @@ public partial class ModesSettingsViewModel : ObservableObject
         RefreshModes();
     }
 
+    /// <summary>Reloads the mode list from the mode service, updating active state and auto-switch status.</summary>
     public void RefreshModes()
     {
         var modes = _modeService.GetModes();
@@ -105,6 +114,7 @@ public partial class ModesSettingsViewModel : ObservableObject
         ClearEditor();
     }
 
+    /// <summary>Writes the mode settings (auto-switch flag and pinned active mode) into the given JSON configuration node for persistence.</summary>
     public void WriteSettings(JsonNode section)
     {
         var tc = SettingsViewModel.EnsureObject(section, "TextCorrection");
@@ -129,4 +139,11 @@ public partial class ModesSettingsViewModel : ObservableObject
                    .Where(s => s.Length > 0).ToList();
 }
 
+/// <summary>UI-bindable representation of a correction mode displayed in the modes settings list.</summary>
+/// <param name="Name">The display name of the correction mode (e.g., "E-Mail", "Code").</param>
+/// <param name="SystemPrompt">The AI system prompt used when this mode is active, instructing the LLM how to correct transcribed text.</param>
+/// <param name="AppPatterns">Comma-separated process names that trigger auto-switching to this mode (e.g., "Slack, Teams, Discord").</param>
+/// <param name="IsBuiltIn">Whether this is a built-in mode that cannot be edited or deleted by the user.</param>
+/// <param name="IsActive">Whether this mode is currently the manually pinned (active) mode.</param>
+/// <param name="TargetLanguage">Optional target language for translation modes (e.g., "English"). Null for non-translation modes.</param>
 public record ModeItem(string Name, string SystemPrompt, string AppPatterns, bool IsBuiltIn, bool IsActive, string? TargetLanguage = null);

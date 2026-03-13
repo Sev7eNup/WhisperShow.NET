@@ -204,6 +204,22 @@ public class TranscriptionHistoryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task LoadAsync_CorruptedJson_CreatesBackupFile()
+    {
+        var filePath = Path.Combine(_tempDir, "backup-history.json");
+        File.WriteAllText(filePath, "{ not valid json !!! }");
+
+        var service = CreateService();
+        SetFilePath(service, filePath);
+
+        await service.LoadAsync();
+
+        var backupFiles = Directory.GetFiles(_tempDir, "backup-history.json.corrupt-*");
+        backupFiles.Should().HaveCount(1);
+        File.ReadAllText(backupFiles[0]).Should().Be("{ not valid json !!! }");
+    }
+
+    [Fact]
     public async Task SaveAndLoad_PreservesAllFields()
     {
         var service = CreateService();

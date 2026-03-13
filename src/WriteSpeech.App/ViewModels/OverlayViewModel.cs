@@ -20,6 +20,14 @@ using WriteSpeech.Core.Services.Transcription;
 
 namespace WriteSpeech.App.ViewModels;
 
+/// <summary>
+/// Central state machine coordinator for the speech-to-text overlay.
+/// Manages recording state transitions (Idle -> Listening -> Recording -> Transcribing -> Result/Error)
+/// by delegating audio capture to <see cref="RecordingController"/> and transcription/correction
+/// to <see cref="TranscriptionPipeline"/>. Handles command mode (voice commands on selected text),
+/// VAD continuous listening loops, text insertion into the previously focused window, waveform
+/// visualization data, and overlay position persistence.
+/// </summary>
 public partial class OverlayViewModel : ObservableObject, IDisposable
 {
     private readonly RecordingController _recordingController;
@@ -44,8 +52,13 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
     private WriteSpeechOptions Options => _optionsMonitor.CurrentValue;
 
+    /// <summary>Whether other audio applications should be muted during dictation.</summary>
     public bool MuteWhileDictating => Options.Audio.MuteWhileDictating;
+
+    /// <summary>Whether the overlay stays visible even when idle (no active recording).</summary>
     public bool IsOverlayAlwaysVisible => Options.Overlay.AlwaysVisible;
+
+    /// <summary>Formatted text displaying the push-to-talk hotkey combination for the UI.</summary>
     public string PushToTalkHotkeyText =>
         $"Click \"{Settings.GeneralSettingsViewModel.FormatKeys(Options.Hotkey.PushToTalk.Modifiers, Options.Hotkey.PushToTalk.Key, Options.Hotkey.PushToTalk.MouseButton)}\" to start dictating";
 
@@ -60,6 +73,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
     private readonly float[] _waveformLevels = new float[20];
     private readonly Lock _waveformLock = new();
+    /// <summary>Raised when the waveform level buffer is updated with a new audio sample.</summary>
     public event EventHandler? WaveformUpdated;
 
     [ObservableProperty]
@@ -80,8 +94,13 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isCommandModeActive;
 
-    // --- Overlay position ---
+    [ObservableProperty]
+    private bool _isModelLoading;
+
+    /// <summary>Horizontal screen position of the overlay window, persisted across sessions.</summary>
     public double PositionX { get; private set; }
+
+    /// <summary>Vertical screen position of the overlay window, persisted across sessions.</summary>
     public double PositionY { get; private set; }
 
     public OverlayViewModel(
@@ -128,6 +147,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _optionsChangeRegistration = _optionsMonitor.OnChange(OnOptionsChanged);
 
         UpdateProviderName();
+        StartModelLoadingPoll();
     }
 
     /// <summary>
@@ -360,6 +380,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             // Prepare IDE context while user records (non-blocking)
             _transcriptionPipeline.PrepareIDEContext(_previousForegroundWindow, Options,
                 h => _windowFocusService.GetProcessName(h));
+
+            if (!_transcriptionPipeline.IsTranscriptionModelReady(Options.Provider))
+                StatusText = "Loading model...";
 
             State = RecordingState.Recording;
             RecordingTimerText = "0:00";
@@ -635,6 +658,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         WaveformUpdated?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>Returns a snapshot of the rolling waveform level buffer (20 float values, 0.0-1.0).</summary>
     public float[] GetWaveformLevels()
     {
         lock (_waveformLock)
@@ -643,6 +667,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Resets all waveform levels to zero.</summary>
     public void ClearWaveform()
     {
         lock (_waveformLock)
@@ -653,6 +678,10 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
     // --- Position persistence ---
 
+    /// <summary>
+    /// Updates the overlay's screen position and schedules persistence to appsettings.json.
+    /// Called when the user drags the overlay to a new location.
+    /// </summary>
     public void UpdatePosition(double x, double y)
     {
         PositionX = x;
@@ -665,11 +694,37 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         });
     }
 
+    /// <summary>Refreshes the displayed transcription provider name from current settings.</summary>
     public void UpdateProviderName()
     {
         CurrentProviderName = _transcriptionPipeline.GetProviderName(Options.Provider);
     }
 
+    /// <summary>Checks if local models are loaded and updates <see cref="IsModelLoading"/> accordingly.</summary>
+    internal void UpdateModelLoadingStatus()
+    {
+        var transcriptionReady = _transcriptionPipeline.IsTranscriptionModelReady(Options.Provider);
+        var correctionReady = _transcriptionPipeline.IsCorrectionModelReady(Options.TextCorrection.Provider);
+        IsModelLoading = !transcriptionReady || !correctionReady;
+    }
+
+    private void StartModelLoadingPoll()
+    {
+        UpdateModelLoadingStatus();
+        if (!IsModelLoading) return;
+
+        // Poll every second until models are ready, then stop
+        _ = Task.Run(async () =>
+        {
+            while (IsModelLoading)
+            {
+                await Task.Delay(1000);
+                _dispatcher.Invoke(UpdateModelLoadingStatus);
+            }
+        });
+    }
+
+    /// <summary>Unsubscribes from all events, cancels pending operations, and disposes resources.</summary>
     public void Dispose()
     {
         _recordingController.AudioLevelChanged -= OnControllerAudioLevelChanged;
@@ -691,6 +746,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         try { _recordingController.UnmuteAll(); } catch (Exception ex) { _logger.LogDebug(ex, "Best-effort UnmuteAll during disposal"); }
     }
 
+    /// <summary>Converts an exception into a user-friendly error message string.</summary>
     internal static string SanitizeErrorMessage(Exception ex)
         => ErrorMessageHelper.SanitizeErrorMessage(ex);
 }

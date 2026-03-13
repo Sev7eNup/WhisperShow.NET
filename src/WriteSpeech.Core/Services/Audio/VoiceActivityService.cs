@@ -113,20 +113,28 @@ public class VoiceActivityService : IVoiceActivityService
         }
     }
 
+    // Silero VAD configuration constants
+    private const float MinSpeechDuration = 0.25f;
+    private const float MaxSpeechDuration = 600f;
+    private const int WindowSize = 512;
+    private const int VadSampleRate = 16000;
+    private const int VadThreads = 1;
+    private const float BufferSizeSeconds = 120f;
+
     private static VoiceActivityDetector CreateDetector(VoiceActivityOptions opts, string modelPath)
     {
         var config = new VadModelConfig();
         config.SileroVad.Model = modelPath;
         config.SileroVad.Threshold = opts.Threshold;
         config.SileroVad.MinSilenceDuration = opts.SilenceDurationSeconds;
-        config.SileroVad.MinSpeechDuration = 0.25f;
-        config.SileroVad.MaxSpeechDuration = 600f;
-        config.SileroVad.WindowSize = 512;
-        config.SampleRate = 16000;
-        config.NumThreads = 1;
+        config.SileroVad.MinSpeechDuration = MinSpeechDuration;
+        config.SileroVad.MaxSpeechDuration = MaxSpeechDuration;
+        config.SileroVad.WindowSize = WindowSize;
+        config.SampleRate = VadSampleRate;
+        config.NumThreads = VadThreads;
         config.Provider = "cpu";
 
-        return new VoiceActivityDetector(config, bufferSizeInSeconds: 120f);
+        return new VoiceActivityDetector(config, bufferSizeInSeconds: BufferSizeSeconds);
     }
 
     public void UnloadModel()

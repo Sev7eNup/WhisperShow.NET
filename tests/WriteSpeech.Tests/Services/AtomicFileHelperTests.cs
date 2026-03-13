@@ -1,5 +1,6 @@
 using System.IO;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using WriteSpeech.Core.Services;
 
 namespace WriteSpeech.Tests.Services;
@@ -60,5 +61,42 @@ public class AtomicFileHelperTests : IDisposable
 
         File.Exists(path).Should().BeTrue();
         (await File.ReadAllTextAsync(path)).Should().BeEmpty();
+    }
+
+    // --- BackupCorruptFile ---
+
+    [Fact]
+    public void BackupCorruptFile_CreatesTimestampedBackup()
+    {
+        var path = Path.Combine(_tempDir, "data.json");
+        File.WriteAllText(path, "corrupt content");
+
+        AtomicFileHelper.BackupCorruptFile(path, NullLogger.Instance);
+
+        var backupFiles = Directory.GetFiles(_tempDir, "data.json.corrupt-*");
+        backupFiles.Should().HaveCount(1);
+        File.ReadAllText(backupFiles[0]).Should().Be("corrupt content");
+    }
+
+    [Fact]
+    public void BackupCorruptFile_PreservesOriginalFile()
+    {
+        var path = Path.Combine(_tempDir, "data.json");
+        File.WriteAllText(path, "corrupt content");
+
+        AtomicFileHelper.BackupCorruptFile(path, NullLogger.Instance);
+
+        File.Exists(path).Should().BeTrue();
+        File.ReadAllText(path).Should().Be("corrupt content");
+    }
+
+    [Fact]
+    public void BackupCorruptFile_NonExistentFile_DoesNotThrow()
+    {
+        var path = Path.Combine(_tempDir, "nonexistent.json");
+
+        var act = () => AtomicFileHelper.BackupCorruptFile(path, NullLogger.Instance);
+
+        act.Should().NotThrow();
     }
 }

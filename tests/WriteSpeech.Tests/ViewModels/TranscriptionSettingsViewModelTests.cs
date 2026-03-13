@@ -945,4 +945,13 @@ public class TranscriptionSettingsViewModelTests
         _preloadService.DidNotReceive().UnloadTranscriptionModel();
         _preloadService.DidNotReceive().UnloadParakeetModel();
     }
+
+    [Fact]
+    public void ShowCudaWarning_IsInverseOfCudaDetected()
+    {
+        // ShowCudaWarning is based on App.CudaDetected (static).
+        // In test environment CUDA is never detected, so warning should show.
+        var vm = CreateViewModel();
+        vm.ShowCudaWarning.Should().BeTrue();
+    }
 }

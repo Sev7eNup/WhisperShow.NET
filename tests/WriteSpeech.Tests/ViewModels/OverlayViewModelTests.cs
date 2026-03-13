@@ -1249,4 +1249,54 @@ public class OverlayViewModelTests : IDisposable
         result.Should().Contain("VAD model not downloaded");
         result.Should().NotContain("C:\\path");
     }
+
+    // --- Model Loading Status ---
+
+    [Fact]
+    public void IsModelLoading_False_WhenModelsLoaded()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(true);
+        _textCorrectionService.IsModelLoaded.Returns(true);
+
+        var vm = CreateViewModel();
+
+        vm.IsModelLoading.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsModelLoading_True_WhenTranscriptionModelNotLoaded()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(false);
+        _textCorrectionService.IsModelLoaded.Returns(true);
+
+        var vm = CreateViewModel();
+
+        vm.IsModelLoading.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsModelLoading_True_WhenCorrectionModelNotLoaded()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(true);
+        _textCorrectionService.IsModelLoaded.Returns(false);
+
+        var vm = CreateViewModel(o => o.TextCorrection.Provider = TextCorrectionProvider.Local);
+
+        vm.IsModelLoading.Should().BeTrue();
+    }
+
+    [Fact]
+    public void UpdateModelLoadingStatus_UpdatesProperty()
+    {
+        _transcriptionProvider.IsModelLoaded.Returns(true);
+        _textCorrectionService.IsModelLoaded.Returns(true);
+        var vm = CreateViewModel();
+        vm.IsModelLoading.Should().BeFalse();
+
+        // Simulate model becoming unloaded
+        _transcriptionProvider.IsModelLoaded.Returns(false);
+        vm.UpdateModelLoadingStatus();
+
+        vm.IsModelLoading.Should().BeTrue();
+    }
 }

@@ -8,6 +8,13 @@ using WriteSpeech.Core.Services.Configuration;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+/// <summary>
+/// ViewModel for the system settings page.
+/// Manages application-level preferences: launch at Windows login, UI theme (light/dark),
+/// sound effects, audio muting during dictation, audio compression before cloud upload,
+/// overlay visibility and scale, auto-dismiss timing for transcription results,
+/// maximum recording duration, and setup wizard reset functionality.
+/// </summary>
 public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly IAutoStartService _autoStartService;
@@ -104,6 +111,7 @@ public partial class SystemSettingsViewModel : ObservableObject
     [RelayCommand]
     private void StartEditingAutoDismiss() => IsEditingAutoDismiss = true;
 
+    /// <summary>Sets the auto-dismiss duration (minimum 1 second) for the transcription result overlay and persists the change.</summary>
     public void ApplyAutoDismiss(int seconds)
     {
         AutoDismissSeconds = Math.Max(1, seconds);
@@ -114,6 +122,7 @@ public partial class SystemSettingsViewModel : ObservableObject
     [RelayCommand]
     private void StartEditingMaxRecording() => IsEditingMaxRecording = true;
 
+    /// <summary>Sets the maximum recording duration (minimum 10 seconds) before automatic stop and persists the change.</summary>
     public void ApplyMaxRecording(int seconds)
     {
         MaxRecordingSeconds = Math.Max(10, seconds);
@@ -123,6 +132,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     // --- Setup wizard ---
 
+    /// <summary>Test-only override for the reset confirmation dialog. When set, bypasses the WPF ConfirmationDialog and returns the delegate result.</summary>
     internal Func<bool>? ConfirmResetOverride { get; set; }
 
     [RelayCommand]
@@ -161,6 +171,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     // --- Persistence ---
 
+    /// <summary>Writes all system settings (app preferences, audio options, overlay configuration) into the given JSON configuration node for persistence.</summary>
     public void WriteSettings(JsonNode section)
     {
         var app = SettingsViewModel.EnsureObject(section, "App");
