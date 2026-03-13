@@ -8,7 +8,11 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 ![Tests 1400+](https://img.shields.io/badge/tests-1400%2B-brightgreen)
 ![CI](https://github.com/Sev7eNup/Voxwright/actions/workflows/ci.yml/badge.svg)
 
-<!-- TODO: Add screenshot of overlay + settings window -->
+<p align="center">
+  <video src="https://github.com/Sev7eNup/Voxwright/releases/download/v2.0.0/demovid.mp4" width="600" controls autoplay muted loop>
+    Your browser does not support the video tag. <a href="https://github.com/Sev7eNup/Voxwright/releases/download/v2.0.0/demovid.mp4">Download the demo video</a>.
+  </video>
+</p>
 
 ## ✨ Features
 

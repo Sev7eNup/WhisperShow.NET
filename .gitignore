@@ -3,6 +3,9 @@ bin/
 obj/
 *.user
 *.suo
+
+# Large media files (hosted as GitHub Release assets)
+demovid.mp4
 *.userosscache
 *.sln.docstates
 
