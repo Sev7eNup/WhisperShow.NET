@@ -51,10 +51,12 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 
 ## 📋 Prerequisites
 
+> **Using the installer?** The [pre-built installer](#-installation) is fully self-contained — no .NET SDK or other runtime required. The prerequisites below only apply when building from source.
+
 | Requirement | Notes |
 |---|---|
 | **Windows 10/11** (x64) | WPF + Win32 P/Invoke, not cross-platform |
-| **.NET 10 SDK** | [Download](https://dotnet.microsoft.com/download) |
+| **.NET 10 SDK** | [Download](https://dotnet.microsoft.com/download) — only needed to build from source |
 | **OpenAI API Key** | Required for cloud transcription/correction (optional if using local models only) |
 | **NVIDIA GPU + CUDA 13.x** | Optional — for GPU acceleration with Whisper.net, Parakeet (sherpa-onnx), and LLamaSharp |
 
