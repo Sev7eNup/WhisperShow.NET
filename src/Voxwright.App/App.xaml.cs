@@ -1,0 +1,449 @@
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Win32;
+using Serilog;
+using Voxwright.App.Services;
+using Voxwright.App.ViewModels;
+using Voxwright.App.Views;
+using Voxwright.Core.Configuration;
+using Voxwright.Core.Models;
+using Voxwright.Core.Services.Configuration;
+using Voxwright.Core.Services.Audio;
+using Voxwright.Core.Services.Hotkey;
+using Voxwright.Core.Services.ModelManagement;
+using Voxwright.Core.Services.History;
+using Voxwright.Core.Services.Statistics;
+using Voxwright.Core.Services.Snippets;
+using Voxwright.Core.Services;
+using Voxwright.Core.Services.IDE;
+using Voxwright.Core.Services.TextCorrection;
+using Voxwright.Core.Services.TextInsertion;
+using Voxwright.Core.Services.Modes;
+using Voxwright.Core.Services.Transcription;
+
+namespace Voxwright.App;
+
+public partial class App : Application
+{
+    private static Mutex? _mutex;
+    private IHost? _host;
+    private TrayIconManager? _trayIconManager;
+
+    public IServiceProvider? Services => _host?.Services;
+
+    /// <summary>Whether CUDA libraries were found during startup path discovery.</summary>
+    public static bool CudaDetected { get; private set; }
+
+    protected override async void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        AddCudaLibraryPaths();
+
+        // Single instance check
+        _mutex = new Mutex(true, $@"Local\Voxwright-{Environment.UserName}", out bool isNew);
+        if (!isNew)
+        {
+            MessageBox.Show("Voxwright is already running.", "Voxwright",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
+        // Ensure appsettings.json exists (create from template on first run)
+        EnsureAppSettings();
+
+        // Migrate data from old app name before anything else
+        MigrateAppDataFolder();
+        CleanupOldRegistryEntry();
+
+        // Configure Serilog
+        var logPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Voxwright", "logs", "log-.txt");
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+            .CreateLogger();
+
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log.Fatal(args.Exception, "Unhandled exception");
+            Log.CloseAndFlush();
+        };
+
+        // Build host
+        _host = Host.CreateDefaultBuilder()
+            .UseSerilog()
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                config.SetBasePath(AppDomain.CurrentDomain.BaseDirectory);
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+                config.AddEnvironmentVariables("VOXWRIGHT_");
+            })
+            .ConfigureServices((context, services) =>
+            {
+                // Configuration
+                services.Configure<VoxwrightOptions>(
+                    context.Configuration.GetSection(VoxwrightOptions.SectionName));
+                services.AddSingleton<IValidateOptions<VoxwrightOptions>, VoxwrightOptionsValidator>();
+
+                // Core services
+                services.AddSingleton<OpenAiClientFactory>();
+                services.AddSingleton<IAudioRecordingService, AudioRecordingService>();
+                services.AddSingleton<IAudioMutingService, AudioMutingService>();
+                services.AddSingleton<IAudioCompressor, AudioCompressor>();
+                services.AddSingleton<IAudioFileReader, AudioFileReader>();
+                services.AddSingleton<ITranscriptionService, OpenAiTranscriptionService>();
+                services.AddSingleton<ITranscriptionService, LocalTranscriptionService>();
+                services.AddSingleton<ITranscriptionService, ParakeetTranscriptionService>();
+                services.AddSingleton<TranscriptionProviderFactory>();
+                services.AddSingleton<ITextInsertionService, TextInsertionService>();
+                services.AddSingleton<ISelectedTextService, SelectedTextService>();
+                services.AddSingleton<ITextCorrectionService, OpenAiTextCorrectionService>();
+                services.AddSingleton<ITextCorrectionService, AnthropicTextCorrectionService>();
+                services.AddSingleton<ITextCorrectionService, GoogleTextCorrectionService>();
+                services.AddSingleton<ITextCorrectionService, GroqTextCorrectionService>();
+                services.AddSingleton<ITextCorrectionService, CustomTextCorrectionService>();
+                services.AddSingleton<ITextCorrectionService, LocalTextCorrectionService>();
+                services.AddSingleton<TextCorrectionProviderFactory>();
+                services.AddSingleton<ICombinedTranscriptionCorrectionService, CombinedAudioTranscriptionService>();
+                services.AddSingleton<HotkeyServiceProxy>();
+                services.AddSingleton<IGlobalHotkeyService>(sp => sp.GetRequiredService<HotkeyServiceProxy>());
+                services.AddHttpClient();
+                services.AddSingleton<ModelDownloadHelper>();
+                services.AddSingleton<IModelManager, ModelManager>();
+                services.AddSingleton<ICorrectionModelManager, CorrectionModelManager>();
+                services.AddSingleton<IParakeetModelManager, ParakeetModelManager>();
+                services.AddSingleton<IVadModelManager, VadModelManager>();
+                services.AddSingleton<IVoiceActivityService, VoiceActivityService>();
+                services.AddSingleton<IModelPreloadService, ModelPreloadService>();
+                services.AddSingleton<IDictionaryService, DictionaryService>();
+                services.AddSingleton<IIDEContextService, IDEContextService>();
+                services.AddSingleton<ISnippetService, SnippetService>();
+                services.AddSingleton<IModeService, ModeService>();
+                services.AddSingleton<IUsageStatsService, UsageStatsService>();
+                services.AddSingleton<ITranscriptionHistoryService, TranscriptionHistoryService>();
+
+                // App services
+                services.AddSingleton<ISoundEffectService, SoundEffectService>();
+                services.AddSingleton<IDispatcherService, WpfDispatcherService>();
+                services.AddSingleton<ISettingsPersistenceService, SettingsPersistenceService>();
+                services.AddSingleton<IWindowFocusService, WindowFocusService>();
+                services.AddSingleton<IIDEDetectionService, IDEDetectionService>();
+                services.AddSingleton<IAutoStartService, AutoStartService>();
+                services.AddSingleton<TrayIconManager>();
+
+                // ViewModels
+                services.AddSingleton<RecordingController>();
+                services.AddSingleton<TranscriptionPipeline>();
+                services.AddSingleton<OverlayViewModel>();
+                services.AddSingleton<SettingsViewModel>();
+                services.AddSingleton<HistoryViewModel>();
+                services.AddSingleton<FileTranscriptionViewModel>();
+
+
+                // Windows
+                services.AddSingleton<OverlayWindow>();
+                services.AddSingleton<SettingsWindow>();
+                services.AddSingleton<HistoryWindow>();
+                services.AddSingleton<FileTranscriptionWindow>();
+            })
+            .Build();
+
+        await _host.StartAsync();
+
+        try
+        {
+            // Preload all services that persist data to disk
+            await Task.WhenAll(
+                _host.Services.GetRequiredService<ITranscriptionHistoryService>().LoadAsync(),
+                _host.Services.GetRequiredService<IUsageStatsService>().LoadAsync(),
+                _host.Services.GetRequiredService<IDictionaryService>().LoadAsync(),
+                _host.Services.GetRequiredService<ISnippetService>().LoadAsync(),
+                _host.Services.GetRequiredService<IModeService>().LoadAsync());
+
+            // First-run setup wizard
+            var opts = _host.Services.GetRequiredService<IOptions<VoxwrightOptions>>().Value;
+            if (!opts.App.SetupCompleted)
+            {
+                var wizardVm = new SetupWizardViewModel(
+                    _host.Services.GetRequiredService<ISettingsPersistenceService>(),
+                    _host.Services.GetRequiredService<IDispatcherService>(),
+                    _host.Services.GetRequiredService<ILogger<SetupWizardViewModel>>(),
+                    _host.Services.GetRequiredService<IModelManager>(),
+                    _host.Services.GetRequiredService<IParakeetModelManager>(),
+                    _host.Services.GetRequiredService<ICorrectionModelManager>(),
+                    _host.Services.GetRequiredService<IModelPreloadService>(),
+                    opts);
+                var wizard = new SetupWizardWindow(wizardVm);
+                if (wizard.ShowDialog() != true)
+                {
+                    Shutdown();
+                    return;
+                }
+
+                // Flush settings to disk, then restart so the app picks up new config
+                var persistence = _host.Services.GetRequiredService<ISettingsPersistenceService>();
+                await persistence.FlushAsync();
+                RestartApp();
+                return;
+            }
+
+            // Sync autostart registry with config
+            _host.Services.GetRequiredService<IAutoStartService>().SetAutoStart(opts.App.LaunchAtLogin);
+
+            // Show overlay window
+            var overlayWindow = _host.Services.GetRequiredService<OverlayWindow>();
+            overlayWindow.Show();
+
+            // Setup system tray
+            _trayIconManager = _host.Services.GetRequiredService<TrayIconManager>();
+            _trayIconManager.Initialize(
+                overlayWindow,
+                () => _host!.Services.GetRequiredService<SettingsWindow>(),
+                () => _host!.Services.GetRequiredService<HistoryWindow>(),
+                () => _host!.Services.GetRequiredService<FileTranscriptionWindow>(),
+                Shutdown);
+
+            // Preload local models in background (non-blocking)
+            PreloadLocalModels(opts);
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to start application");
+            Log.CloseAndFlush();
+            var logDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Voxwright", "logs");
+            MessageBox.Show(
+                $"Voxwright failed to start. Please check the log files for details:\n\n{logDir}",
+                "Voxwright Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
+    }
+
+    internal static void RestartApp()
+    {
+        // Release the single-instance mutex before starting the new process,
+        // otherwise it will see the mutex and show "already running".
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
+        _mutex = null;
+
+        Process.Start(Environment.ProcessPath!);
+        Current.Shutdown();
+    }
+
+    private void PreloadLocalModels(VoxwrightOptions opts)
+    {
+        var preloadService = _host!.Services.GetRequiredService<IModelPreloadService>();
+
+        if (opts.Provider == TranscriptionProvider.Local)
+            preloadService.PreloadTranscriptionModel();
+        else if (opts.Provider == TranscriptionProvider.Parakeet)
+            preloadService.PreloadParakeetModel();
+
+        if (opts.TextCorrection.Provider == TextCorrectionProvider.Local)
+            preloadService.PreloadCorrectionModel();
+    }
+
+    private static readonly string[] TrustedCudaBasePaths =
+    [
+        @"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA",
+        @"C:\Program Files\NVIDIA Corporation",
+    ];
+
+    /// <summary>
+    /// Validates that a CUDA path is under a trusted NVIDIA installation directory.
+    /// Prevents DLL injection via user-controllable environment variables.
+    /// </summary>
+    internal static bool IsValidCudaPath(string path)
+    {
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+            return TrustedCudaBasePaths.Any(basePath =>
+                fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void AddCudaLibraryPaths()
+    {
+        var candidates = new List<string>();
+
+        // 1. Versioned env vars (CUDA_PATH_V13_1 etc.) — most specific
+        foreach (System.Collections.DictionaryEntry env in Environment.GetEnvironmentVariables())
+        {
+            var key = env.Key?.ToString() ?? "";
+            if (key.StartsWith("CUDA_PATH_V13", StringComparison.OrdinalIgnoreCase)
+                && env.Value is string val && !string.IsNullOrEmpty(val))
+                candidates.Add(val);
+        }
+
+        // 2. Generic CUDA_PATH
+        var cudaPath = Environment.GetEnvironmentVariable("CUDA_PATH");
+        if (!string.IsNullOrEmpty(cudaPath))
+            candidates.Add(cudaPath);
+
+        // 3. Scan standard CUDA toolkit directory for v13.x installations
+        var toolkitBase = @"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA";
+        if (Directory.Exists(toolkitBase))
+        {
+            foreach (var dir in Directory.GetDirectories(toolkitBase, "v13.*"))
+                candidates.Add(dir);
+        }
+
+        var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+        var additions = new List<string>();
+        bool foundValidCuda = false;
+
+        foreach (var candidate in candidates)
+        {
+            if (!IsValidCudaPath(candidate))
+            {
+                Log.Warning("Skipping untrusted CUDA path: {Path}", candidate);
+                continue;
+            }
+
+            var binX64 = Path.Combine(candidate, "bin", "x64");
+            if (Directory.Exists(binX64))
+            {
+                foundValidCuda = true;
+                if (!currentPath.Contains(binX64, StringComparison.OrdinalIgnoreCase))
+                    additions.Add(binX64);
+            }
+
+            var bin = Path.Combine(candidate, "bin");
+            if (Directory.Exists(bin))
+            {
+                foundValidCuda = true;
+                if (!currentPath.Contains(bin, StringComparison.OrdinalIgnoreCase))
+                    additions.Add(bin);
+            }
+        }
+
+        if (additions.Count > 0)
+        {
+            Environment.SetEnvironmentVariable("PATH", string.Join(";", additions) + ";" + currentPath);
+            Log.Information("Added CUDA library paths: {Paths}", string.Join(", ", additions));
+        }
+
+        CudaDetected = foundValidCuda;
+        if (!CudaDetected)
+            Log.Warning("No CUDA libraries found — local models will use CPU inference (slower)");
+        else if (additions.Count == 0)
+            Log.Information("CUDA detected (already on PATH)");
+    }
+
+    private static void EnsureAppSettings()
+    {
+        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        var settingsPath = Path.Combine(baseDir, "appsettings.json");
+        var templatePath = Path.Combine(baseDir, "appsettings.template.json");
+
+        if (!File.Exists(settingsPath) && File.Exists(templatePath))
+        {
+            try
+            {
+                File.Copy(templatePath, settingsPath);
+            }
+            catch
+            {
+                // Best-effort; app still works without appsettings.json (defaults apply)
+            }
+        }
+    }
+
+    private static void MigrateAppDataFolder()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var targetDir = Path.Combine(appData, "Voxwright");
+
+        // Chain migration: WhisperShow → WriteSpeech → Voxwright
+        string[] oldNames = ["WhisperShow", "WriteSpeech"];
+        foreach (var oldName in oldNames)
+        {
+            var oldDir = Path.Combine(appData, oldName);
+            if (Directory.Exists(oldDir) && !Directory.Exists(targetDir))
+            {
+                try
+                {
+                    Directory.Move(oldDir, targetDir);
+                    Log.Information("Migrated AppData folder from {OldDir} to {NewDir}", oldDir, targetDir);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to migrate AppData folder from {OldDir} to {NewDir}", oldDir, targetDir);
+                }
+            }
+        }
+    }
+
+    private static void CleanupOldRegistryEntry()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
+            // Clean up auto-start entries from previous app names
+            foreach (var oldName in new[] { "WhisperShow", "WriteSpeech" })
+            {
+                if (key?.GetValue(oldName) is not null)
+                    key.DeleteValue(oldName, throwOnMissingValue: false);
+            }
+        }
+        catch
+        {
+            // Best-effort cleanup
+        }
+    }
+
+    protected override async void OnExit(ExitEventArgs e)
+    {
+        _trayIconManager?.Dispose();
+
+        if (_host is not null)
+        {
+            // Unsubscribe event handlers before host disposal to ensure clean shutdown
+            _host.Services.GetService<OverlayWindow>()?.Cleanup();
+            _host.Services.GetService<SettingsWindow>()?.Cleanup();
+            _host.Services.GetService<HistoryWindow>()?.Cleanup();
+            _host.Services.GetService<FileTranscriptionWindow>()?.Cleanup();
+
+            var hotkeyService = _host.Services.GetService<IGlobalHotkeyService>();
+            hotkeyService?.Dispose();
+
+            var audioService = _host.Services.GetService<IAudioRecordingService>();
+            (audioService as IDisposable)?.Dispose();
+
+            _host.Services.GetService<IVoiceActivityService>()?.Dispose();
+
+            _host.Services.GetService<IModeService>()?.Dispose();
+
+            // Dispose GPU model services to release VRAM
+            foreach (var transcription in _host.Services.GetServices<ITranscriptionService>())
+                (transcription as IDisposable)?.Dispose();
+
+            foreach (var correction in _host.Services.GetServices<ITextCorrectionService>())
+                (correction as IDisposable)?.Dispose();
+
+            await _host.StopAsync();
+            _host.Dispose();
+        }
+
+        Log.CloseAndFlush();
+        _mutex?.Dispose();
+        base.OnExit(e);
+    }
+}

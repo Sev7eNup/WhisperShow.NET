@@ -1,4 +1,4 @@
-# ✍️ WriteSpeech.NET
+# ✍️ Voxwright.NET
 
 Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflow.com). Record speech via microphone, transcribe it using OpenAI Whisper, Groq, a local Whisper model, or NVIDIA Parakeet, optionally correct it with AI, and auto-insert the text at the cursor position in any application. Supports voice commands on selected text, file transcription, context-aware correction modes, and IDE integration.
 
@@ -6,7 +6,7 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 ![Tests 1400+](https://img.shields.io/badge/tests-1400%2B-brightgreen)
-![CI](https://github.com/Sev7eNup/WriteSpeech.NET/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Sev7eNup/Voxwright.NET/actions/workflows/ci.yml/badge.svg)
 
 <!-- TODO: Add screenshot of overlay + settings window -->
 
@@ -57,13 +57,13 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 ## 🚀 Build & Run
 
 ```bash
-dotnet build WriteSpeech.slnx
-dotnet run --project src/WriteSpeech.App
+dotnet build Voxwright.slnx
+dotnet run --project src/Voxwright.App
 ```
 
 > **Note:** If the app is already running, the build will fail because the exe is locked. Kill it first:
 > ```bash
-> taskkill /F /IM WriteSpeech.App.exe
+> taskkill /F /IM Voxwright.App.exe
 > ```
 
 ## 🏁 Quick Start
@@ -83,10 +83,10 @@ For cloud transcription, enter your OpenAI API key in Settings > Transcription. 
 
 ### Pre-built Installer (Recommended)
 
-Download the latest installer from the [GitHub Releases](https://github.com/Sev7eNup/WriteSpeech.NET/releases) page:
+Download the latest installer from the [GitHub Releases](https://github.com/Sev7eNup/Voxwright.NET/releases) page:
 
-- **`WriteSpeech-Setup-{version}.exe`** — Self-contained Inno Setup installer, no admin rights required
-- Installs to `%LOCALAPPDATA%\WriteSpeech` (user-level, no UAC prompt)
+- **`Voxwright-Setup-{version}.exe`** — Self-contained Inno Setup installer, no admin rights required
+- Installs to `%LOCALAPPDATA%\Voxwright` (user-level, no UAC prompt)
 - Optional: desktop shortcut, optional: start with Windows
 - **Preserves your settings** (`appsettings.json`) on upgrades
 - Requires Windows 10/11 x64
@@ -97,7 +97,7 @@ See the [Build & Run](#-build--run) section above.
 
 ## 🔧 Configuration
 
-All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpeech"` section. They can also be modified via the Settings UI (right-click tray icon > Settings).
+All settings live in `src/Voxwright.App/appsettings.json` under the `"Voxwright"` section. They can also be modified via the Settings UI (right-click tray icon > Settings).
 
 ### Transcription
 
@@ -114,10 +114,10 @@ All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpe
 | `CustomTranscription.Endpoint` | string | — | Custom OpenAI-compatible transcription endpoint (required) |
 | `CustomTranscription.Model` | string | — | Model name for custom transcription endpoint |
 | `Local.ModelName` | string | `"ggml-small.bin"` | GGML model filename |
-| `Local.ModelDirectory` | string | — | Custom model directory (default: `%APPDATA%/WriteSpeech/models`) |
+| `Local.ModelDirectory` | string | — | Custom model directory (default: `%APPDATA%/Voxwright/models`) |
 | `Local.GpuAcceleration` | bool | `true` | Enable CUDA for local Whisper |
 | `Parakeet.ModelName` | string | `"sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8"` | Parakeet model directory name |
-| `Parakeet.ModelDirectory` | string | — | Custom model directory (default: `%APPDATA%/WriteSpeech/parakeet-models`) |
+| `Parakeet.ModelDirectory` | string | — | Custom model directory (default: `%APPDATA%/Voxwright/parakeet-models`) |
 | `Parakeet.GpuAcceleration` | bool | `true` | Enable CUDA for Parakeet inference |
 | `Parakeet.NumThreads` | int | `4` | CPU inference threads (min: 1) |
 | `Language` | string | — | Language code (`"de"`, `"en"`, ...) or null for auto-detect |
@@ -242,21 +242,21 @@ WRITESPEECH_PROVIDER=Local
 |---|---|---|---|
 | Parakeet TDT 0.6B v2 (int8) | `sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8` | ~260 MB | English only, 4 ONNX files (encoder/decoder/joiner + tokens.txt) |
 
-Parakeet models are stored in `%APPDATA%/WriteSpeech/parakeet-models/` and can be downloaded from Settings > Models.
+Parakeet models are stored in `%APPDATA%/Voxwright/parakeet-models/` and can be downloaded from Settings > Models.
 
-All Whisper and correction models can be downloaded directly from the Settings UI (Settings > Models). They are stored in `%APPDATA%/WriteSpeech/models/` and `%APPDATA%/WriteSpeech/correction-models/` respectively.
+All Whisper and correction models can be downloaded directly from the Settings UI (Settings > Models). They are stored in `%APPDATA%/Voxwright/models/` and `%APPDATA%/Voxwright/correction-models/` respectively.
 
 ## 📁 Project Structure
 
 ```
-WriteSpeech.slnx
+Voxwright.slnx
 .github/
   workflows/ci.yml               # GitHub Actions: Build + Test on Windows
   workflows/release.yml          # Automated release: Test → Publish → Installer → GitHub Release
 
 src/
-  WriteSpeech.Core/              # Platform-independent core logic (net10.0)
-    Configuration/               #   WriteSpeechOptions (strongly-typed config)
+  Voxwright.Core/              # Platform-independent core logic (net10.0)
+    Configuration/               #   VoxwrightOptions (strongly-typed config)
     Models/                      #   RecordingState, TranscriptionResult, ModelInfoBase,
                                  #   ParakeetModelInfo (directory-based with IsDirectoryComplete),
                                  #   CorrectionMode, IDEInfo, SupportedLanguages, ...
@@ -278,7 +278,7 @@ src/
       OpenAiClientFactory.cs     #   Centralized OpenAI client caching (thread-safe)
       DebouncedSaveHelper.cs     #   Reusable debounced async save utility
 
-  WriteSpeech.App/               # WPF application (net10.0-windows)
+  Voxwright.App/               # WPF application (net10.0-windows)
     App.xaml.cs                  #   Host builder, DI setup, CUDA path discovery
     NativeMethods.cs             #   Win32 P/Invoke (SendInput, RegisterHotKey, SetWindowsHookEx, ...)
     Themes/                      #   Dark/Light theme ResourceDictionaries
@@ -308,7 +308,7 @@ src/
                                  #   SelectedText, AudioFileReader, IDEDetection, Tray, ...
 
 tests/
-  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (1400+ tests)
+  Voxwright.Tests/             # xUnit + NSubstitute + FluentAssertions (1400+ tests)
     Services/                    #   Service unit tests (incl. ModeService, IDE, HotkeyMatcher, Vocab)
     ViewModels/                  #   ViewModel unit tests (incl. CommandMode, FileTranscription, Modes)
     Views/                       #   WPF-specific tests (themes, code-behind helpers)
@@ -319,7 +319,7 @@ tests/
 
 ### DI Container
 
-All services are registered as singletons via `Microsoft.Extensions.Hosting` in `App.xaml.cs`. Core interfaces live in `WriteSpeech.Core`, Win32/WPF implementations in `WriteSpeech.App/Services/`.
+All services are registered as singletons via `Microsoft.Extensions.Hosting` in `App.xaml.cs`. Core interfaces live in `Voxwright.Core`, Win32/WPF implementations in `Voxwright.App/Services/`.
 
 ### MVVM
 
@@ -347,7 +347,7 @@ Idle → [VAD enabled] → Listening → [Speech detected] → Recording → [Si
 
 | Pattern | Purpose |
 |---|---|
-| `IOptionsMonitor<WriteSpeechOptions>` | Live settings — changes take effect without restart |
+| `IOptionsMonitor<VoxwrightOptions>` | Live settings — changes take effect without restart |
 | `TranscriptionProviderFactory` / `TextCorrectionProviderFactory` | Runtime provider selection (methods are `virtual` for test isolation) |
 | `OpenAiClientFactory` | Thread-safe caching of `OpenAIClient` instances by ApiKey+Endpoint |
 | `DebouncedSaveHelper` | Reusable debounced async persistence (used by 7+ services) |
@@ -391,7 +391,7 @@ git push origin v1.2.3
 ## 🧪 Testing
 
 ```bash
-dotnet test tests/WriteSpeech.Tests
+dotnet test tests/Voxwright.Tests
 ```
 
 - **1400+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
@@ -401,12 +401,12 @@ dotnet test tests/WriteSpeech.Tests
 
 ```bash
 # With code coverage
-dotnet test tests/WriteSpeech.Tests --collect:"XPlat Code Coverage"
+dotnet test tests/Voxwright.Tests --collect:"XPlat Code Coverage"
 ```
 
 ## 💾 Data Files
 
-All user data is stored in `%APPDATA%/WriteSpeech/`:
+All user data is stored in `%APPDATA%/Voxwright/`:
 
 | Path | Content |
 |---|---|
@@ -446,7 +446,7 @@ All user data is stored in `%APPDATA%/WriteSpeech/`:
 The app is still running. Kill it before rebuilding:
 
 ```bash
-taskkill /F /IM WriteSpeech.App.exe
+taskkill /F /IM Voxwright.App.exe
 ```
 
 ### 🖥️ CUDA not detected / local model falls back to CPU
@@ -460,7 +460,7 @@ taskkill /F /IM WriteSpeech.App.exe
 
 - Ensure the key is entered in Settings > Transcription > API Key
 - For custom endpoints (Azure, LM Studio), also set the Endpoint field
-- Check `%APPDATA%/WriteSpeech/logs/` for detailed error messages
+- Check `%APPDATA%/Voxwright/logs/` for detailed error messages
 
 ### 👻 Overlay does not appear
 
@@ -488,21 +488,21 @@ Parakeet (NVIDIA NeMo TDT) is an English-only model. If your language is set to 
 
 ### 🔒 Second instance shows error
 
-WriteSpeech.NET enforces single-instance via a named Mutex. Close the existing instance first, or use the tray icon.
+Voxwright.NET enforces single-instance via a named Mutex. Close the existing instance first, or use the tray icon.
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Write tests for your changes
-4. Ensure all tests pass: `dotnet test tests/WriteSpeech.Tests`
-5. Ensure the build succeeds: `dotnet build WriteSpeech.slnx`
+4. Ensure all tests pass: `dotnet test tests/Voxwright.Tests`
+5. Ensure the build succeeds: `dotnet build Voxwright.slnx`
 6. Submit a Pull Request
 
 ### Code Conventions
 
-- Core interfaces in `WriteSpeech.Core`, Win32/WPF implementations in `WriteSpeech.App`
-- Use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`) for live settings
+- Core interfaces in `Voxwright.Core`, Win32/WPF implementations in `Voxwright.App`
+- Use `IOptionsMonitor<VoxwrightOptions>` (not `IOptions<T>`) for live settings
 - OpenAI client access goes through `OpenAiClientFactory`
 - Debounced saves use `DebouncedSaveHelper`
 - Factory methods (`GetProvider`) must stay `virtual` for test isolation

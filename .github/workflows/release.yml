@@ -29,11 +29,11 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Run tests
-        run: dotnet test tests/WriteSpeech.Tests --verbosity normal
+        run: dotnet test tests/Voxwright.Tests --verbosity normal
 
       - name: Publish application
         run: >
-          dotnet publish src/WriteSpeech.App/WriteSpeech.App.csproj
+          dotnet publish src/Voxwright.App/Voxwright.App.csproj
           --configuration Release
           --runtime win-x64
           --self-contained true
@@ -56,7 +56,7 @@ jobs:
                   continue
               with open(path) as f:
                   data = json.load(f)
-              ws = data.get('WriteSpeech', {})
+              ws = data.get('Voxwright', {})
               keys_to_check = [
                   ('OpenAI.ApiKey', ws.get('OpenAI', {}).get('ApiKey', '')),
                   ('GroqTranscription.ApiKey', ws.get('GroqTranscription', {}).get('ApiKey', '')),
@@ -84,15 +84,15 @@ jobs:
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
         run: >
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\WriteSpeech.iss
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\Voxwright.iss
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: WriteSpeech ${{ steps.version.outputs.version }}
+          name: Voxwright ${{ steps.version.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true
           files: |
-            output/WriteSpeech-Setup-${{ steps.version.outputs.version }}.exe
+            output/Voxwright-Setup-${{ steps.version.outputs.version }}.exe

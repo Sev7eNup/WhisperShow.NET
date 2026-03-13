@@ -1,0 +1,82 @@
+<UserControl x:Class="Voxwright.App.Views.Settings.IntegrationsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel DataContext="{Binding Integrations}">
+        <TextBlock Text="Integrations" Style="{StaticResource PageTitleStyle}"/>
+        <TextBlock Text="IDE integration for better transcription accuracy."
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="4,-4,0,16"/>
+
+        <!-- ===== IDE Integration ===== -->
+        <TextBlock Text="IDE integration" Style="{StaticResource GroupHeaderStyle}" Margin="4,0,0,8"/>
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+            <StackPanel>
+                <!-- Variable Recognition -->
+                <Grid Margin="20,10,20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Variable recognition (VS Code, Cursor, Windsurf)" FontSize="12.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Better understands variables in code."
+                                   FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding VariableRecognition}"
+                                  Command="{Binding ToggleVariableRecognitionCommand}" VerticalAlignment="Center"/>
+                </Grid>
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                <!-- File Tagging -->
+                <Grid Margin="20,10,20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="File tagging (VS Code, Cursor, Windsurf)" FontSize="12.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Automatically tags files from your IDE workspace."
+                                   FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding FileTagging}"
+                                  Command="{Binding ToggleFileTaggingCommand}" VerticalAlignment="Center"/>
+                </Grid>
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="20,0"/>
+                <!-- Include for local models -->
+                <Grid Margin="20,10,20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Include for local models" FontSize="12.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Also inject IDE context when using a local correction model."
+                                   FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding IncludeForLocalModels}"
+                                  Command="{Binding ToggleIncludeForLocalModelsCommand}" VerticalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Info hint -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Margin="0,16,0,0" Padding="16,12">
+            <TextBlock TextWrapping="Wrap" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                       Foreground="{DynamicResource TextSecondaryBrush}">
+                <Run FontWeight="SemiBold">How it works:</Run>
+                <Run Text="When you start recording in a supported IDE, Voxwright scans your workspace for variable names and file names. These are fed into the text correction prompt so the AI produces accurate code terminology. Requires text correction to be enabled (Intelligence page)."/>
+            </TextBlock>
+        </Border>
+    </StackPanel>
+</UserControl>

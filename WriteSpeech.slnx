@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/WriteSpeech.App/WriteSpeech.App.csproj" />
-    <Project Path="src/WriteSpeech.Core/WriteSpeech.Core.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/WriteSpeech.Tests/WriteSpeech.Tests.csproj" />
-  </Folder>
-</Solution>

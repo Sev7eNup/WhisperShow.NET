@@ -1,0 +1,109 @@
+<UserControl x:Class="Voxwright.App.Views.Settings.DictionaryPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel DataContext="{Binding DictionarySnippets}">
+        <TextBlock Text="Custom Dictionary" Style="{StaticResource PageTitleStyle}"/>
+        <TextBlock Text="Add custom words, names, and technical terms to improve transcription accuracy."
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                   TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+        <!-- Correction disabled hint -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,12"
+                Visibility="{Binding IsCorrectionOff, Converter={StaticResource BoolToVisibility}}">
+            <Grid Margin="16,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Top" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="11.5"
+                           FontFamily="Segoe UI Variable, Segoe UI"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="Dictionary entries and auto-add require a text correction provider. Configure one on the Intelligence page."/>
+            </Grid>
+        </Border>
+
+        <!-- ===== Auto-add settings ===== -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid Margin="20,10,20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Auto-add to dictionary" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Automatically learn proper nouns, brand names, and technical terms"
+                                   FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                  IsChecked="{Binding AutoAddToDictionary}"
+                                  Command="{Binding ToggleAutoAddToDictionaryCommand}" VerticalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Add word input -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="20,10" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{Binding NewDictionaryWord, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource SettingsTextBoxStyle}"
+                         MinWidth="0" MaxWidth="9999" KeyDown="DictionaryTextBox_KeyDown"
+                         VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="Add" Style="{StaticResource PillButtonStyle}"
+                        Command="{Binding AddDictionaryEntryCommand}" Margin="10,0,0,0"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Word list -->
+        <ItemsControl ItemsSource="{Binding DictionaryEntries}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{DynamicResource CardBgBrush}" CornerRadius="10"
+                            Padding="16,10" Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding}" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                    FontSize="10" Cursor="Hand" VerticalAlignment="Center"
+                                    Foreground="{DynamicResource TextSecondaryBrush}"
+                                    Command="{Binding DataContext.RemoveDictionaryEntryCommand,
+                                        RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd" Background="Transparent"
+                                                CornerRadius="6" Width="28" Height="28">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background"
+                                                        Value="{DynamicResource ButtonBgBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

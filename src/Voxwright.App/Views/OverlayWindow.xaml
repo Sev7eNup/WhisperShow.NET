@@ -1,0 +1,387 @@
+<Window x:Class="Voxwright.App.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Voxwright.App.ViewModels"
+        AutomationProperties.Name="Voxwright Overlay"
+        WindowStyle="None"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        MinHeight="1"
+        MinWidth="1"
+        WindowStartupLocation="Manual">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+
+        <!-- Backgrounds -->
+        <SolidColorBrush x:Key="GlassBackground" Color="#C0181818"/>
+        <SolidColorBrush x:Key="IdleBackground" Color="#C09B7DFF"/>
+
+        <!-- Border brushes -->
+        <SolidColorBrush x:Key="IdleBorderBrush" Color="#AAD0D0D0"/>
+        <SolidColorBrush x:Key="RecordingBorderBrush" Color="#CCEF5350"/>
+        <SolidColorBrush x:Key="CommandBorderBrush" Color="#CC5C6BC0"/>
+
+        <!-- Wave stroke brushes -->
+        <SolidColorBrush x:Key="RecordingWaveStroke" Color="#CCEF5350"/>
+        <SolidColorBrush x:Key="CommandWaveStroke" Color="#CC7986CB"/>
+        <SolidColorBrush x:Key="ListeningBorderBrush" Color="#CC4DD0E1"/>
+
+        <!-- Text colors -->
+        <SolidColorBrush x:Key="TextBrush" Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="SubtleBrush" Color="#99FFFFFF"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#FFE53935"/>
+
+        <!-- Button brushes -->
+        <SolidColorBrush x:Key="InsertButtonBg" Color="#404CAF50"/>
+        <SolidColorBrush x:Key="InsertButtonBorder" Color="#604CAF50"/>
+        <SolidColorBrush x:Key="CopyButtonBg" Color="#40FFFFFF"/>
+        <SolidColorBrush x:Key="CopyButtonBorder" Color="#30FFFFFF"/>
+        <SolidColorBrush x:Key="GlassButtonBg" Color="#40FFFFFF"/>
+        <SolidColorBrush x:Key="GlassButtonBorder" Color="#30FFFFFF"/>
+
+        <!-- Dark tooltip style -->
+        <Style x:Key="DarkToolTipStyle" TargetType="ToolTip">
+            <Setter Property="Background" Value="#E0181818"/>
+            <Setter Property="Foreground" Value="#FFFFFFFF"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                BorderBrush="#25FFFFFF" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.4" Direction="270"/>
+                            </Border.Effect>
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Transcribing sweep animation -->
+        <Storyboard x:Key="SweepAnimation" RepeatBehavior="Forever">
+            <DoubleAnimationUsingKeyFrames
+                Storyboard.TargetName="SweepTranslate"
+                Storyboard.TargetProperty="X">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="-20"/>
+                <SplineDoubleKeyFrame KeyTime="0:0:0.8" Value="40">
+                    <SplineDoubleKeyFrame.KeySpline>
+                        <KeySpline ControlPoint1="0.4,0.0" ControlPoint2="0.2,1.0"/>
+                    </SplineDoubleKeyFrame.KeySpline>
+                </SplineDoubleKeyFrame>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.0" Value="40"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames
+                Storyboard.TargetName="SweepBar"
+                Storyboard.TargetProperty="Opacity">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.1" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.7" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.0" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+    </Window.Resources>
+
+    <!-- Root grid for drag support -->
+    <Grid x:Name="RootGrid"
+          PreviewMouseLeftButtonDown="RootGrid_PreviewMouseLeftButtonDown"
+          PreviewMouseMove="RootGrid_PreviewMouseMove"
+          PreviewMouseLeftButtonUp="RootGrid_PreviewMouseLeftButtonUp">
+        <Grid.LayoutTransform>
+            <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1"/>
+        </Grid.LayoutTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- Glass pill -->
+        <Grid RenderTransformOrigin="0.5,0.5" Margin="3">
+            <Grid.RenderTransform>
+                <ScaleTransform x:Name="BubbleScale" ScaleX="1.0" ScaleY="1.0"/>
+            </Grid.RenderTransform>
+
+            <Border x:Name="GlassPill"
+                    CornerRadius="25"
+                    Background="{StaticResource GlassBackground}"
+                    BorderBrush="{StaticResource IdleBorderBrush}"
+                    BorderThickness="1">
+                <Grid>
+                    <!-- Idle State -->
+                    <Grid x:Name="IdlePanel" Visibility="Visible">
+                        <!-- Visual icon: mic + wave bars (outside template for FindName access) -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    IsHitTestVisible="False">
+                            <!-- Left wave bars (outer to inner) -->
+                            <Rectangle x:Name="WaveL3" Width="2" Height="4" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextBrush}" Opacity="0.5"
+                                       VerticalAlignment="Center" Margin="0,0,1.5,0"/>
+                            <Rectangle x:Name="WaveL2" Width="2" Height="7" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextBrush}" Opacity="0.65"
+                                       VerticalAlignment="Center" Margin="0,0,1.5,0"/>
+                            <Rectangle x:Name="WaveL1" Width="2" Height="10" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextBrush}" Opacity="0.8"
+                                       VerticalAlignment="Center" Margin="0,0,2,0"/>
+                            <!-- Microphone center -->
+                            <Path Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
+                                  Fill="{StaticResource TextBrush}" Stretch="Uniform"
+                                  Width="14" Height="14"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <!-- Right wave bars (inner to outer) -->
+                            <Rectangle x:Name="WaveR1" Width="2" Height="10" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextBrush}" Opacity="0.8"
+                                       VerticalAlignment="Center" Margin="2,0,1.5,0"/>
+                            <Rectangle x:Name="WaveR2" Width="2" Height="7" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextBrush}" Opacity="0.65"
+                                       VerticalAlignment="Center" Margin="0,0,1.5,0"/>
+                            <Rectangle x:Name="WaveR3" Width="2" Height="4" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextBrush}" Opacity="0.5"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <!-- Transparent button overlay for click + tooltip -->
+                        <Button Click="RecordButton_Click" Cursor="Hand"
+                                Width="44" Height="44" BorderThickness="0"
+                                RenderTransformOrigin="0.5,0.5"
+                                AutomationProperties.Name="Start recording"
+                                ToolTipService.InitialShowDelay="0">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource DarkToolTipStyle}"
+                                         Content="{Binding PushToTalkHotkeyText}"
+                                         Placement="Custom"
+                                         CustomPopupPlacementCallback="CenterAbovePlacement"/>
+                            </Button.ToolTip>
+                            <Button.RenderTransform>
+                                <ScaleTransform x:Name="IdleButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Button.RenderTransform>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" Width="44" Height="44"/>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <!-- Listening State (VAD: waiting for speech) -->
+                    <Grid x:Name="ListeningPanel" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" IsHitTestVisible="False">
+                            <Path x:Name="ListeningMicIcon"
+                                  Data="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
+                                  Fill="{StaticResource TextBrush}" Stretch="Uniform"
+                                  Width="12" Height="12"
+                                  VerticalAlignment="Center" Opacity="0.7"/>
+                            <TextBlock Text="Listening..."
+                                       Foreground="{StaticResource SubtleBrush}"
+                                       FontSize="10" FontFamily="Segoe UI"
+                                       VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <Button Click="RecordButton_Click" Cursor="Hand"
+                                AutomationProperties.Name="Stop listening"
+                                BorderThickness="0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" MinWidth="90" MinHeight="36"/>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <!-- Recording State -->
+                    <Grid x:Name="RecordingPanel" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                    Margin="3,0,0,0" Height="44">
+                            <!-- Stop button -->
+                            <Button Click="RecordButton_Click" Cursor="Hand"
+                                    Width="34" Height="34" BorderThickness="0"
+                                    AutomationProperties.Name="Stop recording"
+                                    VerticalAlignment="Center">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="Transparent" Width="34" Height="34">
+                                            <Rectangle Width="11" Height="11" Fill="{StaticResource TextBrush}"
+                                                       RadiusX="2" RadiusY="2"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <!-- Sine-wave waveform -->
+                            <Canvas x:Name="WaveformCanvas" Width="80" Height="30"
+                                    Margin="2,0,6,0" VerticalAlignment="Center"
+                                    ClipToBounds="True">
+                                <!-- Filled area under the wave -->
+                                <Path x:Name="WaveformFill" StrokeThickness="0">
+                                    <Path.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop x:Name="WaveFillTopStop" Color="#40EF5350" Offset="0"/>
+                                            <GradientStop Color="#00000000" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Path.Fill>
+                                </Path>
+                                <!-- Wave line on top -->
+                                <Path x:Name="WaveformLine"
+                                      Stroke="{StaticResource RecordingWaveStroke}"
+                                      StrokeThickness="2"
+                                      StrokeLineJoin="Round"
+                                      Fill="Transparent"/>
+                            </Canvas>
+                            <!-- Recording timer -->
+                            <TextBlock Text="{Binding RecordingTimerText}"
+                                       Foreground="{StaticResource TextBrush}" FontSize="11"
+                                       FontFamily="Segoe UI" VerticalAlignment="Center"
+                                       Margin="2,0,8,0" Opacity="0.8"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Transcribing State -->
+                    <Grid x:Name="TranscribingPanel" Visibility="Collapsed"
+                          MinWidth="56" MinHeight="44">
+                        <!-- Sweep animation (shown when no streaming text) -->
+                        <StackPanel x:Name="SweepPanel"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border CornerRadius="2" Width="40" Height="4"
+                                    Background="#15FFFFFF" ClipToBounds="True"
+                                    Margin="8,0,8,0">
+                                <Border x:Name="SweepBar" CornerRadius="2"
+                                        Width="20" Height="4"
+                                        HorizontalAlignment="Left"
+                                        Background="#60FFFFFF">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="SweepTranslate" X="-20"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
+                            <TextBlock Text="{Binding StatusText}"
+                                       Foreground="{StaticResource SubtleBrush}"
+                                       FontSize="9" FontFamily="Segoe UI"
+                                       HorizontalAlignment="Center"
+                                       Margin="6,4,6,0"/>
+                        </StackPanel>
+                        <!-- Streaming text (shown when segments arrive) -->
+                        <StackPanel x:Name="StreamingPanel" Visibility="Collapsed"
+                                    Margin="10,6" MinWidth="150" MaxWidth="500">
+                            <TextBlock Text="{Binding StreamingText}" TextWrapping="Wrap"
+                                       Foreground="{StaticResource TextBrush}" FontSize="11"
+                                       MaxHeight="300"/>
+                            <TextBlock Text="{Binding StatusText}"
+                                       Foreground="{StaticResource SubtleBrush}"
+                                       FontSize="9" FontFamily="Segoe UI"
+                                       HorizontalAlignment="Right"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Result State -->
+                    <Grid x:Name="ResultPanel" Visibility="Collapsed"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="ResultTranslate"/>
+                        </Grid.RenderTransform>
+                        <StackPanel Margin="10,6" MinWidth="150" MaxWidth="500">
+                            <TextBlock Text="{Binding TranscribedText}" TextWrapping="Wrap"
+                                       Foreground="{StaticResource TextBrush}" FontSize="11"
+                                       MaxHeight="300" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <!-- Insert button: glass green -->
+                                <Button Content="Insert" Margin="0,0,4,0"
+                                        Click="InsertButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Insert text"
+                                        Foreground="White" Padding="8,3" Cursor="Hand"
+                                        FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{StaticResource InsertButtonBg}"
+                                                    BorderBrush="{StaticResource InsertButtonBorder}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <!-- Copy button: glass neutral -->
+                                <Button Content="Copy" Margin="0,0,4,0"
+                                        Click="CopyButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Copy text"
+                                        Foreground="{StaticResource SubtleBrush}" Padding="8,3"
+                                        Cursor="Hand" FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{StaticResource CopyButtonBg}"
+                                                    BorderBrush="{StaticResource CopyButtonBorder}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <!-- Dismiss X -->
+                                <Button Content="X" Click="DismissButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Dismiss"
+                                        Background="Transparent" Foreground="{StaticResource SubtleBrush}"
+                                        Padding="4,3" Cursor="Hand"
+                                        BorderThickness="0" FontWeight="Bold" FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Error State -->
+                    <Grid x:Name="ErrorPanel" Visibility="Collapsed"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="ErrorTranslate"/>
+                        </Grid.RenderTransform>
+                        <Border Padding="10,6" MinWidth="120" MaxWidth="300"
+                                BorderBrush="#40E53935" BorderThickness="1"
+                                CornerRadius="12">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap"
+                                           Foreground="{StaticResource ErrorBrush}" FontSize="10"
+                                           MaxHeight="120" Margin="0,0,0,4"/>
+                                <Button Content="OK" Click="DismissButton_Click" Style="{x:Null}"
+                                        AutomationProperties.Name="Dismiss error"
+                                        Foreground="White" Padding="8,3" Cursor="Hand"
+                                        HorizontalAlignment="Right" FontSize="11">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{StaticResource GlassButtonBg}"
+                                                    BorderBrush="{StaticResource GlassButtonBorder}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- Model loading indicator (below the bubble, MaxWidth prevents widening) -->
+        <TextBlock Grid.Row="1" Text="Loading..." FontSize="8" FontFamily="Segoe UI Variable, Segoe UI"
+                   Foreground="#E8A735" HorizontalAlignment="Center" MaxWidth="56"
+                   Margin="0,1,0,0" IsHitTestVisible="False"
+                   Visibility="{Binding IsModelLoading, Converter={StaticResource BoolToVisibility}}"/>
+    </Grid>
+</Window>

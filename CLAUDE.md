@@ -1,19 +1,19 @@
-# WriteSpeech.NET
+# Voxwright
 
 Speech-to-Text desktop overlay app (inspired by Wispr Flow). Record speech via microphone, transcribe it, optionally correct it via AI, and auto-insert the text at the cursor position in the previously active window. Supports voice commands on selected text, file transcription, context-aware correction modes, and IDE integration.
 
 ## Build & Run
 
 ```bash
-dotnet build WriteSpeech.slnx
-dotnet run --project src/WriteSpeech.App
+dotnet build Voxwright.slnx
+dotnet run --project src/Voxwright.App
 ```
 
 Requires **.NET 10 SDK** (`net10.0-windows` TFM). Windows-only (WPF + Win32 P/Invoke).
 
 **Important:** If the app is already running, `dotnet build` will fail because the exe is locked. Kill the process first:
 ```bash
-taskkill //F //IM WriteSpeech.App.exe
+taskkill //F //IM Voxwright.App.exe
 ```
 
 ## CI/CD
@@ -25,18 +25,18 @@ taskkill //F //IM WriteSpeech.App.exe
 ## Project Structure
 
 ```
-WriteSpeech.slnx
+Voxwright.slnx
 .github/
   workflows/ci.yml            # GitHub Actions: Build + Test on Windows
   workflows/release.yml       # GitHub Actions: Build installer + create Release on version tags
   dependabot.yml              # Automated dependency updates (NuGet + Actions)
 
 installer/
-  WriteSpeech.iss             # Inno Setup installer script (x64, Win10+, preserves user config)
+  Voxwright.iss             # Inno Setup installer script (x64, Win10+, preserves user config)
 
 src/
-  WriteSpeech.Core/          # Platform-independent core logic (net10.0)
-    Configuration/            # WriteSpeechOptions (strongly-typed config, IOptionsMonitor)
+  Voxwright.Core/          # Platform-independent core logic (net10.0)
+    Configuration/            # VoxwrightOptions (strongly-typed config, IOptionsMonitor)
     Models/                   # RecordingState (Idle/Listening/Recording/Transcribing/Result/Error),
                               # TranscriptionResult, TranscriptionProvider, VadModelInfo,
                               # ModelInfoBase (abstract base), WhisperModel, CorrectionModelInfo,
@@ -87,10 +87,10 @@ src/
       DebouncedSaveHelper.cs  # Reusable debounced async save utility (used by 7+ services)
       AtomicFileHelper.cs     # Atomic file writes: write to .tmp → rename, corrupted file backup
 
-  WriteSpeech.App/            # WPF application (net10.0-windows)
+  Voxwright.App/            # WPF application (net10.0-windows)
     App.xaml.cs               # Host builder, DI, Serilog, CUDA path discovery, single-instance (Mutex),
                               # data preloading (history/stats/dictionary/snippets/modes), model preloading
-    AssemblyInfo.cs           # InternalsVisibleTo("WriteSpeech.Tests")
+    AssemblyInfo.cs           # InternalsVisibleTo("Voxwright.Tests")
     NativeMethods.cs          # Win32 P/Invoke (SendInput, RegisterHotKey, SetWindowsHookEx, etc.)
     Themes/                   # SettingsStyles.xaml (shared), SettingsDarkTheme.xaml, SettingsLightTheme.xaml,
                               # TrayMenuStyles.xaml
@@ -162,8 +162,8 @@ src/
       TrayIconManager.cs            # System tray icon, context menu (language/mic/mode submenus)
 
 tests/
-  WriteSpeech.Tests/          # xUnit 2.9.3 + NSubstitute 5.3.0 + FluentAssertions 8.2.0
-    Configuration/            # WriteSpeechOptionsTests (validation, defaults, hotkey method validation)
+  Voxwright.Tests/          # xUnit 2.9.3 + NSubstitute 5.3.0 + FluentAssertions 8.2.0
+    Configuration/            # VoxwrightOptionsTests (validation, defaults, hotkey method validation)
     Converters/               # SettingsConvertersTests
     Models/                   # WhisperModelTests, UsageStatsTests, SupportedLanguagesTests
     Services/                 # OpenAiClientFactory, DebouncedSaveHelper, transcription, correction,
@@ -182,7 +182,7 @@ tests/
 ## Testing
 
 ```bash
-dotnet test tests/WriteSpeech.Tests
+dotnet test tests/Voxwright.Tests
 ```
 
 74 test files, ~1454 test methods across services, ViewModels, views, models, converters, and configuration.
@@ -198,10 +198,10 @@ Key test patterns:
 ## Architecture & Key Patterns
 
 ### DI Container (Microsoft.Extensions.Hosting)
-All services registered as singletons in `App.xaml.cs`. Core interfaces live in `WriteSpeech.Core`, implementations that need WPF/Win32 live in `WriteSpeech.App/Services/`.
+All services registered as singletons in `App.xaml.cs`. Core interfaces live in `Voxwright.Core`, implementations that need WPF/Win32 live in `Voxwright.App/Services/`.
 
 ### Live Settings (IOptionsMonitor)
-All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!) for live configuration updates. `OverlayViewModel` reads settings from `SettingsViewModel` directly. Changes in the Settings UI take effect immediately without restart.
+All core services use `IOptionsMonitor<VoxwrightOptions>` (not `IOptions<T>`!) for live configuration updates. `OverlayViewModel` reads settings from `SettingsViewModel` directly. Changes in the Settings UI take effect immediately without restart.
 
 ### Transcription Providers
 - **OpenAI**: Uses `OpenAI` SDK (`AudioClient.TranscribeAudioAsync`) — cloud-based, requires API key
@@ -209,7 +209,7 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 - **Custom**: User-defined OpenAI-compatible transcription endpoint
 - **Local**: Uses `Whisper.net` (`WhisperFactory.FromPath`) — offline, requires GGML model file. Implements `IStreamingTranscriptionService` for segment-by-segment results.
 - **Parakeet**: Uses `sherpa-onnx` (`OfflineRecognizer`) — offline, English-only, NVIDIA Parakeet TDT 0.6B model. Directory-based model with 4 files (encoder/decoder/joiner .int8.onnx + tokens.txt). GPU (CUDA) or CPU inference. Auto-fallback to Whisper for non-English.
-- Switched via `TranscriptionProviderFactory` based on `WriteSpeechOptions.Provider` enum
+- Switched via `TranscriptionProviderFactory` based on `VoxwrightOptions.Provider` enum
 - Cloud sub-provider selection via `CloudTranscriptionProvider` (OpenAI/Groq/Custom)
 
 ### Text Correction Providers
@@ -221,7 +221,7 @@ All core services use `IOptionsMonitor<WriteSpeechOptions>` (not `IOptions<T>`!)
 - **Local**: Uses `LLamaSharp` with GGUF models for offline correction
 - **Combined Audio Model**: Sends audio directly to GPT-4o-audio-preview (single API call for transcription + correction)
 - **Base class**: `CloudTextCorrectionServiceBase` — shared prompt building, response processing, vocab extraction, error handling
-- **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/WriteSpeech/custom-dictionary.json`)
+- **Dictionary**: Custom word list injected into correction prompts (`%APPDATA%/Voxwright/custom-dictionary.json`)
 - **Shared prompts**: Default system prompts live in `TextCorrectionDefaults` (not duplicated per service)
 - **Smart self-correction**: All prompts instruct the AI to apply mid-speech corrections (e.g. "at 2pm... no, 4pm" → outputs only the corrected version)
 - **Filler-word removal**: All prompts instruct the AI to strip verbal hesitations (um, uh, ähm, basically, you know, etc.)
@@ -237,7 +237,7 @@ Context-aware text correction with different system prompts based on active appl
 - **Manual pin**: Users can pin a specific mode that overrides auto-switch
 - **Resolution**: `ResolveSystemPrompt(processName)` returns mode-specific prompt (null for Default → services use their own default)
 - **Translation**: `ResolveTargetLanguage(processName)` returns target language when the resolved mode has one configured (e.g. Translate → "English")
-- **Persistence**: `%APPDATA%/WriteSpeech/modes.json` via `DebouncedSaveHelper`
+- **Persistence**: `%APPDATA%/Voxwright/modes.json` via `DebouncedSaveHelper`
 - **Tray integration**: Mode submenu in system tray context menu for quick switching
 
 Built-in mode app patterns:
@@ -300,20 +300,20 @@ Reusable utility for debounced async persistence. Used by 7+ services: `Transcri
 ### Centralized Settings Persistence (ISettingsPersistenceService)
 `SettingsPersistenceService` provides `ScheduleUpdate(Action<JsonNode> mutator)`. Multiple mutators are composed — if several `ScheduleUpdate()` calls arrive before the debounce flush, all mutations apply to the same JSON document. Thread-safe via `Lock` + `DebouncedSaveHelper`.
 
-### Options Validation (WriteSpeechOptionsValidator)
-`IValidateOptions<WriteSpeechOptions>` validates at startup and on reload: SampleRate (8000-48000), MaxRecordingSeconds (10-7200), AutoDismissSeconds (>=1), Scale (0.5-3.0), MaxHistoryEntries (1-10000), all Endpoints (valid URI + HTTPS required), Hotkey.Method (`RegisterHotKey` or `LowLevelHook`), mouse bindings require LowLevelHook, provider-specific requirements (API key for OpenAI/Cloud, model name for Local). **Provider-specific API key validation is deferred until `App.SetupCompleted = true`** — allows first-run without keys configured.
+### Options Validation (VoxwrightOptionsValidator)
+`IValidateOptions<VoxwrightOptions>` validates at startup and on reload: SampleRate (8000-48000), MaxRecordingSeconds (10-7200), AutoDismissSeconds (>=1), Scale (0.5-3.0), MaxHistoryEntries (1-10000), all Endpoints (valid URI + HTTPS required), Hotkey.Method (`RegisterHotKey` or `LowLevelHook`), mouse bindings require LowLevelHook, provider-specific requirements (API key for OpenAI/Cloud, model name for Local). **Provider-specific API key validation is deferred until `App.SetupCompleted = true`** — allows first-run without keys configured.
 
 ### IDispatcherService
 Abstraction over WPF `Dispatcher.Invoke()`. `WpfDispatcherService` wraps `Application.Current.Dispatcher`; tests use `SynchronousDispatcherService` that executes actions inline. All ViewModels use this instead of direct `Dispatcher` access.
 
 ### Settings Sub-ViewModels
-`SettingsViewModel` delegates to `GeneralSettingsViewModel`, `SystemSettingsViewModel`, `TranscriptionSettingsViewModel`, `ModesSettingsViewModel`, and `IntegrationsSettingsViewModel`. Each sub-VM receives `WriteSpeechOptions` in constructor (not individual primitives) and implements `WriteSettings(JsonNode)` for persistence.
+`SettingsViewModel` delegates to `GeneralSettingsViewModel`, `SystemSettingsViewModel`, `TranscriptionSettingsViewModel`, `ModesSettingsViewModel`, and `IntegrationsSettingsViewModel`. Each sub-VM receives `VoxwrightOptions` in constructor (not individual primitives) and implements `WriteSettings(JsonNode)` for persistence.
 
 ### Model Info Hierarchy (ModelInfoBase)
 Abstract base class shared by `WhisperModel` and `CorrectionModelInfo`. Provides `Name`, `FileName`, `SizeBytes`, `FilePath`, `IsDownloaded`, `SizeDisplay`. `CorrectionModelInfo` extends with `DownloadUrl`.
 
 ### Snippet Service (SnippetService)
-Trigger→replacement text substitution applied after transcription. Uses compiled `Regex` with word boundary matching (`\b`), cached and invalidated on add/remove. Persisted to `%APPDATA%/WriteSpeech/snippets.json`.
+Trigger→replacement text substitution applied after transcription. Uses compiled `Regex` with word boundary matching (`\b`), cached and invalidated on add/remove. Persisted to `%APPDATA%/Voxwright/snippets.json`.
 
 ### OverlayViewModel Architecture (Split)
 `OverlayViewModel` is the main state machine coordinator (~380 lines), delegating to two extracted components:
@@ -370,7 +370,7 @@ All JSON persistence services use `AtomicFileHelper.WriteAllTextAsync()`:
 - Used by: `TranscriptionHistoryService`, `UsageStatsService`, `DictionaryService`, `SnippetService`, `ModeService`, `SettingsPersistenceService`
 
 ### Installer & Release Pipeline
-- **`installer/WriteSpeech.iss`**: Inno Setup script — installs to `{localappdata}\WriteSpeech`, preserves user `appsettings.json` on upgrades, German+English, desktop icon + Windows startup options, x64 only, Windows 10+
+- **`installer/Voxwright.iss`**: Inno Setup script — installs to `{localappdata}\Voxwright`, preserves user `appsettings.json` on upgrades, German+English, desktop icon + Windows startup options, x64 only, Windows 10+
 - **`.github/workflows/release.yml`**: Triggered on `v*.*.*` tags — runs tests, publishes self-contained win-x64, Python script verifies no API keys in published config, builds installer via Inno Setup, creates GitHub Release with installer artifact
 
 ### CUDA Path Discovery (App.xaml.cs)
@@ -385,7 +385,7 @@ This is necessary because `CUDA_PATH` may point to an older CUDA version while W
 `PreloadLocalModels()` fires a background `Task.Run` at startup to load Whisper, Parakeet, and/or correction models if their respective providers are set to Local/Parakeet. Does not block the UI thread.
 
 ### Single-Instance Enforcement (App.xaml.cs)
-Uses `Mutex("WriteSpeech-SingleInstance")` in `OnStartup`. Shows `MessageBox` and calls `Shutdown()` if another instance is running.
+Uses `Mutex("Voxwright-{user}")` in `OnStartup`. Shows `MessageBox` and calls `Shutdown()` if another instance is running.
 
 ### Data Preloading (App.xaml.cs)
 `Task.WhenAll()` loads history, stats, dictionary, snippets, and modes before showing the overlay.
@@ -416,7 +416,7 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 
 ## Configuration
 
-`appsettings.json` under section `"WriteSpeech"`:
+`appsettings.json` under section `"Voxwright"`:
 - `Provider`: `"OpenAI"`, `"Local"`, or `"Parakeet"`
 - `CloudTranscriptionProvider`: `"OpenAI"`, `"Groq"`, or `"Custom"` (sub-provider when Provider=OpenAI)
 - `OpenAI.ApiKey`: OpenAI API key (keep out of git!)
@@ -428,10 +428,10 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `CustomTranscription.Endpoint`: Custom OpenAI-compatible transcription endpoint
 - `CustomTranscription.Model`: Custom transcription model name
 - `Local.ModelName`: GGML model filename, default `"ggml-small.bin"`
-- `Local.ModelDirectory`: path to models dir (default: `%APPDATA%/WriteSpeech/models`)
+- `Local.ModelDirectory`: path to models dir (default: `%APPDATA%/Voxwright/models`)
 - `Local.GpuAcceleration`: enable CUDA for local Whisper (default: `true`)
 - `Parakeet.ModelName`: Parakeet model directory name (default: `"sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8"`)
-- `Parakeet.ModelDirectory`: path to Parakeet models (default: `%APPDATA%/WriteSpeech/parakeet-models`)
+- `Parakeet.ModelDirectory`: path to Parakeet models (default: `%APPDATA%/Voxwright/parakeet-models`)
 - `Parakeet.GpuAcceleration`: enable CUDA for Parakeet (default: `true`)
 - `Parakeet.NumThreads`: inference threads (default: 4, min: 1)
 - `Language`: language code or null for auto-detect
@@ -463,7 +463,7 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `TextCorrection.Model`: cloud correction model (default: `"gpt-4.1-mini"`)
 - `TextCorrection.SystemPrompt`: custom system prompt for correction
 - `TextCorrection.LocalModelName`: GGUF model filename for local correction
-- `TextCorrection.LocalModelDirectory`: path to local correction models (default: `%APPDATA%/WriteSpeech/correction-models`)
+- `TextCorrection.LocalModelDirectory`: path to local correction models (default: `%APPDATA%/Voxwright/correction-models`)
 - `TextCorrection.LocalGpuAcceleration`: enable CUDA for local correction (default: `true`)
 - `TextCorrection.UseCombinedAudioModel`: use GPT-4o audio input (default: `false`)
 - `TextCorrection.CombinedAudioModel`: combined model name (default: `"gpt-4o-mini-audio-preview"`)
@@ -486,7 +486,7 @@ Rolling `float[20]` buffer in ViewModel. `AudioLevelChanged` event shifts buffer
 - `App.MaxHistoryEntries`: max history entries (default: 20)
 - `App.SetupCompleted`: first-run wizard completed (default: `false`)
 
-Environment variables prefixed with `WRITESPEECH_` also bind to config.
+Environment variables prefixed with `VOXWRIGHT_` also bind to config.
 
 ## Key Dependencies
 
@@ -508,7 +508,7 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 | CommunityToolkit.Mvvm 8.4.0 | Source generators ([ObservableProperty], [RelayCommand]) |
 | H.NotifyIcon.Wpf 2.4.1 | System tray icon |
 | Serilog.Extensions.Hosting 10.0.0 | Serilog integration with Host builder |
-| Serilog.Sinks.File 7.0.0 | File logging to `%APPDATA%/WriteSpeech/logs/` |
+| Serilog.Sinks.File 7.0.0 | File logging to `%APPDATA%/Voxwright/logs/` |
 
 ## Known Gotchas
 
@@ -519,10 +519,10 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 - **appsettings.json**: Contains API key locally — sanitize before committing.
 - **CUDA_PATH may point to old version**: `AddCudaLibraryPaths()` works around this by scanning versioned env vars and filesystem for v13.x.
 - **WS_EX_NOACTIVATE blocks tray menu**: Temporarily remove the flag in `TrayRightMouseDown`, call `SetForegroundWindow`, restore when menu closes.
-- **IOptionsMonitor, not IOptions**: All core services must use `IOptionsMonitor<WriteSpeechOptions>` for live settings.
+- **IOptionsMonitor, not IOptions**: All core services must use `IOptionsMonitor<VoxwrightOptions>` for live settings.
 - **Factory methods are `virtual`**: `TranscriptionProviderFactory.GetProvider` and `TextCorrectionProviderFactory.GetProvider` must stay `virtual` — tests override them for isolation (`OverlayViewModelTests`).
 - **appsettings.json is gitignored**: `appsettings.json` contains local API keys and is NOT tracked. `appsettings.template.json` is the tracked template (no secrets). On first run, `EnsureAppSettings()` copies the template to `appsettings.json` if it doesn't exist.
-- **Single-instance Mutex**: `App.xaml.cs` uses `Mutex("WriteSpeech-SingleInstance")` — if the app crashes without disposing the mutex, you may need to restart or wait for the OS to release it.
+- **Single-instance Mutex**: `App.xaml.cs` uses `Mutex("Voxwright-{user}")` — if the app crashes without disposing the mutex, you may need to restart or wait for the OS to release it.
 - **TestOptionsMonitor.OnChange() returns null**: `_optionsChangeRegistration` must be `IDisposable?` (nullable) because the test helper doesn't implement change notifications.
 - **LowLevelHook GetModuleHandle**: `GetModuleHandle(null)` must succeed for `SetWindowsHookEx`. Use the exe module name as entry point; crashes if called before module is loaded.
 - **P/Invoke W variants**: `GetWindowText` and `GetWindowTextLength` need explicit `EntryPoint = "GetWindowTextW"` / `"GetWindowTextLengthW"` for correct Unicode behavior.
@@ -533,11 +533,11 @@ Environment variables prefixed with `WRITESPEECH_` also bind to config.
 - **Parakeet English-only**: Parakeet TDT models only support English. UI must show "English only" notice. Non-English languages should fall back to Whisper.
 - **AtomicFileHelper for persistence**: All JSON persistence services must use `AtomicFileHelper.WriteAllTextAsync()` — don't use `File.WriteAllText` directly for user data files.
 - **Setup wizard validation deferral**: Provider-specific options validation is skipped until `App.SetupCompleted = true` — allows app to start with default config during first-run wizard.
-- **Endpoint HTTPS enforcement**: `WriteSpeechOptionsValidator` rejects all non-HTTPS endpoint URLs. Custom endpoints must use HTTPS.
+- **Endpoint HTTPS enforcement**: `VoxwrightOptionsValidator` rejects all non-HTTPS endpoint URLs. Custom endpoints must use HTTPS.
 
 ## Git Repository
 
-GitHub: `https://github.com/Sev7eNup/WriteSpeech.NET`
+GitHub: `https://github.com/Sev7eNup/Voxwright`
 
 ## User Preferences
 

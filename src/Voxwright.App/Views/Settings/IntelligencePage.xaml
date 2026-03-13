@@ -1,0 +1,933 @@
+<UserControl x:Class="Voxwright.App.Views.Settings.IntelligencePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:Voxwright.App.Converters"
+             xmlns:local="clr-namespace:Voxwright.App.ViewModels.Settings">
+    <StackPanel DataContext="{Binding Transcription}">
+        <TextBlock Text="Intelligence" Style="{StaticResource PageTitleStyle}"/>
+        <TextBlock Text="Configure text correction to improve transcription quality."
+                   FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                   TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+        <!-- Correction provider picker: pill selector -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="20" Padding="4" Margin="0,0,0,4"
+                HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+                <!-- Off -->
+                <Border Tag="Off" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="No text correction" CornerRadius="16" Padding="12,6" Margin="0,0,2,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="Off">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource OffIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Off">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="Off" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Off">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- OpenAI -->
+                <Border Tag="OpenAI" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="GPT" CornerRadius="16" Padding="12,6" Margin="0,0,2,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="OpenAI">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource OpenAiIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="OpenAI">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="OpenAI" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="OpenAI">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- Anthropic -->
+                <Border Tag="Anthropic" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="Claude" CornerRadius="16" Padding="12,6" Margin="0,0,2,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="Anthropic">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource AnthropicIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Anthropic">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="Anthropic" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Anthropic">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- Google -->
+                <Border Tag="Google" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="Gemini" CornerRadius="16" Padding="12,6" Margin="0,0,2,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="Google">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource GeminiIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Google">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="Google" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Google">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- Groq -->
+                <Border Tag="Groq" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="Llama / Mixtral" CornerRadius="16" Padding="12,6" Margin="0,0,2,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="Groq">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource GroqIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Groq">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="Groq" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Groq">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- Custom -->
+                <Border Tag="Custom" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="OpenAI-compatible" CornerRadius="16" Padding="12,6" Margin="0,0,2,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="Custom">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource CustomIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Custom">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="Custom" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Custom">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- Local -->
+                <Border Tag="Local" MouseLeftButtonDown="CorrectionProviderCard_Click" Cursor="Hand"
+                        ToolTip="Local LLM (GGUF)" CornerRadius="16" Padding="12,6">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CorrectionProvider}" Value="Local">
+                                    <Setter Property="Background" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource LocalIconGeometry}"
+                              Stretch="Uniform" Width="12" Height="12"
+                              VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Local">
+                                            <Setter Property="Fill" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock Text="Local" FontSize="11.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CorrectionProvider}" Value="Local">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- What text correction does -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,10,0,0">
+            <Grid Margin="16,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Top" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                           Foreground="{DynamicResource TextSecondaryBrush}">
+                    <Run FontWeight="SemiBold">When enabled, text correction:</Run><LineBreak/>
+                    <Run Text="&#x2022; Fixes punctuation, capitalization, and grammar"/><LineBreak/>
+                    <Run Text="&#x2022; Preserves the original language (no translation)"/><LineBreak/>
+                    <Run Text="&#x2022; Considers custom dictionary entries (Dictionary page)"/><LineBreak/>
+                    <Run Text="&#x2022; Uses IDE context like variable names (Integrations page)"/>
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════ OpenAI correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=OpenAI}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="OpenAI settings" Style="{StaticResource GroupHeaderStyle}"/>
+            <StackPanel>
+                <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                           FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                           Margin="0,0,0,8"/>
+                <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.CloudCorrectionModels}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
+                                    Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                    BorderThickness="2"
+                                    MouseLeftButtonDown="CorrectionCloudModelCard_Click" Tag="{Binding Id}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource EqualityConverter}">
+                                                        <Binding Path="Id"/>
+                                                        <Binding Path="DataContext.CorrectionCloudModel"
+                                                                 RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                               FontFamily="Segoe UI Variable, Segoe UI"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="10.5"
+                                               FontFamily="Segoe UI Variable, Segoe UI"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <!-- Custom model option -->
+                <Border Margin="0,0,0,0" Padding="12,8" Cursor="Hand"
+                        Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                        BorderThickness="2"
+                        MouseLeftButtonDown="CustomCorrectionModelCard_Click">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCustomCorrectionModel}" Value="True">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Visibility="{Binding IsEditingCustomCorrectionModel, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock Text="Custom" FontSize="11.5" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable, Segoe UI"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock FontSize="10.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"
+                                       Text="{Binding CorrectionCloudModel}"
+                                       Visibility="{Binding IsCustomCorrectionModel, Converter={StaticResource BoolToVisibility}}"/>
+                            <TextBlock Text="Use a custom model name" FontSize="10.5"
+                                       FontFamily="Segoe UI Variable, Segoe UI"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"
+                                       Visibility="{Binding IsCustomCorrectionModel, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        </StackPanel>
+                        <TextBox Visibility="{Binding IsEditingCustomCorrectionModel, Converter={StaticResource BoolToVisibility}}"
+                                 Text="{Binding CorrectionCloudModel}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomCorrectionModelTextBox_KeyDown"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- ═══════════════ Anthropic correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Anthropic}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="Anthropic settings" Style="{StaticResource GroupHeaderStyle}"/>
+
+            <!-- API Key -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="AnthropicApiKey_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingAnthropicApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AnthropicApiKeyDisplay}" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingAnthropicApiKey, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding AnthropicApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="AnthropicApiKeyTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Model -->
+            <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                       Margin="0,0,0,8"/>
+            <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.AnthropicCorrectionModels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
+                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                BorderThickness="2"
+                                MouseLeftButtonDown="AnthropicModelCard_Click" Tag="{Binding Id}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource EqualityConverter}">
+                                                    <Binding Path="Id"/>
+                                                    <Binding Path="DataContext.AnthropicModel"
+                                                             RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Description}" FontSize="10.5"
+                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- ═══════════════ Google correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Google}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="Google settings" Style="{StaticResource GroupHeaderStyle}"/>
+
+            <!-- API Key -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="GoogleApiKey_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingGoogleApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding GoogleApiKeyDisplay}" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingGoogleApiKey, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding GoogleApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="GoogleApiKeyTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Model -->
+            <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                       Margin="0,0,0,8"/>
+            <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.GoogleCorrectionModels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
+                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                BorderThickness="2"
+                                MouseLeftButtonDown="GoogleModelCard_Click" Tag="{Binding Id}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource EqualityConverter}">
+                                                    <Binding Path="Id"/>
+                                                    <Binding Path="DataContext.GoogleModel"
+                                                             RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Description}" FontSize="10.5"
+                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- ═══════════════ Groq correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Groq}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="Groq settings" Style="{StaticResource GroupHeaderStyle}"/>
+
+            <!-- API Key -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="GroqApiKey_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingGroqApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding GroqApiKeyDisplay}" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingGroqApiKey, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding GroqApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="GroqApiKeyTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Model -->
+            <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                       FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                       Margin="0,0,0,8"/>
+            <ItemsControl ItemsSource="{x:Static local:TranscriptionSettingsViewModel.GroqCorrectionModels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,4" Padding="12,8" Cursor="Hand"
+                                Background="{DynamicResource CardBgBrush}" CornerRadius="8"
+                                BorderThickness="2"
+                                MouseLeftButtonDown="GroqModelCard_Click" Tag="{Binding Id}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource EqualityConverter}">
+                                                    <Binding Path="Id"/>
+                                                    <Binding Path="DataContext.GroqModel"
+                                                             RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Description}" FontSize="10.5"
+                                           FontFamily="Segoe UI Variable, Segoe UI"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- ═══════════════ Custom correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Custom}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="Custom settings" Style="{StaticResource GroupHeaderStyle}"/>
+
+            <!-- API Endpoint -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="CustomProviderEndpoint_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingCustomCorrectionEndpoint, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Endpoint" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock.Text>
+                                <Binding Path="CustomCorrectionEndpoint" FallbackValue="Not configured">
+                                    <Binding.TargetNullValue>Not configured</Binding.TargetNullValue>
+                                </Binding>
+                            </TextBlock.Text>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CustomCorrectionEndpoint}" Value="">
+                                            <Setter Property="Text" Value="Not configured"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingCustomCorrectionEndpoint, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Endpoint" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding CustomCorrectionEndpoint}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomProviderEndpointTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- API Key -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="CustomProviderApiKey_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingCustomCorrectionApiKey, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding CustomCorrectionApiKeyDisplay}" FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingCustomCorrectionApiKey, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="API Key" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding CustomCorrectionApiKey}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomProviderApiKeyTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Model -->
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,8"
+                    Cursor="Hand" MouseLeftButtonDown="CustomProviderModel_Click">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditingCustomProviderModel, Converter={StaticResource InverseBoolToVisibility}}">
+                        <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock FontSize="11.5"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock.Text>
+                                <Binding Path="CustomCorrectionModel" FallbackValue="Not configured">
+                                    <Binding.TargetNullValue>Not configured</Binding.TargetNullValue>
+                                </Binding>
+                            </TextBlock.Text>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CustomCorrectionModel}" Value="">
+                                            <Setter Property="Text" Value="Not configured"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Visibility="{Binding IsEditingCustomProviderModel, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Model" FontSize="12.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding CustomCorrectionModel}" Style="{StaticResource SettingsTextBoxStyle}"
+                                 KeyDown="CustomProviderModelTextBox_KeyDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- ═══════════════ Local correction settings ═══════════════ -->
+        <StackPanel Visibility="{Binding CorrectionProvider, Converter={StaticResource StringToVisibility}, ConverterParameter=Local}"
+                    Margin="0,8,0,0">
+            <TextBlock Text="Local settings" Style="{StaticResource GroupHeaderStyle}"/>
+            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12">
+                <StackPanel>
+                    <Grid Margin="20,10,20,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                      IsChecked="{Binding CorrectionGpuAcceleration}"
+                                      Command="{Binding ToggleCorrectionGpuAccelerationCommand}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="CUDA not detected — using CPU (slower)"
+                               FontSize="11" FontFamily="Segoe UI Variable, Segoe UI" Foreground="#E8A735"
+                               Margin="20,0,20,10"
+                               Visibility="{Binding ShowCudaWarning, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Correction model list -->
+            <TextBlock Text="Available models" Style="{StaticResource GroupHeaderStyle}"/>
+            <ItemsControl ItemsSource="{Binding Models.CorrectionModelItems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,6" Padding="16,12"
+                                Background="{DynamicResource CardBgBrush}" CornerRadius="10"
+                                BorderThickness="2">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SelectedBorderBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold"
+                                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding SizeDisplay}" FontSize="11.5" Margin="8,0,0,0"
+                                                   FontFamily="Segoe UI Variable, Segoe UI" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding StatusText}" FontSize="10.5"
+                                               FontFamily="Segoe UI Variable, Segoe UI"
+                                               Margin="0,2,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource SelectedBorderBrush}"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <!-- Download -->
+                                <Button Grid.Column="1" Content="Download" Cursor="Hand"
+                                        FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        VerticalAlignment="Center" Margin="10,0,0,0"
+                                        Command="{Binding DataContext.Models.DownloadCorrectionModelCommand,
+                                            RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Visibility>
+                                        <MultiBinding Converter="{StaticResource ModelActionVisibility}">
+                                            <Binding Path="IsDownloaded"/>
+                                            <Binding Path="IsDownloading"/>
+                                        </MultiBinding>
+                                    </Button.Visibility>
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{DynamicResource CardBgBrush}"
+                                                    CornerRadius="10" Padding="14,6"
+                                                    BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <!-- Use -->
+                                <Button Grid.Column="1" Content="Use" Cursor="Hand"
+                                        FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" Margin="10,0,0,0"
+                                        Command="{Binding DataContext.Models.ActivateCorrectionModelCommand,
+                                            RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Visibility>
+                                        <MultiBinding Converter="{StaticResource ModelUseVisibility}">
+                                            <Binding Path="IsDownloaded"/>
+                                            <Binding Path="IsDownloading"/>
+                                            <Binding Path="IsActive"/>
+                                        </MultiBinding>
+                                    </Button.Visibility>
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="#7C5CFC" CornerRadius="10" Padding="14,6">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <Button.Foreground><SolidColorBrush Color="White"/></Button.Foreground>
+                                </Button>
+                                <!-- Delete -->
+                                <Button Grid.Column="2" Content="Delete" Cursor="Hand"
+                                        FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        VerticalAlignment="Center" Margin="6,0,0,0"
+                                        Command="{Binding DataContext.Models.DeleteCorrectionModelCommand,
+                                            RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Visibility>
+                                        <MultiBinding Converter="{StaticResource ModelDeleteVisibility}">
+                                            <Binding Path="IsDownloaded"/>
+                                            <Binding Path="IsDownloading"/>
+                                            <Binding Path="IsActive"/>
+                                        </MultiBinding>
+                                    </Button.Visibility>
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{DynamicResource CardBgBrush}"
+                                                    CornerRadius="10" Padding="14,6"
+                                                    BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBorderBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <!-- Progress bar -->
+                                <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="1"
+                                             Value="{Binding DownloadProgress}" Height="4" Margin="0,8,0,0"
+                                             Foreground="#7C5CFC"
+                                             Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- Cloud usage hint -->
+        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,10,0,0"
+                Visibility="{Binding ShowCloudUsageHint, Converter={StaticResource BoolToVisibility}}">
+            <Grid Margin="16,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#x2139;" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Top" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="11.5" FontFamily="Segoe UI Variable, Segoe UI"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="OpenAI text correction uses the shared API key. Configure it in Models → Cloud settings."/>
+            </Grid>
+        </Border>
+    </StackPanel>
+</UserControl>
