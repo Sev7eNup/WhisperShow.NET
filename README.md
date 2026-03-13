@@ -19,11 +19,11 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 - 🎙️ **Speech-to-Text Overlay** — Transparent, always-on-top speech bubble with real-time waveform visualization and recording timer
 - 📋 **Auto-Insert** — Automatically pastes transcribed text at the cursor position in any app via clipboard + Win32 SendInput
 - 🗣️ **Voice Commands** — Select text in any app, then speak a command to transform it (translate, reformat, fix grammar, etc.)
-- 📁 **File Transcription** — Transcribe audio files (MP3, WAV, M4A, FLAC, OGG, MP4) via tray menu — supports drag & drop
 - ☁️ **Cloud Transcription** — OpenAI Whisper API, Groq, or any custom OpenAI-compatible endpoint — configurable model and endpoint per sub-provider
 - 💻 **Local Transcription** — Offline via Whisper.net (GGML models, 5 sizes from 75 MB to 3 GB) with optional CUDA GPU acceleration
 - 🦜 **NVIDIA Parakeet Transcription** — Offline English-only transcription via NVIDIA NeMo Parakeet TDT 0.6B (sherpa-onnx), GPU (CUDA) or CPU — auto-falls back to Whisper for non-English languages
 - 📡 **Realtime Streaming** — Progressive segment-by-segment text display during local transcription; cloud providers show a sweep animation
+- 📁 **File Transcription** — Transcribe audio files (MP3, WAV, M4A, FLAC, OGG, MP4) via tray menu — supports drag & drop
 - 🤖 **AI Text Correction** — Post-process transcriptions with **OpenAI** (GPT-4.1-mini), **Anthropic** (Claude), **Google** (Gemini), **Groq**, **Custom** (any OpenAI-compatible endpoint), or **Local** (LLamaSharp, offline GGUF models)
 - 🎯 **Correction Modes** — 6 built-in modes (Default, Email, Message, Code, Note, Translate) with auto-switch by active app, plus custom modes
 - 🌐 **Translation Mode** — Speak in one language, output in another (e.g., speak German → get English text). Configurable target language per mode
