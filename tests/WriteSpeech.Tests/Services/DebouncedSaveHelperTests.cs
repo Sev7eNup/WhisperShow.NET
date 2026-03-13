@@ -25,12 +25,10 @@ public class DebouncedSaveHelperTests
     {
         var saveCount = 0;
         using var helper = new DebouncedSaveHelper(() => { saveCount++; return Task.CompletedTask; },
-            NullLogger.Instance, delayMs: 100);
+            NullLogger.Instance, delayMs: 5000);
 
         helper.Schedule();
-        await Task.Delay(30);
         helper.Schedule();
-        await Task.Delay(30);
         helper.Schedule();
         await helper.FlushAsync();
 

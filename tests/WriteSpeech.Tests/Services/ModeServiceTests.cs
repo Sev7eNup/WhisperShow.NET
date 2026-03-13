@@ -259,12 +259,12 @@ public class ModeServiceTests : IDisposable
     // --- Dispose ---
 
     [Fact]
-    public void Dispose_DoesNotThrow()
+    public async Task Dispose_DoesNotThrow()
     {
         var optionsMonitor = OptionsHelper.CreateMonitor(_ => { });
         var service = new ModeService(NullLogger<ModeService>.Instance, optionsMonitor);
         SetFilePath(service, Path.Combine(_tempDir, "dispose-test.json"));
-        service.LoadAsync().GetAwaiter().GetResult();
+        await service.LoadAsync();
 
         var act = () =>
         {
@@ -290,7 +290,7 @@ public class ModeServiceTests : IDisposable
     // --- AutoSwitchEnabled ---
 
     [Fact]
-    public void AutoSwitchEnabled_DefaultsFromOptions()
+    public async Task AutoSwitchEnabled_DefaultsFromOptions()
     {
         var optionsMonitor = OptionsHelper.CreateMonitor(o =>
         {
@@ -298,7 +298,7 @@ public class ModeServiceTests : IDisposable
         });
         var service = new ModeService(NullLogger<ModeService>.Instance, optionsMonitor);
         SetFilePath(service, Path.Combine(_tempDir, "auto-switch-test.json"));
-        service.LoadAsync().GetAwaiter().GetResult();
+        await service.LoadAsync();
 
         service.AutoSwitchEnabled.Should().BeFalse();
         service.Dispose();
