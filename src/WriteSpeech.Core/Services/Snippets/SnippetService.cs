@@ -136,7 +136,9 @@ public class SnippetService : ISnippetService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load snippets");
+            _logger.LogWarning(ex, "Failed to load snippets — starting with empty list");
+            if (File.Exists(_filePath))
+                AtomicFileHelper.BackupCorruptFile(_filePath, _logger);
             _loaded = true;
         }
     }

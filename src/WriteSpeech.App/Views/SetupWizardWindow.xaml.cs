@@ -31,6 +31,8 @@ public partial class SetupWizardWindow : Window
 
         UpdateProgressIndicator();
         UpdateProviderHighlight();
+        Dispatcher.BeginInvoke(UpdateLanguageHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
+        Dispatcher.BeginInvoke(UpdateMicrophoneHighlight, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private void OnClipBorderSizeChanged(object sender, SizeChangedEventArgs e)
@@ -217,6 +219,21 @@ public partial class SetupWizardWindow : Window
     private void OpenAiApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (sender is TextBox tb) _viewModel.SetOpenAiApiKey(tb.Text);
+    }
+
+    private void OpenAiCorrectionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) _viewModel.SetOpenAiApiKey(tb.Text);
+    }
+
+    private void OpenAiCorrectionApiKeyBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            _viewModel.SetOpenAiApiKey(tb.Text);
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
     }
 
     private void GroqTranscriptionApiKeyBox_TextChanged(object sender, TextChangedEventArgs e)

@@ -1,23 +1,50 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using WriteSpeech.Core.Configuration;
 using WriteSpeech.Core.Services.TextInsertion;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Reads the currently selected text from the foreground window by simulating a Ctrl+C
+/// keystroke and reading the result from the clipboard.
+///
+/// Implementation approach:
+/// 1. Saves the current clipboard contents and clears the clipboard.
+/// 2. Synthesizes Ctrl+C via Win32 <c>SendInput</c> to copy the selection in the active window.
+/// 3. Waits for the copy to complete, then reads the clipboard text.
+/// 4. Restores the original clipboard contents in a <c>finally</c> block.
+///
+/// If no text is selected, the clipboard remains empty after Ctrl+C and the method returns null.
+/// All clipboard operations are dispatched to the WPF UI thread (STA requirement).
+/// </summary>
 public class SelectedTextService : ISelectedTextService
 {
     private readonly ILogger<SelectedTextService> _logger;
+    private readonly IOptionsMonitor<WriteSpeechOptions> _optionsMonitor;
 
-    public SelectedTextService(ILogger<SelectedTextService> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SelectedTextService"/> class.
+    /// </summary>
+    public SelectedTextService(ILogger<SelectedTextService> logger, IOptionsMonitor<WriteSpeechOptions> optionsMonitor)
     {
         _logger = logger;
+        _optionsMonitor = optionsMonitor;
     }
 
+    /// <summary>
+    /// Reads the currently selected text from the foreground window.
+    /// Simulates Ctrl+C, reads the clipboard, and restores the original clipboard contents.
+    /// Returns <c>null</c> if no text is selected or if clipboard access fails.
+    /// </summary>
+    /// <returns>The selected text, or <c>null</c> if no text is selected.</returns>
     public async Task<string?> ReadSelectedTextAsync()
     {
         string? selectedText = null;
         IDataObject? previousClipboard = null;
+        var timing = _optionsMonitor.CurrentValue.Timing;
 
         try
         {
@@ -40,7 +67,7 @@ public class SelectedTextService : ISelectedTextService
                 return null;
             }
 
-            await Task.Delay(30);
+            await Task.Delay(timing.PreCopyWaitMs);
 
             // Simulate Ctrl+C via SendInput
             var inputs = new NativeMethods.INPUT[4];
@@ -72,7 +99,7 @@ public class SelectedTextService : ISelectedTextService
             }
 
             // Wait for the copy operation to complete
-            await Task.Delay(100);
+            await Task.Delay(timing.PasteCompletionMs);
 
             // Read the clipboard content
             Application.Current.Dispatcher.Invoke(() =>

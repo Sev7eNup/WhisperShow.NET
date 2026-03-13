@@ -94,7 +94,9 @@ public class DictionaryService : IDictionaryService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load custom dictionary");
+            _logger.LogWarning(ex, "Failed to load custom dictionary — starting with empty list");
+            if (File.Exists(_filePath))
+                AtomicFileHelper.BackupCorruptFile(_filePath, _logger);
             _loaded = true;
         }
     }

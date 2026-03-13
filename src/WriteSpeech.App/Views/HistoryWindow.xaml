@@ -10,7 +10,8 @@
         ShowInTaskbar="True"
         Icon="/Resources/Icons/app.ico"
         Width="420" Height="520"
-        Title="Transcription History">
+        Title="Transcription History"
+        AutomationProperties.Name="Transcription History">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -60,6 +61,7 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                            AutomationProperties.Name="Close"
                             Cursor="Hand" Click="CloseButton_Click">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
@@ -92,6 +94,7 @@
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="SearchBox" Grid.Column="1"
+                                     AutomationProperties.Name="Search history"
                                      Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
                                      FontSize="12" FontFamily="Segoe UI"
                                      Foreground="{DynamicResource TextPrimaryBrush}"
@@ -187,6 +190,7 @@
                                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0">
                                                 <!-- Copy button (accent pill) -->
                                                 <Button Cursor="Hand"
+                                                        AutomationProperties.Name="Copy"
                                                         Command="{Binding DataContext.CopyEntryCommand,
                                                             RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                         CommandParameter="{Binding}">
@@ -216,6 +220,7 @@
                                                 </Button>
                                                 <!-- Remove button (icon) -->
                                                 <Button Cursor="Hand" Margin="6,0,0,0"
+                                                        AutomationProperties.Name="Remove"
                                                         Command="{Binding DataContext.RemoveEntryCommand,
                                                             RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                         CommandParameter="{Binding}">
@@ -266,6 +271,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center"/>
                         <Button HorizontalAlignment="Right" Cursor="Hand"
+                                AutomationProperties.Name="Clear all"
                                 Command="{Binding ClearAllCommand}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">

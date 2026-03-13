@@ -536,17 +536,23 @@
 
             <!-- GPU acceleration (shared for Whisper + Parakeet) -->
             <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Margin="0,0,0,8">
-                <Grid Margin="20,10,20,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
-                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                    <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
-                                  IsChecked="{Binding GpuAcceleration}"
-                                  Command="{Binding ToggleGpuAccelerationCommand}" VerticalAlignment="Center"/>
-                </Grid>
+                <StackPanel>
+                    <Grid Margin="20,10,20,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="GPU acceleration" FontSize="12.5" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}"
+                                      IsChecked="{Binding GpuAcceleration}"
+                                      Command="{Binding ToggleGpuAccelerationCommand}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="CUDA not detected — using CPU (slower)"
+                               FontSize="11" FontFamily="Segoe UI Variable, Segoe UI" Foreground="#E8A735"
+                               Margin="20,0,20,10"
+                               Visibility="{Binding ShowCudaWarning, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
             </Border>
 
             <!-- ===== Whisper models (visible when Provider=Local) ===== -->

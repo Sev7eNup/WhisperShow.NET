@@ -764,4 +764,144 @@ public class WriteSpeechOptionsTests
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("PreBuffer");
     }
+
+    // --- TimingOptions ---
+
+    [Fact]
+    public void TimingOptions_DefaultValues()
+    {
+        var timing = new TimingOptions();
+
+        timing.ClipboardSettleMs.Should().Be(50);
+        timing.PasteCompletionMs.Should().Be(100);
+        timing.PreCopyWaitMs.Should().Be(30);
+        timing.FocusRestoreMs.Should().Be(150);
+        timing.FocusRetryMs.Should().Be(100);
+        timing.MenuCloseMs.Should().Be(200);
+    }
+
+    [Theory]
+    [InlineData(9)]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(2001)]
+    [InlineData(5000)]
+    public void Validator_InvalidTimingClipboardSettleMs_Fails(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.ClipboardSettleMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("ClipboardSettleMs");
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(50)]
+    [InlineData(2000)]
+    public void Validator_ValidTimingClipboardSettleMs_Succeeds(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.ClipboardSettleMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(9)]
+    [InlineData(2001)]
+    public void Validator_InvalidTimingPasteCompletionMs_Fails(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.PasteCompletionMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("PasteCompletionMs");
+    }
+
+    [Theory]
+    [InlineData(9)]
+    [InlineData(2001)]
+    public void Validator_InvalidTimingPreCopyWaitMs_Fails(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.PreCopyWaitMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("PreCopyWaitMs");
+    }
+
+    [Theory]
+    [InlineData(9)]
+    [InlineData(2001)]
+    public void Validator_InvalidTimingFocusRestoreMs_Fails(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.FocusRestoreMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("FocusRestoreMs");
+    }
+
+    [Theory]
+    [InlineData(9)]
+    [InlineData(2001)]
+    public void Validator_InvalidTimingFocusRetryMs_Fails(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.FocusRetryMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("FocusRetryMs");
+    }
+
+    [Theory]
+    [InlineData(9)]
+    [InlineData(2001)]
+    public void Validator_InvalidTimingMenuCloseMs_Fails(int value)
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.MenuCloseMs = value;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("MenuCloseMs");
+    }
+
+    [Fact]
+    public void Validator_AllTimingAtBoundaries_Succeeds()
+    {
+        var validator = new WriteSpeechOptionsValidator();
+        var options = CreateValidOptions();
+        options.Timing.ClipboardSettleMs = 10;
+        options.Timing.PasteCompletionMs = 2000;
+        options.Timing.PreCopyWaitMs = 10;
+        options.Timing.FocusRestoreMs = 2000;
+        options.Timing.FocusRetryMs = 10;
+        options.Timing.MenuCloseMs = 2000;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
 }

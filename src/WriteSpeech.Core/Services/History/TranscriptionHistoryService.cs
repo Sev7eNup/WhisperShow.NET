@@ -87,7 +87,9 @@ public class TranscriptionHistoryService : ITranscriptionHistoryService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load transcription history");
+            _logger.LogWarning(ex, "Failed to load transcription history — starting with empty list");
+            if (File.Exists(_filePath))
+                AtomicFileHelper.BackupCorruptFile(_filePath, _logger);
             _entries = [];
         }
     }

@@ -15,6 +15,7 @@ public sealed class MicTestHelper : IDisposable
     private readonly Action<float> _onLevelChanged;
     private WaveInEvent? _waveIn;
 
+    /// <summary>Whether a microphone test is currently active and capturing audio.</summary>
     public bool IsTesting { get; private set; }
 
     public MicTestHelper(IDispatcherService dispatcher, ILogger logger, Action<float> onLevelChanged)
@@ -27,6 +28,11 @@ public sealed class MicTestHelper : IDisposable
         _onLevelChanged = onLevelChanged;
     }
 
+    /// <summary>
+    /// Opens the specified microphone device and begins capturing audio.
+    /// RMS audio levels are computed from each buffer and dispatched to the callback on the UI thread.
+    /// Any previously active test is stopped first.
+    /// </summary>
     public void Start(int deviceIndex)
     {
         Stop();
@@ -50,6 +56,7 @@ public sealed class MicTestHelper : IDisposable
         }
     }
 
+    /// <summary>Stops the active microphone test, releases the audio device, and resets the level to zero.</summary>
     public void Stop()
     {
         if (_waveIn is not null)
@@ -80,5 +87,6 @@ public sealed class MicTestHelper : IDisposable
         _dispatcher.Invoke(() => _onLevelChanged(level));
     }
 
+    /// <summary>Stops any active test and releases the microphone device.</summary>
     public void Dispose() => Stop();
 }

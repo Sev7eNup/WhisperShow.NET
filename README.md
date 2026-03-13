@@ -5,7 +5,7 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
-![Tests 857+](https://img.shields.io/badge/tests-857%2B-brightgreen)
+![Tests 1400+](https://img.shields.io/badge/tests-1400%2B-brightgreen)
 ![CI](https://github.com/Sev7eNup/WriteSpeech.NET/actions/workflows/ci.yml/badge.svg)
 
 <!-- TODO: Add screenshot of overlay + settings window -->
@@ -32,7 +32,7 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 - 🌐 **Translation Mode** — Speak in one language, output in another (e.g., speak German → get English text). Configurable target language per mode
 - 🧹 **Smart Cleanup** — Automatically removes filler words (um, uh, ähm, basically, you know) and applies mid-speech self-corrections
 - 🗣️ **Voice Commands** — Select text in any app, then speak a command to transform it (translate, reformat, fix grammar, etc.)
-- 📁 **File Transcription** — Transcribe audio files (MP3, WAV, M4A, FLAC, OGG, MP4) via tray menu
+- 📁 **File Transcription** — Transcribe audio files (MP3, WAV, M4A, FLAC, OGG, MP4) via tray menu — supports drag & drop
 - 🔌 **IDE Integration** — Auto-detect VS Code, Cursor, Windsurf — injects workspace identifiers and file names into correction prompts for better accuracy
 - 📝 **Vocabulary Extraction** — Auto-learn proper nouns, brand names, and technical terms from AI correction responses
 - ⚙️ **Settings UI** — 8-page settings window: General, System, Intelligence, Modes, Integrations, Models, Dictionary/Snippets, Statistics
@@ -40,6 +40,9 @@ Windows desktop speech-to-text overlay inspired by [Wispr Flow](https://wisprflo
 - 🎨 **Dark & Light Themes** — Switchable via settings
 - 🔔 **System Tray** — Left-click toggles overlay, right-click for context menu (language, microphone, mode selection, transcribe file, Settings, History, Exit)
 - ⚡ **Live Settings** — All changes take effect immediately without restart
+- 🧙 **Setup Wizard** — 4-step first-run assistant (Language → Transcription → Correction → Microphone) with in-wizard model download, API key configuration, and automatic app restart
+- 🎤 **Voice Activity Detection (VAD)** — Hands-free dictation mode using Silero VAD (sherpa-onnx) — automatically starts/stops recording on speech/silence detection with continuous loop
+- 🔐 **Security Hardening** — SHA-256 model verification on downloads, prompt injection mitigation via tagged input, sensitive identifier filtering in IDE context
 - 🔒 **Single Instance** — Enforced via named Mutex
 
 ## 📋 Prerequisites
@@ -66,12 +69,13 @@ dotnet run --project src/WriteSpeech.App
 ## 🏁 Quick Start
 
 1. **Build and run** the app (see above)
-2. A transparent speech-bubble overlay appears on screen, and a tray icon shows in the system tray
-3. **Press Ctrl+Shift+Space** (or click the microphone button) to start recording
-4. **Speak** — you'll see a live waveform animation
-5. **Press the hotkey again** to stop recording — the app transcribes your speech
-6. The transcribed text is **automatically pasted** at the cursor position in the previously active window
-7. **Right-click the tray icon** to open Settings, History, or exit
+2. On first launch, a **setup wizard** guides you through language, transcription provider, text correction, and microphone selection
+3. A transparent speech-bubble overlay appears on screen, and a tray icon shows in the system tray
+4. **Press Ctrl+Shift+Space** (or click the microphone button) to start recording
+5. **Speak** — you'll see a live waveform animation
+6. **Press the hotkey again** to stop recording — the app transcribes your speech
+7. The transcribed text is **automatically pasted** at the cursor position in the previously active window
+8. **Right-click the tray icon** to open Settings, History, or exit
 
 For cloud transcription, enter your OpenAI API key in Settings > Transcription. For offline use, switch to Local provider and download a Whisper model in Settings > Models.
 
@@ -152,8 +156,13 @@ All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpe
 | `Audio.DeviceIndex` | int | `0` | Microphone device index (0 = system default) |
 | `Audio.SampleRate` | int | `16000` | Recording sample rate in Hz |
 | `Audio.MaxRecordingSeconds` | int | `300` | Maximum recording length (5 minutes) |
-| `Audio.CompressBeforeUpload` | bool | `true` | Compress WAV to MP3 before cloud upload |
+| `Audio.CompressBeforeUpload` | bool | `false` | Compress WAV to MP3 before cloud upload |
 | `Audio.MuteWhileDictating` | bool | `true` | Mute other apps during recording |
+| `Audio.VoiceActivity.Enabled` | bool | `false` | Enable hands-free VAD dictation mode |
+| `Audio.VoiceActivity.SilenceDurationSeconds` | float | `1.5` | Auto-stop recording after N seconds of silence |
+| `Audio.VoiceActivity.MinRecordingSeconds` | float | `0.5` | Minimum recording duration before auto-stop |
+| `Audio.VoiceActivity.Threshold` | float | `0.5` | Silero VAD sensitivity (0.1–0.9) |
+| `Audio.VoiceActivity.PreBufferSeconds` | float | `0.5` | Pre-buffer duration to capture speech onset |
 
 ### Hotkeys
 
@@ -173,7 +182,7 @@ All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpe
 |---|---|---|---|
 | `Overlay.AlwaysVisible` | bool | `true` | Keep overlay visible in Idle state |
 | `Overlay.AutoDismissSeconds` | int | `10` | Auto-dismiss result after N seconds |
-| `Overlay.ShowResultOverlay` | bool | `true` | Show result panel after transcription |
+| `Overlay.ShowResultOverlay` | bool | `false` | Show result panel after transcription |
 | `Overlay.ShowInTaskbar` | bool | `false` | Show overlay in Windows taskbar |
 | `Overlay.Scale` | double | `1.0` | Overlay scale factor |
 | `Overlay.PositionX` / `PositionY` | double | `-1` | Saved position (-1 = default center) |
@@ -183,7 +192,7 @@ All settings live in `src/WriteSpeech.App/appsettings.json` under the `"WriteSpe
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `App.LaunchAtLogin` | bool | `false` | Auto-start with Windows |
-| `App.SoundEffects` | bool | `true` | Play sounds on start/stop recording |
+| `App.SoundEffects` | bool | `false` | Play sounds on start/stop recording |
 | `App.MaxHistoryEntries` | int | `20` | Maximum transcription history entries |
 | `App.Theme` | string | `"Dark"` | `"Light"` or `"Dark"` |
 
@@ -204,7 +213,7 @@ WRITESPEECH_OPENAI__APIKEY=sk-...
 WRITESPEECH_PROVIDER=Local
 ```
 
-> **🔑 Security:** `appsettings.json` is git-tracked. For local development, use `appsettings.Local.json` (gitignored) to store your API key.
+> **🔑 Security:** `appsettings.json` is gitignored (contains local API keys). `appsettings.template.json` is the tracked template. On first run, the app copies the template to `appsettings.json` if it doesn't exist.
 
 ## 🧠 Available Models
 
@@ -252,7 +261,7 @@ src/
                                  #   ParakeetModelInfo (directory-based with IsDirectoryComplete),
                                  #   CorrectionMode, IDEInfo, SupportedLanguages, ...
     Services/
-      Audio/                     #   Recording (NAudio), muting, WAV→MP3 compression, IAudioFileReader
+      Audio/                     #   Recording (NAudio), VAD (Silero via sherpa-onnx), muting, WAV→MP3 compression
       Transcription/             #   ITranscriptionService + OpenAI/Local/Parakeet implementations
                                  #   IStreamingTranscriptionService (segment-by-segment async enumerable)
       TextCorrection/            #   ITextCorrectionService + CloudTextCorrectionServiceBase (abstract)
@@ -275,18 +284,23 @@ src/
     Themes/                      #   Dark/Light theme ResourceDictionaries
     Converters/                  #   WPF value converters
     ViewModels/
-      OverlayViewModel.cs        #   Main state machine + voice command mode + IDE context
+      OverlayViewModel.cs        #   Main state machine (delegates to RecordingController + TranscriptionPipeline)
+      RecordingController.cs     #   Audio recording lifecycle, timer, muting, VAD event relay
+      TranscriptionPipeline.cs   #   Provider routing, streaming, correction, command mode, IDE context
+      ErrorMessageHelper.cs      #   Shared error message sanitization for ViewModels
+      SetupWizardViewModel.cs    #   First-run setup wizard (4 steps)
       SettingsViewModel.cs       #   Settings coordinator + page navigation
-      FileTranscriptionViewModel.cs #   File-based audio transcription
+      FileTranscriptionViewModel.cs #   File-based audio transcription (with drag & drop)
       ModelItemViewModelBase.cs  #   Abstract base for model download items
       ParakeetModelItemViewModel.cs # Parakeet model download item
       Settings/                  #   Sub-VMs: General, System, Transcription, Modes, Integrations,
                                  #   Models, Stats, Dictionary
     Views/
       OverlayWindow.xaml         #   Transparent overlay with waveform bars
+      SetupWizardWindow.xaml     #   First-run setup wizard UI
       SettingsWindow.xaml        #   8-page settings window
       HistoryWindow.xaml         #   Transcription history browser
-      FileTranscriptionWindow.xaml #  File transcription window
+      FileTranscriptionWindow.xaml #  File transcription window (drag & drop support)
       Settings/                  #   Per-page UserControls (General, System, Intelligence, Modes,
                                  #   Integrations, Models, Dictionary, Snippets, Statistics)
     Services/                    #   Win32 implementations: TextInsertion, GlobalHotkey,
@@ -294,7 +308,7 @@ src/
                                  #   SelectedText, AudioFileReader, IDEDetection, Tray, ...
 
 tests/
-  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (857+ tests)
+  WriteSpeech.Tests/             # xUnit + NSubstitute + FluentAssertions (1400+ tests)
     Services/                    #   Service unit tests (incl. ModeService, IDE, HotkeyMatcher, Vocab)
     ViewModels/                  #   ViewModel unit tests (incl. CommandMode, FileTranscription, Modes)
     Views/                       #   WPF-specific tests (themes, code-behind helpers)
@@ -321,6 +335,12 @@ Idle → [Hotkey/Click] → Recording → [Stop] → Transcribing → [Done] →
                             ├─ Detect IDE + context  ├─ Optional correction ├─ Clipboard + Ctrl+V
                             ├─ Mute other apps       ├─ Voice command mode  │
                             └─ Start WaveInEvent     └─ Snippet expansion   └─ Vocab extraction
+
+VAD (hands-free) mode:
+Idle → [VAD enabled] → Listening → [Speech detected] → Recording → [Silence] → Transcribing → Listening (loop)
+                            │                                                        │
+                            ├─ Mic open, audio fed to Silero VAD                     └─ Toggle hotkey → Idle
+                            └─ Circular pre-buffer captures speech onset
 ```
 
 ### Key Patterns
@@ -341,6 +361,10 @@ Idle → [Hotkey/Click] → Recording → [Stop] → Transcribing → [Done] →
 | `VocabResponseParser` | Extract and auto-learn vocabulary from AI correction responses |
 | `CloudTextCorrectionServiceBase` | Abstract base for all cloud correction providers — shared prompt building, response processing, vocab extraction, error handling |
 | `IStreamingTranscriptionService` | Segment-by-segment async enumerable (`IAsyncEnumerable<string>`) for progressive transcription display |
+| `RecordingController` | Audio recording lifecycle extracted from OverlayViewModel (timer, muting, VAD relay) |
+| `TranscriptionPipeline` | Transcription + correction pipeline extracted from OverlayViewModel (provider routing, streaming, IDE context) |
+| `ErrorMessageHelper` | Shared exception-to-user-message sanitization (used by OverlayViewModel + FileTranscriptionViewModel) |
+| `IVoiceActivityService` | Silero VAD wrapper (sherpa-onnx) — speech/silence detection events for hands-free mode |
 
 ### CUDA Path Discovery
 
@@ -370,7 +394,7 @@ git push origin v1.2.3
 dotnet test tests/WriteSpeech.Tests
 ```
 
-- **857+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
+- **1400+ tests** covering services, ViewModels, converters, WPF helpers, and dispose correctness
 - **Framework:** xUnit 2.9 + NSubstitute 5.3 + FluentAssertions 8.2
 - **WPF Tests:** `WpfTestHelper.EnsureApplication()` provides thread-safe WPF `Application` initialization for parallel xUnit execution
 - **Testable dispatch:** `SynchronousDispatcherService` replaces WPF `Dispatcher` in tests

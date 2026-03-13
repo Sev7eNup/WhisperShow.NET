@@ -205,7 +205,9 @@ public class ModeService : IModeService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load correction modes");
+            _logger.LogWarning(ex, "Failed to load correction modes — starting with defaults");
+            if (File.Exists(_filePath))
+                AtomicFileHelper.BackupCorruptFile(_filePath, _logger);
             _loaded = true;
         }
     }

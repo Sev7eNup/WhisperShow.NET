@@ -1,7 +1,14 @@
 namespace WriteSpeech.Core.Models;
 
+/// <summary>
+/// Provides the list of languages supported for speech transcription.
+/// Each entry contains an ISO 639-1 language code, a display name, and a resource path
+/// to a flag icon used in the UI (settings page and system tray language picker).
+/// When no language is selected (auto-detect), the transcription provider determines the language automatically.
+/// </summary>
 public static class SupportedLanguages
 {
+    /// <summary>All supported transcription languages as tuples of (ISO 639-1 code, display name, flag resource path).</summary>
     public static readonly IReadOnlyList<(string Code, string Name, string Flag)> All =
     [
         ("de", "German", "/Resources/Flags/de.png"),

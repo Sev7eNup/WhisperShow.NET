@@ -9,6 +9,7 @@
         ShowInTaskbar="False"
         SizeToContent="Height"
         Width="420"
+        AutomationProperties.Name="Confirmation"
         PreviewKeyDown="Window_PreviewKeyDown">
 
     <Window.Resources>
@@ -56,6 +57,7 @@
 
                         <!-- Close button -->
                         <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                AutomationProperties.Name="Close"
                                 Click="Cancel_Click" Cursor="Hand">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
@@ -93,10 +95,12 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <!-- Cancel button -->
                         <Button Content="Cancel" Click="Cancel_Click"
+                                AutomationProperties.Name="Cancel"
                                 Style="{StaticResource PillButtonStyle}" Margin="0,0,10,0"/>
 
                         <!-- Confirm button (accent-colored) -->
-                        <Button x:Name="ConfirmButton" Content="Confirm" Click="Confirm_Click" Cursor="Hand">
+                        <Button x:Name="ConfirmButton" Content="Confirm" Click="Confirm_Click" Cursor="Hand"
+                                AutomationProperties.Name="Confirm">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="Bd" CornerRadius="14" Padding="16,6">

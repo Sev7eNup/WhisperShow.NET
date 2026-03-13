@@ -9,10 +9,23 @@ using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+/// <summary>Represents a selectable AI model option shown in provider-specific model dropdowns.</summary>
+/// <param name="Id">The model identifier sent to the API (e.g., "whisper-1", "gpt-4.1-mini").</param>
+/// <param name="DisplayName">The human-readable model name shown in the settings UI.</param>
+/// <param name="Description">A short description of the model's characteristics (e.g., speed, accuracy).</param>
 public record CloudModelOption(string Id, string DisplayName, string Description);
 
+/// <summary>
+/// ViewModel for the transcription and text correction settings page.
+/// Manages speech-to-text provider selection (OpenAI cloud, Groq, Custom, local Whisper, or NVIDIA Parakeet),
+/// AI text correction provider selection (OpenAI, Anthropic, Google Gemini, Groq, Custom, or local GGUF models),
+/// API key configuration for each provider, model selection dropdowns, GPU acceleration toggles,
+/// and the combined audio model option that sends audio directly to a chat model for single-pass transcription+correction.
+/// Delegates model download management to a child <see cref="ModelManagementViewModel"/>.
+/// </summary>
 public partial class TranscriptionSettingsViewModel : ObservableObject
 {
+    /// <summary>Available OpenAI cloud transcription models (GPT-4o Transcribe variants and Whisper).</summary>
     public static IReadOnlyList<CloudModelOption> CloudTranscriptionModels { get; } =
     [
         new("gpt-4o-mini-transcribe", "GPT-4o Mini Transcribe", "Fast and accurate transcription"),
@@ -20,6 +33,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         new("whisper-1", "Whisper", "Original Whisper model"),
     ];
 
+    /// <summary>Available Groq cloud transcription models (Whisper variants hosted on Groq infrastructure).</summary>
     public static IReadOnlyList<CloudModelOption> GroqTranscriptionModels { get; } =
     [
         new("whisper-large-v3-turbo", "Whisper Large V3 Turbo", "Fast, recommended"),
@@ -27,6 +41,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         new("distil-whisper-large-v3-en", "Distil Whisper V3", "English only, fastest"),
     ];
 
+    /// <summary>Available OpenAI models for post-transcription text correction (GPT-5.x and GPT-4.1 variants).</summary>
     public static IReadOnlyList<CloudModelOption> CloudCorrectionModels { get; } =
     [
         new("gpt-5.2", "GPT-5.2", "Latest flagship reasoning model"),
@@ -37,6 +52,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         new("gpt-4.1-nano", "GPT-4.1 Nano", "Lowest latency GPT-4.1"),
     ];
 
+    /// <summary>Available Anthropic Claude models for post-transcription text correction.</summary>
     public static IReadOnlyList<CloudModelOption> AnthropicCorrectionModels { get; } =
     [
         new("claude-sonnet-4-6", "Claude Sonnet 4.6", "Fast and capable"),
@@ -44,6 +60,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         new("claude-haiku-4-5-20251001", "Claude Haiku 4.5", "Fastest"),
     ];
 
+    /// <summary>Available Google Gemini models for post-transcription text correction.</summary>
     public static IReadOnlyList<CloudModelOption> GoogleCorrectionModels { get; } =
     [
         new("gemini-3-flash-preview", "Gemini 3 Flash", "Fast and efficient"),
@@ -51,6 +68,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         new("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite", "Lightweight"),
     ];
 
+    /// <summary>Available Groq-hosted models for post-transcription text correction (open-source LLMs on Groq hardware).</summary>
     public static IReadOnlyList<CloudModelOption> GroqCorrectionModels { get; } =
     [
         new("qwen/qwen3-32b", "Qwen3 32B", "Powerful reasoning, 131K context"),
@@ -66,7 +84,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     private readonly ILogger _logger;
     private readonly Action _scheduleSave;
 
-    // --- Child Sub-VM ---
+    /// <summary>Child ViewModel that manages downloading, activating, and deleting local AI models (Whisper, Parakeet, correction GGUF, and VAD).</summary>
     public ModelManagementViewModel Models { get; }
 
     // --- Transcription: Provider ---
@@ -163,14 +181,17 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [ObservableProperty] private string _combinedAudioModel = "gpt-4o-mini-audio-preview";
     [ObservableProperty] private bool _isEditingCombinedAudioModel;
 
-    // --- Custom endpoint ---
+    /// <summary>Indicates whether a custom OpenAI-compatible endpoint URL has been configured, enabling the endpoint display in the UI.</summary>
     public bool HasCustomEndpoint => !string.IsNullOrWhiteSpace(OpenAiEndpoint);
 
-    // --- Custom correction model ---
+    /// <summary>Returns true when the selected correction model is not in the predefined OpenAI model list, indicating a user-entered custom model name.</summary>
     public bool IsCustomCorrectionModel =>
         CloudCorrectionModels.All(m => m.Id != CorrectionCloudModel);
 
-    // --- Cloud usage hint ---
+    /// <summary>Returns true when CUDA is not detected but GPU acceleration is enabled on a local provider, indicating CPU fallback.</summary>
+    public bool ShowCudaWarning => !App.CudaDetected;
+
+    /// <summary>Returns true when the user has a local transcription provider but an OpenAI cloud correction provider, suggesting the user could simplify by using cloud transcription too.</summary>
     public bool ShowCloudUsageHint =>
         Provider is TranscriptionProvider.Local or TranscriptionProvider.Parakeet &&
         CorrectionProvider is TextCorrectionProvider.Cloud or TextCorrectionProvider.OpenAI;
@@ -266,6 +287,10 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void StartEditingProvider() => IsEditingProvider = true;
 
+    /// <summary>
+    /// Switches the active transcription provider, updates the displayed model name accordingly,
+    /// triggers model preloading/unloading for local providers, and persists the change.
+    /// </summary>
     public void ApplyProvider(TranscriptionProvider provider)
     {
         if (Provider == TranscriptionProvider.OpenAI) _openAiModelName = TranscriptionModel;
@@ -321,6 +346,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void StartEditingEndpoint() => IsEditingEndpoint = true;
 
+    /// <summary>Applies a custom OpenAI-compatible endpoint URL and persists the change.</summary>
     public void ApplyEndpoint(string endpoint)
     {
         OpenAiEndpoint = endpoint;
@@ -331,6 +357,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void StartEditingApiKey() => IsEditingApiKey = true;
 
+    /// <summary>Applies a new OpenAI API key, updates the masked display text, and persists the change.</summary>
     public void ApplyApiKey(string key)
     {
         OpenAiApiKey = key;
@@ -345,6 +372,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void SelectCloudModel(string modelId) => ApplyModel(modelId);
 
+    /// <summary>Applies the selected transcription model name (cloud or local GGML filename) and persists the change.</summary>
     public void ApplyModel(string model)
     {
         TranscriptionModel = model;
@@ -373,6 +401,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     // --- Groq Transcription ---
 
+    /// <summary>Applies a new Groq transcription API key, updates the masked display, and persists the change.</summary>
     public void ApplyGroqTranscriptionApiKey(string key)
     {
         GroqTranscriptionApiKey = key;
@@ -390,6 +419,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     // --- Custom Transcription ---
 
+    /// <summary>Applies a custom transcription endpoint URL and persists the change.</summary>
     public void ApplyCustomTranscriptionEndpoint(string endpoint)
     {
         CustomTranscriptionEndpoint = endpoint;
@@ -397,6 +427,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a custom transcription API key, updates the masked display, and persists the change.</summary>
     public void ApplyCustomTranscriptionApiKey(string key)
     {
         CustomTranscriptionApiKey = key;
@@ -405,6 +436,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a custom transcription model name and persists the change.</summary>
     public void ApplyCustomTranscriptionModel(string model)
     {
         CustomTranscriptionModel = model;
@@ -433,6 +465,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void SelectCorrectionCloudModel(string modelId) => ApplyCorrectionModel(modelId);
 
+    /// <summary>Applies the selected cloud correction model name and persists the change.</summary>
     public void ApplyCorrectionModel(string model)
     {
         CorrectionCloudModel = model;
@@ -450,6 +483,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     // --- Per-provider API key + model ---
 
+    /// <summary>Applies a new Anthropic API key, updates the masked display, and persists the change.</summary>
     public void ApplyAnthropicApiKey(string key)
     {
         AnthropicApiKey = key;
@@ -465,6 +499,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a new Google AI API key, updates the masked display, and persists the change.</summary>
     public void ApplyGoogleApiKey(string key)
     {
         GoogleApiKey = key;
@@ -480,6 +515,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a new Groq correction API key, updates the masked display, and persists the change.</summary>
     public void ApplyGroqApiKey(string key)
     {
         GroqApiKey = key;
@@ -495,6 +531,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a custom correction provider endpoint URL and persists the change.</summary>
     public void ApplyCustomCorrectionEndpoint(string endpoint)
     {
         CustomCorrectionEndpoint = endpoint;
@@ -502,6 +539,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a custom correction provider API key, updates the masked display, and persists the change.</summary>
     public void ApplyCustomCorrectionApiKey(string key)
     {
         CustomCorrectionApiKey = key;
@@ -510,6 +548,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Applies a custom correction provider model name and persists the change.</summary>
     public void ApplyCustomCorrectionModel(string model)
     {
         CustomCorrectionModel = model;
@@ -523,6 +562,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
     [RelayCommand]
     private void StartEditingCombinedAudioModel() => IsEditingCombinedAudioModel = true;
 
+    /// <summary>Applies the combined audio model name (e.g., "gpt-4o-mini-audio-preview") used for single-pass transcription+correction.</summary>
     public void ApplyCombinedAudioModel(string model)
     {
         CombinedAudioModel = model;
@@ -530,6 +570,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Refreshes all model download lists (Whisper, correction, Parakeet, and VAD) by re-scanning available models on disk.</summary>
     public void RefreshModels()
     {
         Models.RefreshModels();
@@ -540,6 +581,7 @@ public partial class TranscriptionSettingsViewModel : ObservableObject
 
     // --- Persistence ---
 
+    /// <summary>Writes all transcription and correction settings (providers, API keys, models, GPU flags) into the given JSON configuration node for persistence.</summary>
     public void WriteSettings(JsonNode section)
     {
         section["Provider"] = Provider.ToString();

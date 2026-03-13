@@ -17,6 +17,15 @@ using WriteSpeech.Core.Services.Hotkey;
 
 namespace WriteSpeech.App.Views;
 
+/// <summary>
+/// Code-behind for the transparent, topmost speech-to-text overlay window.
+/// This window floats above all other windows using Win32 extended styles (WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW)
+/// so it never steals focus from the application where the user is typing.
+/// Manages visual state transitions (idle, listening, recording, transcribing, result, error) with animations,
+/// renders a real-time audio waveform during recording, supports drag-to-reposition with a 5px movement threshold,
+/// and relays global hotkey events (toggle, push-to-talk, escape) to the OverlayViewModel.
+/// Uses DWM-based transparency instead of WPF's AllowsTransparency to avoid software rendering and mouse lag.
+/// </summary>
 public partial class OverlayWindow : Window
 {
     private readonly OverlayViewModel _viewModel;
@@ -67,6 +76,7 @@ public partial class OverlayWindow : Window
 
     private void OnWaveformUpdated(object? sender, EventArgs e) => Dispatcher.Invoke(UpdateWaveformPath);
 
+    /// <summary>Unsubscribes from all ViewModel, hotkey service, and options monitor events to prevent memory leaks on window close.</summary>
     public void Cleanup()
     {
         _optionsChangeRegistration?.Dispose();
@@ -219,6 +229,11 @@ public partial class OverlayWindow : Window
         WaveformFill.Data = fill;
     }
 
+    /// <summary>
+    /// Computes (x, y) coordinates for waveform visualization points from audio level samples.
+    /// Each point alternates above and below the vertical center, with amplitude derived from the
+    /// square root of the level (scaled by 5x) for a more perceptually uniform visual response.
+    /// </summary>
     internal static (double x, double y)[] ComputeWaveformPoints(
         float[] levels, double canvasWidth, double canvasHeight)
     {
@@ -238,6 +253,11 @@ public partial class OverlayWindow : Window
         return points;
     }
 
+    /// <summary>
+    /// Generates WPF StreamGeometry objects for the waveform line and its filled area beneath.
+    /// Uses Catmull-Rom spline interpolation (converted to cubic Bezier control points) for smooth curves.
+    /// Both geometries are frozen for thread-safe rendering performance.
+    /// </summary>
     internal static (StreamGeometry line, StreamGeometry fill) GenerateWaveformPaths(
         float[] levels, double canvasWidth, double canvasHeight)
     {
@@ -292,6 +312,11 @@ public partial class OverlayWindow : Window
 
     // --- Legacy waveform interpolation (kept for existing tests) ---
 
+    /// <summary>
+    /// Resamples the ViewModel's rolling audio level buffer (typically 20 samples) into bar heights
+    /// for the waveform display. Uses linear interpolation between adjacent source samples and applies
+    /// a square-root scaling for perceptual loudness mapping. Returns an array of pixel heights (minimum 2px).
+    /// </summary>
     internal static double[] InterpolateWaveformLevels(float[] levels, int barCount)
     {
         var heights = new double[barCount];
@@ -299,6 +324,7 @@ public partial class OverlayWindow : Window
         return heights;
     }
 
+    /// <summary>Resamples audio level data into the provided heights array. See the overload returning double[] for details.</summary>
     internal static void InterpolateWaveformLevels(float[] levels, double[] heights)
     {
         int srcCount = levels.Length;
@@ -525,6 +551,7 @@ public partial class OverlayWindow : Window
 
     // --- Scale ---
 
+    /// <summary>Constrains the overlay scale factor to the valid range of 0.75 to 2.0.</summary>
     internal static double ClampOverlayScale(double scale) => Math.Clamp(scale, 0.75, 2.0);
 
     private void ApplyOverlayScale(double scale)

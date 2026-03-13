@@ -5,6 +5,23 @@ using WriteSpeech.Core.Services.Hotkey;
 
 namespace WriteSpeech.App.Services;
 
+/// <summary>
+/// Proxy that wraps both hotkey implementations (<see cref="GlobalHotkeyService"/> and
+/// <see cref="LowLevelHookHotkeyService"/>) behind a single <see cref="IGlobalHotkeyService"/>
+/// interface, allowing the active implementation to be hot-swapped at runtime via
+/// <see cref="SwitchMethod"/>.
+///
+/// When switching:
+/// 1. Event handlers are unwired from the old implementation.
+/// 2. The old implementation is disposed (hooks removed).
+/// 3. A new implementation is created and event handlers are re-wired.
+/// 4. If a window handle was previously registered, the new implementation is registered
+///    with the same handle, and escape hotkey state is restored.
+///
+/// This proxy re-raises all events from the inner implementation, ensuring that consumers
+/// (like the OverlayViewModel) see a single stable event source regardless of which
+/// implementation is active underneath.
+/// </summary>
 internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
 {
     private readonly ILoggerFactory _loggerFactory;
@@ -14,18 +31,28 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
     private bool _escapeRegistered;
     private bool _disposed;
 
+    /// <inheritdoc />
     public event EventHandler? ToggleHotkeyPressed;
+    /// <inheritdoc />
     public event EventHandler? PushToTalkHotkeyPressed;
+    /// <inheritdoc />
     public event EventHandler? PushToTalkHotkeyReleased;
+    /// <inheritdoc />
     public event EventHandler? EscapePressed;
+    /// <inheritdoc />
     public event EventHandler<MouseButtonCapturedEventArgs>? MouseButtonCaptured;
 
+    /// <inheritdoc />
     public bool SuppressActions
     {
         get => _inner.SuppressActions;
         set => _inner.SuppressActions = value;
     }
 
+    /// <summary>
+    /// Initializes the proxy with the hotkey method specified in configuration
+    /// ("RegisterHotKey" or "LowLevelHook").
+    /// </summary>
     public HotkeyServiceProxy(
         ILoggerFactory loggerFactory,
         IOptionsMonitor<WriteSpeechOptions> optionsMonitor)
@@ -71,38 +98,53 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
     private void OnEscapePressed(object? sender, EventArgs e) => EscapePressed?.Invoke(this, e);
     private void OnMouseButtonCaptured(object? sender, MouseButtonCapturedEventArgs e) => MouseButtonCaptured?.Invoke(this, e);
 
+    /// <inheritdoc />
     public void Register(IntPtr windowHandle)
     {
         _windowHandle = windowHandle;
         _inner.Register(windowHandle);
     }
 
+    /// <inheritdoc />
     public void Unregister() => _inner.Unregister();
 
+    /// <inheritdoc />
     public void UpdateToggleHotkey(string modifiers, string key)
         => _inner.UpdateToggleHotkey(modifiers, key);
 
+    /// <inheritdoc />
     public void UpdatePushToTalkHotkey(string modifiers, string key)
         => _inner.UpdatePushToTalkHotkey(modifiers, key);
 
+    /// <inheritdoc />
     public void UpdateToggleHotkey(string modifiers, string? key, string? mouseButton)
         => _inner.UpdateToggleHotkey(modifiers, key, mouseButton);
 
+    /// <inheritdoc />
     public void UpdatePushToTalkHotkey(string modifiers, string? key, string? mouseButton)
         => _inner.UpdatePushToTalkHotkey(modifiers, key, mouseButton);
 
+    /// <inheritdoc />
     public void RegisterEscapeHotkey()
     {
         _escapeRegistered = true;
         _inner.RegisterEscapeHotkey();
     }
 
+    /// <inheritdoc />
     public void UnregisterEscapeHotkey()
     {
         _escapeRegistered = false;
         _inner.UnregisterEscapeHotkey();
     }
 
+    /// <summary>
+    /// Hot-swaps the active hotkey implementation at runtime. Disposes the current implementation,
+    /// creates a new one for the specified method, re-wires all events, and re-registers
+    /// the window handle and escape hotkey if they were previously set.
+    /// Preserves the <see cref="SuppressActions"/> state across the switch.
+    /// </summary>
+    /// <param name="method">"RegisterHotKey" or "LowLevelHook".</param>
     public void SwitchMethod(string method)
     {
         if (_disposed) return;
@@ -123,6 +165,9 @@ internal sealed class HotkeyServiceProxy : IGlobalHotkeyService
         }
     }
 
+    /// <summary>
+    /// Disposes the proxy and the underlying hotkey implementation.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed) return;

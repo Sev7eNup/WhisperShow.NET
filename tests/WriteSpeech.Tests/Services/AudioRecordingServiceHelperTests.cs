@@ -70,4 +70,12 @@ public class AudioRecordingServiceHelperTests
 
         result[0].Should().BeApproximately(0.5f, 0.001f);
     }
+
+    [Fact]
+    public void ConvertBytesToFloats_ZeroBytes_ReturnsEmptyArray()
+    {
+        var result = AudioRecordingService.ConvertBytesToFloats([], 0);
+
+        result.Should().BeEmpty();
+    }
 }

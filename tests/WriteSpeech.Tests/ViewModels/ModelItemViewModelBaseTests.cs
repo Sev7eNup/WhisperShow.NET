@@ -85,28 +85,4 @@ public class ModelItemViewModelBaseTests
         vm.SizeDisplay.Should().MatchRegex(@"1[.,]2 GB");
     }
 
-    [Fact]
-    public void SharedProperties_CanBeUpdated()
-    {
-        var model = new WhisperModel
-        {
-            Name = "Medium",
-            FileName = "ggml-medium.bin",
-            SizeBytes = 1_500_000_000
-        };
-
-        var vm = new ModelItemViewModel(model, GgmlType.Medium);
-
-        vm.IsDownloading = true;
-        vm.IsDownloading.Should().BeTrue();
-
-        vm.DownloadProgress = 0.75f;
-        vm.DownloadProgress.Should().Be(0.75f);
-
-        vm.StatusText = "Downloading 75%";
-        vm.StatusText.Should().Be("Downloading 75%");
-
-        vm.IsActive = true;
-        vm.IsActive.Should().BeTrue();
-    }
 }

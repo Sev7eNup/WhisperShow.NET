@@ -14,12 +14,26 @@ using WriteSpeech.Core.Services.Transcription;
 
 namespace WriteSpeech.App.ViewModels;
 
+/// <summary>
+/// Represents a recently transcribed audio file for display in the file picker's history list.
+/// </summary>
+/// <param name="FilePath">Full path to the audio file on disk.</param>
+/// <param name="FileName">Display name (file name without directory).</param>
+/// <param name="TimeAgo">Human-readable relative timestamp (e.g. "2 hours ago").</param>
+/// <param name="FileInfo">File metadata string (e.g. "MP3, 4.2 MB").</param>
 public record RecentFileItem(string FilePath, string FileName, string TimeAgo, string FileInfo);
 
+/// <summary>
+/// ViewModel for the file transcription window. Allows users to select or drag-and-drop an audio
+/// file (MP3, WAV, M4A, FLAC, OGG, MP4), transcribe it using the configured provider, optionally
+/// apply AI text correction, and automatically copy the result to the clipboard. Maintains a
+/// list of recently transcribed files and saves results to transcription history.
+/// </summary>
 public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
 {
     private bool _disposed;
 
+    /// <summary>Supported audio file extensions for transcription.</summary>
     internal static readonly HashSet<string> AudioExtensions =
         [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".mp4"];
 
@@ -85,9 +99,11 @@ public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
         _optionsMonitor = optionsMonitor;
     }
 
+    /// <summary>Returns whether the file at the given path has a supported audio extension.</summary>
     internal static bool IsAudioFile(string path)
         => AudioExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
+    /// <summary>Loads the most recent (up to 5) previously transcribed files from history that still exist on disk.</summary>
     public void LoadRecentFiles()
     {
         var entries = _historyService.GetEntries();
@@ -138,6 +154,7 @@ public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
         _ = TranscribeCommand.ExecuteAsync(null);
     }
 
+    /// <summary>Cancels any active transcription and resets the UI back to the file selection state.</summary>
     public void ResetToSelection()
     {
         _cts?.Cancel();
@@ -154,6 +171,7 @@ public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
         LoadRecentFiles();
     }
 
+    /// <summary>Sets the selected file path and populates file metadata (name, extension, size) for display.</summary>
     public void SetFile(string path)
     {
         FilePath = path;
@@ -262,6 +280,7 @@ public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
         IsCopied = true;
     }
 
+    /// <summary>Cancels any active transcription and releases the cancellation token source.</summary>
     public void Dispose()
     {
         if (_disposed) return;
@@ -270,6 +289,7 @@ public partial class FileTranscriptionViewModel : ObservableObject, IDisposable
         _cts?.Dispose();
     }
 
+    /// <summary>Formats a byte count as a human-readable file size string (B, KB, or MB).</summary>
     internal static string FormatFileSize(long bytes) => bytes switch
     {
         < 1024 => $"{bytes} B",

@@ -12,12 +12,47 @@ using WriteSpeech.Core.Services.ModelManagement;
 
 namespace WriteSpeech.App.ViewModels.Settings;
 
+/// <summary>Represents an audio input device with its NAudio device index and display name.</summary>
+/// <param name="DeviceIndex">The zero-based NAudio device index used to open the microphone for recording.</param>
+/// <param name="Name">The human-readable product name of the audio input device.</param>
 public record MicrophoneInfo(int DeviceIndex, string Name);
+
+/// <summary>Represents a language option for speech-to-text transcription.</summary>
+/// <param name="Code">The ISO language code (e.g., "en", "de") sent to the transcription provider.</param>
+/// <param name="DisplayName">The localized display name shown in the language picker UI.</param>
+/// <param name="Flag">The filename of the flag image resource (e.g., "en.png") used as a visual indicator.</param>
 public record LanguageInfo(string Code, string DisplayName, string Flag);
 
-public enum SettingsDialogType { None, Hotkey, Microphone, Language }
-public enum HotkeyCaptureTarget { None, Toggle, PushToTalk }
+/// <summary>Identifies which settings dialog is currently open in the general settings page.</summary>
+public enum SettingsDialogType
+{
+    /// <summary>No dialog is open.</summary>
+    None,
+    /// <summary>The hotkey configuration dialog is open.</summary>
+    Hotkey,
+    /// <summary>The microphone selection dialog is open.</summary>
+    Microphone,
+    /// <summary>The language picker dialog is open.</summary>
+    Language
+}
 
+/// <summary>Identifies which hotkey binding is currently being captured from user input.</summary>
+public enum HotkeyCaptureTarget
+{
+    /// <summary>No hotkey capture is in progress.</summary>
+    None,
+    /// <summary>Capturing a new toggle (start/stop recording) hotkey binding.</summary>
+    Toggle,
+    /// <summary>Capturing a new push-to-talk hotkey binding.</summary>
+    PushToTalk
+}
+
+/// <summary>
+/// ViewModel for the General settings page in the speech-to-text overlay application.
+/// Manages microphone selection, transcription language, hotkey configuration (toggle and push-to-talk),
+/// hotkey method switching (RegisterHotKey vs. LowLevelHook), and voice activity detection (VAD) settings.
+/// Changes are persisted to appsettings.json via a debounced save callback.
+/// </summary>
 public partial class GeneralSettingsViewModel : ObservableObject
 {
     private readonly IGlobalHotkeyService _hotkeyService;
@@ -39,6 +74,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty] private string _toggleKey = "Space";
     [ObservableProperty] private string? _toggleMouseButton;
     [ObservableProperty] private string _toggleDisplayText = "";
+    /// <summary>Individual modifier and key badge strings displayed in the toggle hotkey UI (e.g., "Ctrl", "Shift", "Space").</summary>
     public ObservableCollection<string> ToggleBadges { get; } = [];
 
     // --- Push-to-Talk hotkey ---
@@ -46,6 +82,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty] private string _pttKey = "Space";
     [ObservableProperty] private string? _pttMouseButton;
     [ObservableProperty] private string _pttDisplayText = "";
+    /// <summary>Individual modifier and key badge strings displayed in the push-to-talk hotkey UI.</summary>
     public ObservableCollection<string> PttBadges { get; } = [];
 
     // --- Hotkey capture state ---
@@ -55,6 +92,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     // --- Microphone ---
     [ObservableProperty] private int _selectedMicrophoneIndex;
     [ObservableProperty] private string _selectedMicrophoneDisplay = "";
+    /// <summary>List of audio input devices available on the system, populated via NAudio enumeration.</summary>
     public ObservableCollection<MicrophoneInfo> AvailableMicrophones { get; } = [];
 
     // --- Mic test ---
@@ -75,6 +113,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isVadModelDownloading;
     [ObservableProperty] private string _vadDownloadStatus = "";
 
+    /// <summary>All languages supported by the transcription engine, each with a code, display name, and flag icon.</summary>
     public ObservableCollection<LanguageInfo> AvailableLanguages { get; } =
         new(SupportedLanguages.All.Select(l => new LanguageInfo(l.Code, l.Name, l.Flag)));
 
@@ -147,6 +186,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
         return result;
     }
 
+    /// <summary>Converts an internal mouse button identifier (e.g., "XButton1") to a user-friendly display string (e.g., "Mouse 4").</summary>
     internal static string FormatMouseButton(string? mouseButton) => mouseButton switch
     {
         "XButton1" => "Mouse 4",
@@ -155,6 +195,10 @@ public partial class GeneralSettingsViewModel : ObservableObject
         _ => mouseButton ?? ""
     };
 
+    /// <summary>
+    /// Formats a hotkey binding into a human-readable display string (e.g., "Ctrl + Shift + Space" or "Ctrl + Mouse 4").
+    /// Used for hotkey labels and tooltip text throughout the settings UI.
+    /// </summary>
     internal static string FormatKeys(string modifiers, string key, string? mouseButton = null)
     {
         var trigger = !string.IsNullOrEmpty(mouseButton) ? FormatMouseButton(mouseButton) : key;
@@ -259,9 +303,14 @@ public partial class GeneralSettingsViewModel : ObservableObject
         _hotkeyService.SuppressActions = true;
     }
 
+    /// <summary>Applies a captured keyboard-only hotkey binding to the currently active capture target (toggle or push-to-talk).</summary>
     public void ApplyNewHotkey(string modifiers, string key)
         => ApplyNewHotkey(modifiers, key, null);
 
+    /// <summary>
+    /// Applies a captured hotkey binding (keyboard or mouse) to the currently active capture target.
+    /// Updates the hotkey service registration, refreshes display text and badges, and triggers a settings save.
+    /// </summary>
     public void ApplyNewHotkey(string modifiers, string? key, string? mouseButton)
     {
         if (CapturingHotkey == HotkeyCaptureTarget.Toggle)
@@ -307,6 +356,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
 
     // --- Microphone dialog ---
 
+    /// <summary>Selects a microphone by its NAudio device index, updates the display text, triggers a save, and restarts the mic level test.</summary>
     public void SelectMicrophone(int deviceIndex)
     {
         SelectedMicrophoneIndex = deviceIndex;
@@ -317,6 +367,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
         StartMicTestInternal();
     }
 
+    /// <summary>Stops the microphone level test if one is currently running.</summary>
     public void StopMicTest()
     {
         if (!IsMicTesting) return;
@@ -424,6 +475,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
         _scheduleSave();
     }
 
+    /// <summary>Writes the general settings (language, hotkey bindings, microphone, VAD) into the given JSON configuration node for persistence.</summary>
     public void WriteSettings(JsonNode section)
     {
         section["Language"] = SelectedLanguageCode;
