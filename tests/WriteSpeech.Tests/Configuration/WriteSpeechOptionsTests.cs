@@ -552,7 +552,7 @@ public class WriteSpeechOptionsTests
     }
 
     [Fact]
-    public void Validator_OpenAICorrectionProvider_AfterSetup_RequiresApiKey()
+    public void Validator_OpenAICorrectionProvider_WithoutApiKey_Succeeds()
     {
         var validator = new WriteSpeechOptionsValidator();
         var options = CreateValidOptions();
@@ -561,22 +561,7 @@ public class WriteSpeechOptionsTests
 
         var result = validator.Validate(null, options);
 
-        result.Failed.Should().BeTrue();
-        result.FailureMessage.Should().Contain("ApiKey");
-    }
-
-    [Fact]
-    public void Validator_OpenAICorrectionProvider_BeforeSetup_Succeeds()
-    {
-        var validator = new WriteSpeechOptionsValidator();
-        var options = new WriteSpeechOptions
-        {
-            TextCorrection = new TextCorrectionOptions { Provider = TextCorrectionProvider.OpenAI },
-            OpenAI = new OpenAiOptions { ApiKey = null }
-        };
-
-        var result = validator.Validate(null, options);
-
+        // Text correction API keys are not validated at startup — services handle missing keys at usage time
         result.Succeeded.Should().BeTrue();
     }
 

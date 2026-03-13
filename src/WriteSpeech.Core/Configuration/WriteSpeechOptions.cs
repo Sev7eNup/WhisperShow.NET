@@ -512,9 +512,6 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
                 && string.IsNullOrWhiteSpace(options.CustomTranscription.Endpoint))
                 failures.Add("Custom transcription provider requires an endpoint (CustomTranscription.Endpoint).");
 
-            if (options.TextCorrection.Provider is TextCorrectionProvider.Cloud or TextCorrectionProvider.OpenAI
-                && string.IsNullOrWhiteSpace(options.OpenAI.ApiKey))
-                failures.Add("OpenAI text correction requires an API key (OpenAI.ApiKey).");
         }
 
         if (options.Provider == TranscriptionProvider.Parakeet
@@ -524,8 +521,8 @@ public class WriteSpeechOptionsValidator : IValidateOptions<WriteSpeechOptions>
         if (options.Parakeet.NumThreads < 1)
             failures.Add($"Parakeet.NumThreads must be at least 1 (got {options.Parakeet.NumThreads}).");
 
-        // Note: Anthropic/Google/Groq API keys are NOT validated here — the user must be able
-        // to start the app and configure keys in Settings. Services handle missing keys at usage time.
+        // Note: Text correction API keys (OpenAI/Anthropic/Google/Groq) are NOT validated here — the user
+        // must be able to start the app and configure keys in Settings. Services handle missing keys at usage time.
 
         var vad = options.Audio.VoiceActivity;
         if (vad.Enabled)
