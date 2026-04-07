@@ -21,11 +21,11 @@ public class CorrectionModelManager : ICorrectionModelManager
             "fa976b45909413d8d418c841e6800bdb28bfc73a5cae99cfb30deb2c4c7da87d"
         ),
         (
-            "Gemma 2 2B IT",
-            "gemma-2-2b-it-Q4_K_M.gguf",
-            1_600_000_000L,
-            "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf",
-            "90f9c2316393fb452b47988ffa7a411f0891e2c1a7178ae868ac4f70f96f7c8d"
+            "Gemma 4 E2B IT",
+            "google_gemma-4-E2B-it-Q4_K_M.gguf",
+            3_462_673_376L,
+            "https://huggingface.co/bartowski/google_gemma-4-E2B-it-GGUF/resolve/main/google_gemma-4-E2B-it-Q4_K_M.gguf",
+            "5efe645db4e1909c7a1f4a9608df18e6c14383f5e86777fc49f769f9ba7d5fdf"
         ),
         (
             "Qwen 2.5 3B Instruct",
