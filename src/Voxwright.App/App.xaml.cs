@@ -93,6 +93,7 @@ public partial class App : Application
                 services.Configure<VoxwrightOptions>(
                     context.Configuration.GetSection(VoxwrightOptions.SectionName));
                 services.AddSingleton<IValidateOptions<VoxwrightOptions>, VoxwrightOptionsValidator>();
+                services.AddSingleton<IPostConfigureOptions<VoxwrightOptions>, VoxwrightOptionsPostConfigure>();
 
                 // Core services
                 services.AddSingleton<OpenAiClientFactory>();

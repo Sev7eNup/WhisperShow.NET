@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Voxwright.Core.Services;
 using Voxwright.Core.Services.Configuration;
+using ApiKeyProtector = Voxwright.Core.Services.Configuration.ApiKeyProtector;
 
 namespace Voxwright.App.Services;
 
@@ -110,6 +111,9 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
 
             mutator(section);
 
+            // Encrypt API keys before writing to disk (DPAPI, current-user scope)
+            EncryptApiKeys(section);
+
             // Write atomically: temp file + rename to avoid FileSystemWatcher seeing truncated data
             await AtomicFileHelper.WriteAllTextAsync(_filePath, doc.ToJsonString(s_jsonOptions));
             _logger.LogInformation("Settings saved to appsettings.json");
@@ -118,6 +122,33 @@ public class SettingsPersistenceService : ISettingsPersistenceService, IDisposab
         {
             _flushSemaphore.Release();
         }
+    }
+
+    /// <summary>
+    /// Encrypts all known API key fields in the JSON section using DPAPI before writing to disk.
+    /// Plaintext keys are encrypted; already-encrypted keys are left unchanged.
+    /// </summary>
+    private static void EncryptApiKeys(JsonNode section)
+    {
+        EncryptKey(section, "OpenAI", "ApiKey");
+        EncryptKey(section, "GroqTranscription", "ApiKey");
+        EncryptKey(section, "CustomTranscription", "ApiKey");
+
+        var textCorrection = section["TextCorrection"];
+        if (textCorrection is not null)
+        {
+            EncryptKey(textCorrection, "Anthropic", "ApiKey");
+            EncryptKey(textCorrection, "Google", "ApiKey");
+            EncryptKey(textCorrection, "Groq", "ApiKey");
+            EncryptKey(textCorrection, "Custom", "ApiKey");
+        }
+    }
+
+    private static void EncryptKey(JsonNode parent, string sectionName, string keyName)
+    {
+        var value = parent[sectionName]?[keyName]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(value) && !ApiKeyProtector.IsProtected(value))
+            parent[sectionName]![keyName] = ApiKeyProtector.Protect(value);
     }
 
     /// <summary>

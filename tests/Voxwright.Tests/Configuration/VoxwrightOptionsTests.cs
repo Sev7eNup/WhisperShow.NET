@@ -889,4 +889,65 @@ public class VoxwrightOptionsTests
 
         result.Succeeded.Should().BeTrue();
     }
+
+    // --- Model name path traversal validation ---
+
+    [Theory]
+    [InlineData("..\\..\\Windows\\System32")]
+    [InlineData("../../etc/passwd")]
+    [InlineData("model..\\..\\secret")]
+    public void Validator_ParakeetModelName_WithPathTraversal_Fails(string modelName)
+    {
+        var validator = new VoxwrightOptionsValidator();
+        var options = CreateValidOptions();
+        options.Parakeet.ModelName = modelName;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("Parakeet.ModelName");
+    }
+
+    [Theory]
+    [InlineData("..\\..\\Windows\\System32")]
+    [InlineData("../../etc/passwd")]
+    public void Validator_LocalModelName_WithPathTraversal_Fails(string modelName)
+    {
+        var validator = new VoxwrightOptionsValidator();
+        var options = CreateValidOptions();
+        options.Local.ModelName = modelName;
+
+        var result = validator.Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("Local.ModelName");
+    }
+
+    [Theory]
+    [InlineData("sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8")]
+    [InlineData("my-custom-model")]
+    public void Validator_ParakeetModelName_ValidName_Succeeds(string modelName)
+    {
+        var validator = new VoxwrightOptionsValidator();
+        var options = CreateValidOptions();
+        options.Parakeet.ModelName = modelName;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("ggml-small.bin")]
+    [InlineData("ggml-large-v3-turbo.bin")]
+    public void Validator_LocalModelName_ValidName_Succeeds(string modelName)
+    {
+        var validator = new VoxwrightOptionsValidator();
+        var options = CreateValidOptions();
+        options.Local.ModelName = modelName;
+
+        var result = validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue();
+    }
 }

@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Voxwright.App.Services;
+using Voxwright.Core.Services.Configuration;
 
 namespace Voxwright.Tests.Services;
 
@@ -214,5 +215,99 @@ public class SettingsPersistenceServiceTests : IDisposable
         var json = await File.ReadAllTextAsync(_filePath);
         var doc = JsonNode.Parse(json)!;
         doc["Voxwright"]!["Language"]!.GetValue<string>().Should().Be("en");
+    }
+
+    // --- API key encryption ---
+
+    [Fact]
+    public async Task ScheduleUpdate_EncryptsApiKeysOnWrite()
+    {
+        WriteInitialSettings("""{ "Voxwright": { "OpenAI": { "ApiKey": "" } } }""");
+        using var service = CreateService();
+
+        service.ScheduleUpdate(section =>
+        {
+            var openAi = section["OpenAI"]!;
+            openAi["ApiKey"] = "sk-test-key-12345";
+        });
+        await Task.Delay(200);
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        var doc = JsonNode.Parse(json)!;
+        var storedKey = doc["Voxwright"]!["OpenAI"]!["ApiKey"]!.GetValue<string>();
+        storedKey.Should().StartWith("DPAPI:");
+        storedKey.Should().NotContain("sk-test-key-12345");
+    }
+
+    [Fact]
+    public async Task ScheduleUpdate_EncryptsAnthropicApiKey()
+    {
+        WriteInitialSettings("""{ "Voxwright": { "TextCorrection": { "Anthropic": { "ApiKey": "" } } } }""");
+        using var service = CreateService();
+
+        service.ScheduleUpdate(section =>
+        {
+            var anthropic = section["TextCorrection"]!["Anthropic"]!;
+            anthropic["ApiKey"] = "sk-ant-test-key";
+        });
+        await Task.Delay(200);
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        var doc = JsonNode.Parse(json)!;
+        var storedKey = doc["Voxwright"]!["TextCorrection"]!["Anthropic"]!["ApiKey"]!.GetValue<string>();
+        storedKey.Should().StartWith("DPAPI:");
+    }
+
+    [Fact]
+    public async Task ScheduleUpdate_EncryptedKey_RoundTrips()
+    {
+        WriteInitialSettings("""{ "Voxwright": { "OpenAI": { "ApiKey": "" } } }""");
+        using var service = CreateService();
+
+        service.ScheduleUpdate(section =>
+        {
+            section["OpenAI"]!["ApiKey"] = "sk-original-key";
+        });
+        await Task.Delay(200);
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        var doc = JsonNode.Parse(json)!;
+        var storedKey = doc["Voxwright"]!["OpenAI"]!["ApiKey"]!.GetValue<string>();
+
+        // Verify round-trip: encrypted on disk can be decrypted
+        var decrypted = ApiKeyProtector.Unprotect(storedKey);
+        decrypted.Should().Be("sk-original-key");
+    }
+
+    [Fact]
+    public async Task ScheduleUpdate_AlreadyEncryptedKey_NotDoubleEncrypted()
+    {
+        var encrypted = ApiKeyProtector.Protect("sk-my-key")!;
+        WriteInitialSettings($$"""{ "Voxwright": { "OpenAI": { "ApiKey": "{{encrypted}}" } } }""");
+        using var service = CreateService();
+
+        // Trigger a save without changing the key
+        service.ScheduleUpdate(section => section["Language"] = "en");
+        await Task.Delay(200);
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        var doc = JsonNode.Parse(json)!;
+        var storedKey = doc["Voxwright"]!["OpenAI"]!["ApiKey"]!.GetValue<string>();
+        storedKey.Should().Be(encrypted);
+    }
+
+    [Fact]
+    public async Task ScheduleUpdate_EmptyApiKey_NotEncrypted()
+    {
+        WriteInitialSettings("""{ "Voxwright": { "OpenAI": { "ApiKey": "" } } }""");
+        using var service = CreateService();
+
+        service.ScheduleUpdate(section => section["Language"] = "de");
+        await Task.Delay(200);
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        var doc = JsonNode.Parse(json)!;
+        var storedKey = doc["Voxwright"]!["OpenAI"]!["ApiKey"]!.GetValue<string>();
+        storedKey.Should().BeEmpty();
     }
 }

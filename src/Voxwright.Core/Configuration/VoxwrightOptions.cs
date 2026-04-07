@@ -498,6 +498,9 @@ public class VoxwrightOptionsValidator : IValidateOptions<VoxwrightOptions>
             && string.IsNullOrWhiteSpace(options.Local.ModelName))
             failures.Add("Local transcription provider requires a model name (Local.ModelName).");
 
+        ValidateModelName(options.Local.ModelName, "Local.ModelName", failures);
+        ValidateModelName(options.Parakeet.ModelName, "Parakeet.ModelName", failures);
+
         // Provider-specific validations only apply after initial setup is complete.
         // Before setup, the app starts with defaults that may not have API keys configured yet.
         if (options.App.SetupCompleted)
@@ -564,6 +567,14 @@ public class VoxwrightOptionsValidator : IValidateOptions<VoxwrightOptions>
     {
         if (value is < 10 or > 2000)
             failures.Add($"{fieldName} must be between 10 and 2000 (got {value}).");
+    }
+
+    private static void ValidateModelName(string? modelName, string fieldName, List<string> failures)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return;
+
+        if (modelName.Contains("..") || modelName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            failures.Add($"{fieldName} contains invalid characters or path traversal sequences.");
     }
 
     private static void ValidateEndpoint(string? endpoint, string fieldName, List<string> failures)
