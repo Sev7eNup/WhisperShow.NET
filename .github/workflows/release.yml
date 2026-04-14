@@ -87,7 +87,7 @@ jobs:
           "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\Voxwright.iss
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Voxwright ${{ steps.version.outputs.version }}
