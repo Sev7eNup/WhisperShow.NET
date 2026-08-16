@@ -5,9 +5,41 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+          - "System.Security.Cryptography.*"
+      whisper:
+        patterns:
+          - "Whisper.net*"
+      llamasharp:
+        patterns:
+          - "LLamaSharp*"
+      naudio:
+        patterns:
+          - "NAudio*"
+      test-dependencies:
+        patterns:
+          - "xunit*"
+          - "NSubstitute"
+          - "FluentAssertions"
+          - "coverlet*"
+          - "Microsoft.NET.Test.Sdk"
+    ignore:
+      # NAudio 3.x changes IWaveProvider/ISampleProvider to Span-based Read() and
+      # reorganizes assemblies. NAudio.Lame (2.1.0) and NAudio.Vorbis (1.5.0) are still
+      # built against NAudio 2.x and would break at runtime. Revisit once both ship a
+      # NAudio 3 compatible release -- their own update PRs will signal that.
+      - dependency-name: "NAudio"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
