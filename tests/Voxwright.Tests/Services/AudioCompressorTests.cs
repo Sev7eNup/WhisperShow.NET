@@ -72,4 +72,41 @@ public class AudioCompressorTests
         // Higher bitrate should produce larger output
         mp3Data128.Length.Should().BeGreaterThan(mp3Data32.Length);
     }
+
+    [Fact]
+    public void CompressToMp3_ProducesADecodableMp3Stream()
+    {
+        // The NAudio -> NAudio.Lame interop is the part most likely to break silently on a
+        // dependency bump: a mismatched binding still returns bytes, but not valid MP3.
+        // Decoding the result back proves the encoder actually ran.
+        var compressor = new AudioCompressor(Microsoft.Extensions.Logging.Abstractions.NullLogger<AudioCompressor>.Instance);
+        var wavData = CreateTestWavData(2.0);
+
+        var mp3Data = compressor.CompressToMp3(wavData);
+
+        using var mp3Stream = new System.IO.MemoryStream(mp3Data);
+        using var reader = new Mp3FileReader(mp3Stream);
+
+        reader.Mp3WaveFormat.SampleRate.Should().Be(16000);
+        reader.Mp3WaveFormat.Channels.Should().Be(1);
+        reader.TotalTime.TotalSeconds.Should().BeApproximately(2.0, 0.2);
+    }
+
+    [Fact]
+    public void CompressToMp3_OutputStartsWithAnMp3FrameHeader()
+    {
+        var compressor = new AudioCompressor(Microsoft.Extensions.Logging.Abstractions.NullLogger<AudioCompressor>.Instance);
+        var wavData = CreateTestWavData();
+
+        var mp3Data = compressor.CompressToMp3(wavData);
+
+        mp3Data.Length.Should().BeGreaterThan(4);
+
+        // Either an ID3v2 tag ("ID3") or a raw MPEG frame sync (11 set bits).
+        var hasId3Tag = mp3Data[0] == 0x49 && mp3Data[1] == 0x44 && mp3Data[2] == 0x33;
+        var hasFrameSync = mp3Data[0] == 0xFF && (mp3Data[1] & 0xE0) == 0xE0;
+
+        (hasId3Tag || hasFrameSync).Should().BeTrue(
+            "compressor output must be a real MP3 stream, not arbitrary bytes");
+    }
 }

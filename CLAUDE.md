@@ -492,20 +492,20 @@ Environment variables prefixed with `VOXWRIGHT_` also bind to config.
 
 | Package | Purpose |
 |---|---|
-| NAudio 2.2.1 | Audio recording (WaveInEvent) + muting (CoreAudioApi) |
+| NAudio 2.3.0 | Audio recording (WaveInEvent) + muting (CoreAudioApi) |
 | NAudio.Lame 2.1.0 | Audio compression (WAV → MP3) |
-| NAudio.Vorbis | OGG/Vorbis audio file reading |
-| Concentus | OGG/Opus audio decoding |
-| OpenAI 2.8.0 | Cloud transcription (Whisper API) + text correction (ChatCompletions) |
-| Whisper.net 1.9.0 | Local transcription via GGML models |
-| Whisper.net.Runtime 1.9.0 | Whisper CPU runtime |
-| Whisper.net.Runtime.Cuda 1.9.0 | Whisper CUDA GPU runtime |
-| org.k2fsa.sherpa.onnx 1.12.27 | Parakeet local transcription (NVIDIA NeMo via ONNX) |
-| LLamaSharp 0.26.0 | Local text correction via GGUF LLM models |
-| LLamaSharp.Backend.Cuda12 0.26.0 | CUDA backend for LLamaSharp |
-| Microsoft.Extensions.Hosting 10.0.3 | Host builder, DI container, app lifetime |
-| Microsoft.Extensions.Http 10.0.3 | IHttpClientFactory for model downloads |
-| CommunityToolkit.Mvvm 8.4.0 | Source generators ([ObservableProperty], [RelayCommand]) |
+| NAudio.Vorbis 1.5.0 | OGG/Vorbis audio file reading |
+| Concentus 2.2.2 | OGG/Opus audio decoding |
+| OpenAI 2.13.0 | Cloud transcription (Whisper API) + text correction (ChatCompletions) |
+| Whisper.net 1.9.1 | Local transcription via GGML models |
+| Whisper.net.Runtime 1.9.1 | Whisper CPU runtime |
+| Whisper.net.Runtime.Cuda 1.9.1 | Whisper CUDA GPU runtime |
+| org.k2fsa.sherpa.onnx 1.13.5 | Parakeet local transcription (NVIDIA NeMo via ONNX) |
+| LLamaSharp 0.27.0 | Local text correction via GGUF LLM models |
+| LLamaSharp.Backend.Cuda12 0.27.0 | CUDA backend for LLamaSharp |
+| Microsoft.Extensions.Hosting 10.0.11 | Host builder, DI container, app lifetime |
+| Microsoft.Extensions.Http 10.0.11 | IHttpClientFactory for model downloads |
+| CommunityToolkit.Mvvm 8.4.2 | Source generators ([ObservableProperty], [RelayCommand]) |
 | H.NotifyIcon.Wpf 2.4.1 | System tray icon |
 | Serilog.Extensions.Hosting 10.0.0 | Serilog integration with Host builder |
 | Serilog.Sinks.File 7.0.0 | File logging to `%APPDATA%/Voxwright/logs/` |
